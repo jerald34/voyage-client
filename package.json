@@ -4,11 +4,19 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "vitest run --pool=threads",
+    "test:watch:vitest": "vitest --pool=threads"
   },
   "dependencies": {
     "next": "^16.2.4",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "jsdom": "^29.0.2",
+    "vitest": "^4.1.4"
   }
 }
