@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-
+import { useState, useEffect } from "react";
 import prototypeData from "./prototype-data";
 import { usePrototypeState } from "./prototype-state";
 
@@ -21,166 +20,165 @@ const tripBriefLabels = {
   priority: "Planning priorities",
 };
 
-const fieldInputStyle = {
-  width: "100%",
-  marginTop: "10px",
-  padding: "14px 16px",
-  borderRadius: "16px",
-  border: "1px solid rgba(247, 243, 235, 0.15)",
-  background: "rgba(255, 255, 255, 0.04)",
-  color: "inherit",
-  font: "inherit",
-};
-
-const workspaceTabListStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-  gap: "10px",
-};
-
-const workspaceTabStyle = {
-  appearance: "none",
-  minHeight: "46px",
-  padding: "0 14px",
-  borderRadius: "999px",
-  border: "1px solid rgba(247, 243, 235, 0.18)",
-  background: "rgba(255, 255, 255, 0.03)",
-  color: "inherit",
-  font: "inherit",
-  fontWeight: 700,
-  cursor: "pointer",
-};
+const voyageSamples = [
+  {
+    id: "sample-1",
+    title: "7 Days in Kyoto",
+    subtitle: "Temples, Tea, and Timing",
+    tags: ["Culture", "Slow Pace"],
+  },
+  {
+    id: "sample-2",
+    title: "Amalfi Drift",
+    subtitle: "Coastal Routes & Hidden Coves",
+    tags: ["Nature", "High Budget"],
+  },
+  {
+    id: "sample-3",
+    title: "Icelandic Ring",
+    subtitle: "Geothermal Power & Glacial Pace",
+    tags: ["Adventure", "Active"],
+  },
+];
 
 function formatTripBriefValue(key, value) {
-  if (key === "travelers") {
-    return `${value} travelers`;
-  }
-
+  if (key === "travelers") return `${value} travelers`;
   return value;
 }
 
-function getWorkspaceTab(activeWorkspaceTab) {
-  if (activeWorkspaceTab === "overview" || activeWorkspaceTab === "itinerary") {
-    return "trip";
-  }
-
-  return activeWorkspaceTab;
-}
-
-function getSelectedPlace(selectedPlaceId) {
+function LandingPage({ onStart }) {
   return (
-    prototypeData.mapPlaces.find((place) => place.id === selectedPlaceId) ??
-    prototypeData.mapPlaces[0] ??
-    null
-  );
-}
-
-function getSelectedDay(days, selectedDayId) {
-  return days.find((day) => day.id === selectedDayId) ?? days[0] ?? null;
-}
-
-function openWorkspace({
-  setActiveScreen,
-  setActiveWorkspaceTab,
-  setSelectedPlaceId,
-}) {
-  setActiveWorkspaceTab("trip");
-  setSelectedPlaceId(prototypeData.mapPlaces[0]?.id ?? null);
-  setActiveScreen("workspace");
-}
-
-function changeWorkspaceTab({
-  nextTab,
-  selectedPlaceId,
-  setActiveWorkspaceTab,
-  setSelectedPlaceId,
-}) {
-  setActiveWorkspaceTab(nextTab);
-
-  if (nextTab === "map" && !selectedPlaceId) {
-    setSelectedPlaceId(prototypeData.mapPlaces[0]?.id ?? null);
-  }
-}
-
-function selectDay({
-  dayId,
-  setActiveWorkspaceTab,
-  setSelectedDayId,
-}) {
-  setSelectedDayId(dayId);
-  setActiveWorkspaceTab("trip");
-}
-
-function WelcomeScreen({ installRequested, onInstall, onStart }) {
-  const [startAction, installAction] = prototypeData.entryActions;
-
-  return (
-    <section className="screen-frame">
-      <div className="frame-panel frame-panel-form">
-        <div className="frame-header">
-          <p className="frame-label">PWA welcome</p>
-          <h1>Plan the route before you leave home.</h1>
-          <p>
-            Voyage opens with the feel of a well-marked departure board: destination first,
-            decisions next, and just enough structure to turn a loose idea into a trip worth taking.
-          </p>
-        </div>
-
+    <div className="landing-container">
+      {/* Hero Section */}
+      <section className="landing-hero">
+        <span className="frame-label">Voyage Intelligence</span>
+        <h1 style={{ fontSize: 'clamp(4rem, 12vw, 7rem)', lineHeight: 0.9, marginBottom: '2rem' }}>
+          The world, <br />
+          <span style={{ color: 'var(--accent)', fontStyle: 'italic' }}>recharted.</span>
+        </h1>
+        <p className="lede" style={{ maxWidth: '600px' }}>
+          A high-fidelity planning environment that turns the chaos of travel into an editorial journey. 
+          Powered by spatial intelligence and your dedicated planning agent.
+        </p>
         <div className="button-stack">
-          <button className="button button-primary" onClick={onStart} type="button">
-            {startAction.label}
-          </button>
-          <button className="button button-secondary" onClick={onInstall} type="button">
-            {installAction.label}
+          <button className="button button-primary" onClick={onStart}>
+            Start Your Voyage
           </button>
         </div>
+        <div className="scroll-indicator">
+          <span>↓</span>
+        </div>
+      </section>
 
-        {installRequested && (
-          <p role="status">
-            Install stays staged as a PWA touchpoint here so the planning flow still feels ready
-            for the traveler&apos;s phone.
-          </p>
-        )}
-      </div>
-    </section>
+      {/* Samples Section */}
+      <section className="landing-section">
+        <span className="frame-label">Planned by Voyage</span>
+        <h2 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Curated Expeditions</h2>
+        <p className="lede">Sample itineraries generated by the Voyage Agent for refined travelers.</p>
+        
+        <div className="sample-grid">
+          {voyageSamples.map((sample) => (
+            <div key={sample.id} className="sample-card">
+              <div className="sample-image-placeholder" />
+              <div className="sample-content">
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                  {sample.tags.map(tag => (
+                    <span key={tag} style={{ fontSize: '0.65rem', padding: '4px 8px', background: 'var(--accent-glow)', border: '1px solid var(--accent)', borderRadius: '4px', color: 'var(--accent)' }}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <h3 style={{ fontSize: '1.5rem', marginBottom: '4px' }}>{sample.title}</h3>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-dim)' }}>{sample.subtitle}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Feature Section: The Atlas */}
+      <section className="landing-section">
+        <div className="frame-panel" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px', alignItems: 'center' }}>
+          <div>
+            <span className="frame-label">01. The Atlas</span>
+            <h2 style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>Itinerary-first thinking.</h2>
+            <p className="lede">
+              The itinerary is the operating system of your trip. We prioritize daily rhythm, 
+              clustering stops logically and leaving room for the unplanned.
+            </p>
+          </div>
+          <div className="day-card" style={{ transform: 'rotate(2deg)', opacity: 0.8 }}>
+            <span className="frame-label">Prototype Wireframe</span>
+            <div style={{ height: '200px', background: 'var(--bg-glass)', borderRadius: '8px', border: '1px dashed var(--border-bright)' }}></div>
+          </div>
+        </div>
+      </section>
+
+      {/* Feature Section: The Agent */}
+      <section className="landing-section">
+        <div className="frame-panel" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px', alignItems: 'center' }}>
+          <div className="day-card" style={{ transform: 'rotate(-2deg)', opacity: 0.8, order: 2 }}>
+            <span className="frame-label">Agent Interface</span>
+            <div style={{ height: '200px', background: 'var(--bg-glass)', borderRadius: '8px', border: '1px dashed var(--border-bright)' }}></div>
+          </div>
+          <div style={{ order: 1 }}>
+            <span className="frame-label">02. The Copilot</span>
+            <h2 style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>Intelligence on call.</h2>
+            <p className="lede">
+              The Voyage Agent isn't just a chatbot. It's a spatial engine that understands 
+              distance, tempo, and your personal priorities.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="landing-section" style={{ textAlign: 'center', alignItems: 'center' }}>
+        <h2 style={{ fontSize: '3.5rem', marginBottom: '2rem' }}>Ready to depart?</h2>
+        <button className="button button-primary" onClick={onStart} style={{ padding: '20px 48px', fontSize: '1.2rem' }}>
+          Begin Planning
+        </button>
+      </section>
+
+      <footer style={{ padding: '60px 0', borderTop: '1px solid var(--border-glass)', marginTop: '80px', color: 'var(--text-dim)', fontSize: '0.9rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>© 2026 Voyage Intelligence. All rights reserved.</span>
+          <div style={{ display: 'flex', gap: '24px' }}>
+            <span>Privacy</span>
+            <span>Terms</span>
+            <span>Atlas API</span>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
 
 function EntryScreen({ email, onEmailChange, onGuest }) {
   return (
     <section className="screen-frame">
-      <div className="frame-panel frame-panel-form">
-        <div className="frame-header">
-          <p className="frame-label">Entry</p>
-          <h2>Continue into planning</h2>
-          <p>
-            Step through the lightest door available, then move straight into the brief while the
-            trip still feels fresh.
-          </p>
-        </div>
-
-        <label className="input-row">
-          <span>Email address</span>
-          <input
-            aria-label="Email address"
-            onChange={(event) => onEmailChange(event.target.value)}
-            placeholder="name@example.com"
-            style={fieldInputStyle}
-            type="email"
-            value={email}
-          />
-        </label>
+      <div className="frame-panel">
+        <span className="frame-label">Identity</span>
+        <h2>Continue your journey</h2>
+        <p className="lede">Sign in to sync your itineraries across all your devices.</p>
 
         <div className="input-row">
-          <span>Sign-in paths sketched for later</span>
-          <strong>Email, Google, and Apple will be wired in after the guest flow.</strong>
+          <span>Email address</span>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => onEmailChange(e.target.value)}
+            placeholder="voyager@example.com"
+          />
         </div>
 
-        <div className="button-stack">
-          <button className="button button-primary" onClick={onGuest} type="button">
-            Continue as guest
-          </button>
+        <div style={{ marginBottom: '2rem', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+          Social authentication (Google, Apple) will be available in the release version.
         </div>
+
+        <button className="button button-primary" onClick={onGuest} style={{ width: '100%' }}>
+          Continue as Guest
+        </button>
       </div>
     </section>
   );
@@ -189,35 +187,23 @@ function EntryScreen({ email, onEmailChange, onGuest }) {
 function TripBriefScreen({ onContinue, tripBrief }) {
   return (
     <section className="screen-frame">
-      <div className="frame-panel frame-panel-form">
-        <div className="frame-header">
-          <p className="frame-label">Trip brief</p>
-          <h2>Build your trip brief</h2>
-          <p>
-            Give Voyage the bones of the journey: where you&apos;re headed, who&apos;s coming, how
-            the days should feel, and what deserves priority once the itinerary starts to take shape.
-          </p>
-        </div>
+      <div className="frame-panel">
+        <span className="frame-label">Project Brief</span>
+        <h2>Defining the scope</h2>
+        <p className="lede">The foundation of every great Voyage starts with a clear brief.</p>
 
         <div className="field-grid">
-          {Object.entries(tripBrief).map(([key, value], index) => (
-            <article
-              key={key}
-              className={`input-row input-row-${index % 2 === 0 ? "wide" : "compact"}`}
-            >
+          {Object.entries(tripBrief).map(([key, value]) => (
+            <div key={key} className="input-row">
               <span>{tripBriefLabels[key] ?? key}</span>
               <strong>{formatTripBriefValue(key, value)}</strong>
-            </article>
+            </div>
           ))}
         </div>
 
-        <div className="step-footer">
-          <div className="footer-actions">
-            <button className="button button-primary" onClick={onContinue} type="button">
-              Continue to Voyage agent
-            </button>
-          </div>
-        </div>
+        <button className="button button-primary" onClick={onContinue} style={{ width: '100%' }}>
+          Initialize Voyage Agent
+        </button>
       </div>
     </section>
   );
@@ -225,53 +211,38 @@ function TripBriefScreen({ onContinue, tripBrief }) {
 
 function AgentKickoffScreen({ onOpenWorkspace, tripBrief }) {
   return (
-    <section className="screen-frame screen-create">
-      <div className="frame-panel frame-panel-form">
-        <div className="frame-header">
-          <p className="frame-label">Agent kickoff</p>
-          <h2>Bring in Voyage agent as your planning copilot</h2>
-          <p>
-            The brief is in place. Now the copilot can start shaping it into a trip that reads like
-            an editorial itinerary: clear days, smart clusters, and a steady sense of where to go
-            next.
+    <section className="screen-frame">
+      <div className="frame-panel" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '40px' }}>
+        <div>
+          <span className="frame-label">Agent Sync</span>
+          <h2>Your copilot is ready.</h2>
+          <p className="lede">
+            The Voyage Agent has processed your brief for {tripBrief.destination}. 
+            We've mapped out potential clusters and optimized for your {tripBrief.pace} pace.
           </p>
+
+          <button className="button button-primary" onClick={onOpenWorkspace} style={{ marginTop: '2rem' }}>
+            Enter Workspace
+          </button>
         </div>
 
-        <div className="input-row input-row-wide">
-          <span>Voyage agent</span>
-          <strong>
-            Ready to turn {tripBrief.destination} into a paced plan with route notes, food
-            anchors, and room for unplanned hours.
-          </strong>
-        </div>
-
-        <div className="step-footer">
-          <span>Planning copilot queued from the trip brief</span>
-          <div className="footer-actions">
-            <button className="button button-primary" onClick={onOpenWorkspace} type="button">
-              Open workspace
-            </button>
+        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '24px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-glass)' }}>
+          <div className="detail-block">
+            <p>Processing...</p>
+            <ul>
+              <li>Destination: {tripBrief.destination}</li>
+              <li>Tempo: {tripBrief.pace}</li>
+              <li>Priority: {tripBrief.priority}</li>
+            </ul>
           </div>
-        </div>
-      </div>
-
-      <div className="frame-panel frame-panel-detail">
-        <div className="detail-block">
-          <p>What the copilot carries in</p>
-          <ul>
-            <li>{tripBrief.travelWindow}</li>
-            <li>{tripBrief.pace}</li>
-            <li>{tripBrief.priority}</li>
-          </ul>
-        </div>
-
-        <div className="detail-block">
-          <p>Next in the workspace</p>
-          <ul>
-            <li>Trip tab for day-by-day pacing</li>
-            <li>Map tab for place selection and clustering</li>
-            <li>Agent tab for planning prompts that stay close to the itinerary</li>
-          </ul>
+          <div className="detail-block" style={{ marginBottom: 0 }}>
+            <p>Module Status</p>
+            <ul style={{ color: 'var(--accent-secondary)' }}>
+              <li>Itinerary Engine: OK</li>
+              <li>Map Overlay: Ready</li>
+              <li>Agent Memory: Initialized</li>
+            </ul>
+          </div>
         </div>
       </div>
     </section>
@@ -293,311 +264,247 @@ function WorkspaceScreen({
 }) {
   return (
     <section className="screen-frame screen-editor">
-      <aside className="frame-panel frame-panel-nav">
-        <div className="frame-header">
-          <p className="frame-label">Workspace</p>
-          <h3>{tripBrief.destination}</h3>
-          <p>Itinerary-first planning with the map and agent close enough to steer every day.</p>
+      {/* Navigation Sidebar */}
+      <aside className="frame-panel frame-panel-nav" style={{ padding: '0', background: 'transparent', border: 'none', boxShadow: 'none' }}>
+        <div className="frame-panel" style={{ padding: '24px', marginBottom: '24px' }}>
+          <span className="frame-label">Voyage</span>
+          <h3 style={{ fontSize: '1.5rem' }}>{tripBrief.destination}</h3>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginTop: '8px' }}>
+            {tripBrief.travelWindow}
+          </p>
         </div>
 
-        <div aria-label="Workspace tabs" role="tablist" style={workspaceTabListStyle}>
-          {workspaceTabs.map((tab) => {
-            const isActive = activeWorkspaceTab === tab.id;
+        <div style={{ display: 'grid', gap: '12px', marginBottom: '24px' }}>
+          {workspaceTabs.map((tab) => (
+            <button
+              key={tab.id}
+              className={`topbar-chip ${activeWorkspaceTab === tab.id ? 'active' : ''}`}
+              onClick={() => onTabChange(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-            return (
+        <div className="frame-panel" style={{ padding: '24px' }}>
+          <span className="frame-label">Timeline</span>
+          <div style={{ marginTop: '16px' }}>
+            {days.map((day) => (
               <button
-                key={tab.id}
-                aria-selected={isActive}
-                className={`topbar-chip${isActive ? " active" : ""}`}
-                onClick={() => onTabChange(tab.id)}
-                role="tab"
-                style={workspaceTabStyle}
-                type="button"
+                key={day.id}
+                className={`day-pill ${selectedDayId === day.id ? 'active' : ''}`}
+                style={{ width: '100%', textAlign: 'left' }}
+                onClick={() => onSelectDay(day.id)}
               >
-                {tab.label}
+                <span>{day.label}</span>
+                <strong style={{ fontSize: '0.9rem' }}>{day.title}</strong>
               </button>
-            );
-          })}
-        </div>
-
-        <div className="side-box">
-          <p>Trip days</p>
-          <div className="day-list">
-            {days.map((day) => {
-              const isActive = selectedDayId === day.id;
-
-              return (
-                <button
-                  key={day.id}
-                  className={`day-pill${isActive ? " active" : ""}`}
-                  onClick={() => onSelectDay(day.id)}
-                  type="button"
-                >
-                  <span>{day.label}</span>
-                  <strong>{day.title}</strong>
-                </button>
-              );
-            })}
+            ))}
           </div>
         </div>
       </aside>
 
-      <div className="frame-panel frame-panel-board">
+      {/* Main Content Area */}
+      <main className="frame-panel frame-panel-board">
         {activeWorkspaceTab === "trip" && (
-          <>
-            <div className="board-header">
-              <div className="frame-header">
-                <p className="frame-label">Trip tab</p>
-                <h3>{selectedDay?.title ?? "Itinerary"}</h3>
-                <p>
-                  A day-by-day planning board with enough detail to feel traveled already, but still
-                  light enough to rearrange on instinct.
-                </p>
-              </div>
-
-              <div className="board-actions">
-                <span>{tripBrief.travelWindow}</span>
-                <span>{tripBrief.pace}</span>
-              </div>
+          <div className="day-split">
+            <div>
+              <span className="frame-label">Itinerary Editor</span>
+              <h3>{selectedDay?.title ?? "Planning Overview"}</h3>
+              <p className="lede" style={{ marginBottom: '1rem' }}>
+                Refine the rhythm of your days. Drag and drop stops to reorder.
+              </p>
             </div>
 
-            <div className="itinerary-grid">
-              {days.map((day) => {
-                const isSelected = selectedDayId === day.id;
-
-                return (
-                  <article key={day.id} className={`day-card${isSelected ? " selected" : ""}`}>
-                    <div className="day-card-head">
-                      <div>
-                        <span>{day.label}</span>
-                        <strong>{day.title}</strong>
+            <div style={{ display: 'grid', gap: '20px' }}>
+              {days.map((day) => (
+                <article key={day.id} className={`day-card ${selectedDayId === day.id ? 'selected' : ''}`} style={{ borderLeft: selectedDayId === day.id ? '4px solid var(--accent)' : '' }}>
+                  <div className="day-card-head">
+                    <div>
+                      <span className="frame-label">{day.label}</span>
+                      <strong style={{ fontSize: '1.3rem' }}>{day.title}</strong>
+                    </div>
+                    <button className="button button-secondary" style={{ padding: '8px 16px', fontSize: '0.8rem' }} onClick={() => onSelectDay(day.id)}>
+                      {selectedDayId === day.id ? 'Active' : 'Focus'}
+                    </button>
+                  </div>
+                  
+                  <div style={{ display: 'grid', gap: '8px' }}>
+                    {day.stops.map((stop) => (
+                      <div key={stop} className="activity-chip">
+                        <span className="chip-drag"></span>
+                        <span style={{ fontSize: '0.95rem' }}>{stop}</span>
                       </div>
-
-                      <button
-                        className="card-mini-action"
-                        onClick={() => onSelectDay(day.id)}
-                        type="button"
-                      >
-                        Focus day
-                      </button>
-                    </div>
-
-                    <div className="activity-stack">
-                      {day.stops.map((stop) => (
-                        <button key={`${day.id}-${stop}`} className="activity-chip" type="button">
-                          <span className="chip-drag" aria-hidden="true" />
-                          <strong>{stop}</strong>
-                        </button>
-                      ))}
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </>
-        )}
-
-        {activeWorkspaceTab === "map" && (
-          <div className="day-split">
-            <div className="board-header">
-              <div className="frame-header">
-                <p className="frame-label">Map tab</p>
-                <h3>Places in reach of the brief</h3>
-                <p>
-                  Use the map as a planning companion: check what belongs together, what deserves
-                  its own morning, and where the route should breathe.
-                </p>
-              </div>
-            </div>
-
-            <article className="day-card day-card-focus">
-              <div className="day-card-head">
-                <div>
-                  <span>Selected place</span>
-                  <strong>{selectedPlace?.name ?? "Choose a place"}</strong>
-                </div>
-                {selectedPlace && <span>{selectedPlace.district}</span>}
-              </div>
-
-              <p className="lede" style={{ margin: 0 }}>
-                {selectedPlace?.note ??
-                  "The next place you select will anchor the map companion view."}
-              </p>
-            </article>
-
-            <div className="activity-stack">
-              {prototypeData.mapPlaces.map((place) => {
-                const isActive = selectedPlace?.id === place.id;
-
-                return (
-                  <button
-                    key={place.id}
-                    className={`activity-chip${isActive ? " active" : ""}`}
-                    onClick={() => onSelectPlace(place.id)}
-                    type="button"
-                  >
-                    <span className="chip-drag" aria-hidden="true" />
-                    <strong>{place.name}</strong>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {activeWorkspaceTab === "agent" && (
-          <div className="day-split">
-            <div className="frame-header">
-              <p className="frame-label">Agent tab</p>
-              <h3>Keep the planning conversation close to the route</h3>
-              <p>
-                The copilot stays grounded in the brief, the days, and the places already under
-                consideration.
-              </p>
-            </div>
-
-            <div className="share-list">
-              {agentMessages.map((message) => (
-                <article key={message.id} className="share-row">
-                  <strong>Voyage agent</strong>
-                  <span>{message.text}</span>
+                    ))}
+                  </div>
                 </article>
               ))}
             </div>
           </div>
         )}
 
-        {activeWorkspaceTab === "share" && (
+        {activeWorkspaceTab === "map" && (
           <div className="day-split">
-            <div className="frame-header">
-              <p className="frame-label">Share tab</p>
-              <h3>Sharing stays parked for the next task</h3>
-              <p>
-                The tab is visible in the workspace shell now so the navigation feels complete, but
-                review and sharing behavior will arrive in the next pass.
-              </p>
+            <div>
+              <span className="frame-label">Spatial Planning</span>
+              <h3>Map Discovery</h3>
+              <p className="lede">Anchors and potential stops clustered for efficiency.</p>
+            </div>
+
+            <div className="day-card" style={{ background: 'var(--accent-glow)', borderColor: 'var(--accent)' }}>
+              <span className="frame-label" style={{ color: 'var(--text-main)' }}>Focused Anchor</span>
+              <h4 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>{selectedPlace?.name ?? "Select a point on the map"}</h4>
+              <p style={{ color: 'var(--text-main)', opacity: 0.8 }}>{selectedPlace?.note}</p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' }}>
+              {prototypeData.mapPlaces.map((place) => (
+                <button
+                  key={place.id}
+                  className={`day-card ${selectedPlace?.id === place.id ? 'selected' : ''}`}
+                  style={{ textAlign: 'left', cursor: 'pointer' }}
+                  onClick={() => onSelectPlace(place.id)}
+                >
+                  <span style={{ fontSize: '0.7rem', color: 'var(--accent)' }}>{place.district}</span>
+                  <strong style={{ display: 'block', fontSize: '1rem', marginTop: '4px' }}>{place.name}</strong>
+                </button>
+              ))}
             </div>
           </div>
         )}
-      </div>
 
+        {activeWorkspaceTab === "agent" && (
+          <div className="day-split">
+            <div>
+              <span className="frame-label">AI Intelligence</span>
+              <h3>Voyage Agent</h3>
+              <p className="lede">Conversational refinement for your itinerary.</p>
+            </div>
+
+            <div style={{ display: 'grid', gap: '16px' }}>
+              {agentMessages.map((msg) => (
+                <div key={msg.id} className="share-row" style={{ borderLeft: msg.role === 'assistant' ? '2px solid var(--accent)' : '2px solid var(--text-dim)' }}>
+                  <strong>{msg.role === 'assistant' ? 'Voyage Agent' : 'You'}</strong>
+                  <p>{msg.text}</p>
+                </div>
+              ))}
+            </div>
+            
+            <div className="input-row" style={{ marginTop: '20px' }}>
+              <input type="text" placeholder="Ask about reservations, clusters, or pace..." style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-md)', padding: '16px', color: '#fff', width: '100%' }} />
+            </div>
+          </div>
+        )}
+
+        {activeWorkspaceTab === "share" && (
+          <div className="day-split">
+            <div>
+              <span className="frame-label">Deployment</span>
+              <h3>Trip Finalization</h3>
+              <p className="lede">Exporting your plans to high-fidelity formats.</p>
+            </div>
+            <div className="day-card">
+              <p>Ready to deploy your itinerary for {tripBrief.destination}.</p>
+              <button className="button button-primary" style={{ marginTop: '16px' }} onClick={onReviewTrip}>
+                Review & Export
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Detail Panel */}
       <aside className="frame-panel frame-panel-detail">
+        <span className="frame-label">Quick Insights</span>
+        
         <div className="detail-block">
-          <p>Voyage agent</p>
-          <strong>Planning copilot on call</strong>
-          <ul>
-            {agentMessages.map((message) => (
-              <li key={message.id}>{message.text}</li>
-            ))}
+          <p>Context</p>
+          <strong style={{ fontSize: '1rem', marginBottom: '8px', display: 'block' }}>{tripBrief.destination}</strong>
+          <ul style={{ fontSize: '0.85rem' }}>
+            <li>{tripBrief.travelers} Travelers</li>
+            <li>{tripBrief.pace}</li>
+            <li>Budget: {tripBrief.budget}</li>
           </ul>
         </div>
 
-        <div className="detail-block">
-          <p>Selected day</p>
-          <strong>{selectedDay?.title ?? "Choose a day"}</strong>
-          <ul>
-            {(selectedDay?.stops ?? []).map((stop) => (
-              <li key={stop}>{stop}</li>
-            ))}
-          </ul>
+        {selectedDay && (
+          <div className="detail-block">
+            <p>Active Day: {selectedDay.label}</p>
+            <strong style={{ fontSize: '1rem', marginBottom: '8px', display: 'block' }}>{selectedDay.title}</strong>
+            <ul>
+              {selectedDay.stops.map(stop => <li key={stop}>{stop}</li>)}
+            </ul>
+          </div>
+        )}
+
+        <div style={{ marginTop: 'auto' }}>
+          <button className="button button-primary" style={{ width: '100%' }} onClick={onReviewTrip}>
+            Final Review
+          </button>
         </div>
       </aside>
-
-      <div className="workspace-actions">
-        <button
-          className="button button-secondary"
-          onClick={onReviewTrip}
-          type="button"
-        >
-          Review trip
-        </button>
-      </div>
     </section>
   );
 }
 
 function ReviewScreen({ days, onBackToWorkspace, onShare, tripBrief }) {
   return (
-    <section className="screen-frame screen-create">
-      <div className="frame-panel frame-panel-form">
-        <div className="frame-header">
-          <p className="frame-label">Review trip</p>
-          <h2>Trip review</h2>
-          <p>
-            Pause before sharing. Check the daily rhythm, the trip brief, and the shape of the route.
-          </p>
-        </div>
+    <section className="screen-frame">
+      <div className="frame-panel">
+        <span className="frame-label">Review</span>
+        <h2>The Grand Tour</h2>
+        <p className="lede">Final check of your itinerary for {tripBrief.destination}.</p>
 
-        <div className="review-list">
+        <div style={{ display: 'grid', gap: '12px', marginBottom: '32px' }}>
           {days.map((day) => (
-            <article key={day.id} className="day-card">
-              <div className="day-card-head">
-                <div>
-                  <span>{day.label}</span>
-                  <strong>{day.title}</strong>
-                </div>
+            <div key={day.id} className="day-card" style={{ padding: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <strong>{day.label}: {day.title}</strong>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{day.stops.length} stops</span>
               </div>
-            </article>
+            </div>
           ))}
         </div>
 
-        <div className="footer-actions">
-          <button className="button button-secondary" onClick={onBackToWorkspace} type="button">
-            Back to workspace
+        <div className="button-stack">
+          <button className="button button-secondary" onClick={onBackToWorkspace}>
+            Adjust Plans
           </button>
-          <button className="button button-primary" onClick={onShare} type="button">
-            Share trip
+          <button className="button button-primary" onClick={onShare}>
+            Confirm Voyage
           </button>
         </div>
       </div>
-
-      <aside className="frame-panel frame-panel-detail">
-        <div className="detail-block">
-          <p>Trip brief</p>
-          <strong>{tripBrief.destination}</strong>
-          <ul>
-            <li>{tripBrief.travelWindow}</li>
-            <li>{tripBrief.pace}</li>
-            <li>{tripBrief.priority}</li>
-          </ul>
-        </div>
-      </aside>
     </section>
   );
 }
 
 function ShareScreen({ onBackToWorkspace }) {
   return (
-    <section className="screen-frame screen-create">
-      <div className="frame-panel frame-panel-form">
-        <div className="frame-header">
-          <p className="frame-label">Share</p>
-          <h2>Share and export</h2>
-          <p>
-            Hand the trip off cleanly with link sharing, collaborator invites, and export cues.
-          </p>
-        </div>
+    <section className="screen-frame">
+      <div className="frame-panel">
+        <span className="frame-label">Transmission</span>
+        <h2>Share your Voyage</h2>
+        <p className="lede">Project your itinerary to collaborators and devices.</p>
 
         <div className="share-list">
-          <article className="share-row">
-            <strong>Invite collaborators</strong>
-            <span>Keep planning with travel partners.</span>
-          </article>
-          <article className="share-row">
-            <strong>Copy trip link</strong>
-            <span>Send a quick mobile-friendly view.</span>
-          </article>
-          <article className="share-row">
-            <strong>Export summary</strong>
-            <span>Create a portable itinerary snapshot.</span>
-          </article>
+          <div className="share-row">
+            <strong>Direct Link</strong>
+            <span>Generate a secure URL for mobile viewing.</span>
+          </div>
+          <div className="share-row">
+            <strong>Collaborator Access</strong>
+            <span>Invite others to co-edit the itinerary.</span>
+          </div>
+          <div className="share-row">
+            <strong>PDF Export</strong>
+            <span>Create a high-fidelity print snapshot.</span>
+          </div>
         </div>
 
-        <div className="footer-actions">
-          <button className="button button-primary" onClick={onBackToWorkspace} type="button">
-            Back to workspace
-          </button>
-        </div>
+        <button className="button button-primary" onClick={onBackToWorkspace} style={{ marginTop: '32px', width: '100%' }}>
+          Return to Workspace
+        </button>
       </div>
     </section>
   );
@@ -617,23 +524,22 @@ export default function HomePage() {
     setSelectedPlaceId,
     agentMessages,
   } = usePrototypeState();
+
   const currentScreen = activeScreen === "landing" ? "welcome" : activeScreen;
-  const currentWorkspaceTab = getWorkspaceTab(activeWorkspaceTab);
-  const selectedDay = getSelectedDay(days, selectedDayId);
-  const selectedPlace = getSelectedPlace(selectedPlaceId);
+  const currentWorkspaceTab = activeWorkspaceTab === 'overview' || activeWorkspaceTab === 'itinerary' ? 'trip' : activeWorkspaceTab;
+  
+  const selectedDay = days.find((day) => day.id === selectedDayId) || days[0];
+  const selectedPlace = prototypeData.mapPlaces.find((place) => place.id === selectedPlaceId) || prototypeData.mapPlaces[0];
+  
   const [email, setEmail] = useState("");
-  const [installRequested, setInstallRequested] = useState(false);
 
   return (
     <main className="system-shell">
-      <div className="system-grid" aria-hidden="true" />
       <div className="system-grain" aria-hidden="true" />
 
       <section className="wireframe-section">
         {currentScreen === "welcome" && (
-          <WelcomeScreen
-            installRequested={installRequested}
-            onInstall={() => setInstallRequested(true)}
+          <LandingPage
             onStart={() => setActiveScreen("entry")}
           />
         )}
@@ -652,13 +558,7 @@ export default function HomePage() {
 
         {currentScreen === "agent-kickoff" && (
           <AgentKickoffScreen
-            onOpenWorkspace={() =>
-              openWorkspace({
-                setActiveScreen,
-                setActiveWorkspaceTab,
-                setSelectedPlaceId,
-              })
-            }
+            onOpenWorkspace={() => setActiveScreen("workspace")}
             tripBrief={tripBrief}
           />
         )}
@@ -669,22 +569,12 @@ export default function HomePage() {
             agentMessages={agentMessages}
             days={days}
             onReviewTrip={() => setActiveScreen("review")}
-            onSelectDay={(dayId) =>
-              selectDay({
-                dayId,
-                setActiveWorkspaceTab,
-                setSelectedDayId,
-              })
-            }
+            onSelectDay={setSelectedDayId}
             onSelectPlace={setSelectedPlaceId}
-            onTabChange={(nextTab) =>
-              changeWorkspaceTab({
-                nextTab,
-                selectedPlaceId,
-                setActiveWorkspaceTab,
-                setSelectedPlaceId,
-              })
-            }
+            onTabChange={(tab) => {
+              setActiveWorkspaceTab(tab);
+              if (tab === 'map' && !selectedPlaceId) setSelectedPlaceId(prototypeData.mapPlaces[0].id);
+            }}
             selectedDay={selectedDay}
             selectedDayId={selectedDayId}
             selectedPlace={selectedPlace}
@@ -702,9 +592,7 @@ export default function HomePage() {
         )}
 
         {currentScreen === "share" && (
-          <ShareScreen
-            onBackToWorkspace={() => setActiveScreen("workspace")}
-          />
+          <ShareScreen onBackToWorkspace={() => setActiveScreen("workspace")} />
         )}
       </section>
     </main>
