@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import prototypeData from "./prototype-data";
 import { usePrototypeState } from "./prototype-state";
 
@@ -113,7 +113,7 @@ function LandingPage({ onStart }) {
           ))}
         </nav>
         <button className="button button-primary landing-header-cta" onClick={onStart} type="button">
-          Launch planner
+          Start Planning
         </button>
       </header>
 
@@ -269,7 +269,7 @@ function EntryScreen({ email, onEmailChange, onGuest }) {
         </div>
 
         <button className="button button-primary" onClick={onGuest} style={{ width: "100%" }}>
-          Continue as guest
+          Continue as Guest
         </button>
       </div>
     </section>
@@ -281,7 +281,7 @@ function TripBriefScreen({ onContinue, tripBrief }) {
     <section className="screen-frame">
       <div className="frame-panel">
         <span className="frame-label">Project Brief</span>
-        <h2>Build your trip brief</h2>
+        <h2>Defining the scope</h2>
         <p className="lede">The foundation of every great Voyage starts with a clear brief.</p>
 
         <div className="field-grid">
@@ -294,7 +294,7 @@ function TripBriefScreen({ onContinue, tripBrief }) {
         </div>
 
         <button className="button button-primary" onClick={onContinue} style={{ width: "100%" }}>
-          Continue to Voyage agent
+          Initialize Voyage Agent
         </button>
       </div>
     </section>
@@ -306,15 +306,15 @@ function AgentKickoffScreen({ onOpenWorkspace, tripBrief }) {
     <section className="screen-frame">
       <div className="frame-panel" style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "40px" }}>
         <div>
-          <span className="frame-label">Voyage agent</span>
-          <h2>Bring in Voyage agent as your planning copilot</h2>
+          <span className="frame-label">Agent Sync</span>
+          <h2>Your copilot is ready.</h2>
           <p className="lede">
             The Voyage Agent has processed your brief for {tripBrief.destination}. We've mapped out potential clusters
             and optimized for your {tripBrief.pace} pace.
           </p>
 
           <button className="button button-primary" onClick={onOpenWorkspace} style={{ marginTop: "2rem" }}>
-            Open workspace
+            Enter Workspace
           </button>
         </div>
 
@@ -533,7 +533,7 @@ function WorkspaceScreen({
             <div className="day-card">
               <p>Ready to deploy your itinerary for {tripBrief.destination}.</p>
               <button className="button button-primary" style={{ marginTop: "16px" }} onClick={onReviewTrip}>
-                Review trip
+                Review & Export
               </button>
             </div>
           </div>
@@ -567,7 +567,7 @@ function WorkspaceScreen({
 
         <div style={{ marginTop: "auto" }}>
           <button className="button button-primary" style={{ width: "100%" }} onClick={onReviewTrip}>
-            Review trip
+            Final Review
           </button>
         </div>
       </aside>
@@ -580,7 +580,7 @@ function ReviewScreen({ days, onBackToWorkspace, onShare, tripBrief }) {
     <section className="screen-frame">
       <div className="frame-panel">
         <span className="frame-label">Review</span>
-        <h2>Trip review</h2>
+        <h2>The Grand Tour</h2>
         <p className="lede">Final check of your itinerary for {tripBrief.destination}.</p>
 
         <div style={{ display: "grid", gap: "12px", marginBottom: "32px" }}>
@@ -601,7 +601,7 @@ function ReviewScreen({ days, onBackToWorkspace, onShare, tripBrief }) {
             Adjust Plans
           </button>
           <button className="button button-primary" onClick={onShare}>
-            Share trip
+            Confirm Voyage
           </button>
         </div>
       </div>
@@ -614,7 +614,7 @@ function ShareScreen({ onBackToWorkspace }) {
     <section className="screen-frame">
       <div className="frame-panel">
         <span className="frame-label">Transmission</span>
-        <h2>Share and export</h2>
+        <h2>Share your Voyage</h2>
         <p className="lede">Project your itinerary to collaborators and devices.</p>
 
         <div className="share-list">
@@ -663,13 +663,6 @@ export default function HomePage() {
   const selectedPlace = prototypeData.mapPlaces.find((place) => place.id === selectedPlaceId) || prototypeData.mapPlaces[0];
 
   const [email, setEmail] = useState("");
-
-  useEffect(() => {
-    const shells = Array.from(document.querySelectorAll("main.system-shell"));
-    if (shells.length <= 1) return;
-
-    shells.slice(0, -1).forEach((shell) => shell.remove());
-  }, []);
 
   return (
     <main className="system-shell">
