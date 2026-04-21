@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import prototypeData from "./prototype-data";
 import { usePrototypeState } from "./prototype-state";
 
@@ -20,24 +20,76 @@ const tripBriefLabels = {
   priority: "Planning priorities",
 };
 
-const voyageSamples = [
+const landingNavItems = [
+  { id: "home", label: "Home" },
+  { id: "plan", label: "Plan" },
+  { id: "how-it-works", label: "How It Works" },
+  { id: "for-agencies", label: "For Agencies" },
+  { id: "for-travelers", label: "For Travelers" },
+  { id: "voyage-agent", label: "Voyage Agent" },
+];
+
+const featureHighlights = [
   {
-    id: "sample-1",
-    title: "7 Days in Kyoto",
-    subtitle: "Temples, Tea, and Timing",
-    tags: ["Culture", "Slow Pace"],
+    title: "Plan the trip",
+    description: "Turn a rough travel idea into a structured itinerary brief with clear priorities and pace.",
   },
   {
-    id: "sample-2",
-    title: "Amalfi Drift",
-    subtitle: "Coastal Routes & Hidden Coves",
-    tags: ["Nature", "High Budget"],
+    title: "See the route",
+    description: "Keep planning tied to geography so timing, movement, and daily flow stay realistic.",
   },
   {
-    id: "sample-3",
-    title: "Icelandic Ring",
-    subtitle: "Geothermal Power & Glacial Pace",
-    tags: ["Adventure", "Active"],
+    title: "Refine with AI",
+    description: "Use the Voyage agent to revise stops, rebalance days, and react faster to changes.",
+  },
+  {
+    title: "Share the final itinerary",
+    description: "Hand off the plan cleanly to clients, collaborators, or fellow travelers.",
+  },
+];
+
+const workflowSteps = [
+  {
+    step: "01",
+    title: "Brief the trip",
+    description: "Capture destination, schedule, traveler count, pace, and priorities in one clear planning brief.",
+  },
+  {
+    step: "02",
+    title: "Build the itinerary",
+    description: "Shape daily plans with structured stops instead of juggling notes, tabs, and spreadsheets.",
+  },
+  {
+    step: "03",
+    title: "Review on the map",
+    description: "Keep route awareness visible so travel time and location clustering support better decisions.",
+  },
+  {
+    step: "04",
+    title: "Share and revise",
+    description:
+      "Update plans quickly when clients or travelers ask for changes, then send the latest version with confidence.",
+  },
+];
+
+const audienceCards = [
+  {
+    id: "for-agencies",
+    title: "For agencies and organizers",
+    benefits: [
+      "Reduce manual recalculation across multiple client itineraries.",
+      "Keep planning, revision, and route awareness in one workspace.",
+      "Move faster when clients request destination or schedule changes.",
+    ],
+  },
+  {
+    id: "for-travelers",
+    title: "For individual travelers",
+    benefits: [
+      "Turn scattered trip ideas into a clear day-by-day plan.",
+      "Balance stops, pace, and travel time with less context switching.",
+      "Use Voyage as a travel copilot before the trip ever begins.",
+    ],
   },
 ];
 
@@ -48,108 +100,148 @@ function formatTripBriefValue(key, value) {
 
 function LandingPage({ onStart }) {
   return (
-    <div className="landing-container">
-      {/* Hero Section */}
-      <section className="landing-hero">
-        <span className="frame-label">Voyage Intelligence</span>
-        <h1 style={{ fontSize: 'clamp(4rem, 12vw, 7rem)', lineHeight: 0.9, marginBottom: '2rem' }}>
-          The world, <br />
-          <span style={{ color: 'var(--accent)', fontStyle: 'italic' }}>recharted.</span>
-        </h1>
-        <p className="lede" style={{ maxWidth: '600px' }}>
-          A high-fidelity planning environment that turns the chaos of travel into an editorial journey. 
-          Powered by spatial intelligence and your dedicated planning agent.
-        </p>
-        <div className="button-stack">
-          <button className="button button-primary" onClick={onStart}>
-            Start Your Voyage
-          </button>
+    <div className="landing-shell">
+      <header className="landing-header">
+        <a className="landing-brand" href="#home">
+          Voyage
+        </a>
+        <nav className="landing-nav" aria-label="Landing page">
+          {landingNavItems.map((item) => (
+            <a key={item.id} href={`#${item.id}`}>
+              {item.label}
+            </a>
+          ))}
+        </nav>
+        <button className="button button-primary landing-header-cta" onClick={onStart} type="button">
+          Launch planner
+        </button>
+      </header>
+
+      <section className="landing-hero" id="home">
+        <div className="landing-hero-copy">
+          <span className="frame-label">Unified travel planning</span>
+          <h1>Plan smarter trips with AI, itinerary logic, and map-aware routing</h1>
+          <p className="lede">
+            Voyage brings together trip briefs, itinerary building, Google Maps-aware planning, and fast revisions in
+            one workspace for travelers, agencies, and organizers.
+          </p>
+          <div className="button-stack">
+            <button className="button button-primary" onClick={onStart} type="button">
+              Start planning
+            </button>
+            <a className="button button-secondary" href="#how-it-works">
+              See how Voyage works
+            </a>
+          </div>
         </div>
-        <div className="scroll-indicator">
-          <span>↓</span>
+
+        <div className="landing-hero-panel" aria-label="Voyage product preview">
+          <article className="preview-card preview-card-brief">
+            <span className="frame-label">Trip brief</span>
+            <h2>Turn direction into a clear planning brief</h2>
+            <p>Capture destination, dates, pace, and planning priorities before the itinerary starts to take shape.</p>
+          </article>
+          <article className="preview-card preview-card-itinerary">
+            <span className="frame-label">Itinerary</span>
+            <h2>Shape daily flow with structured stops</h2>
+            <p>Build day-by-day plans that stay readable, editable, and ready for collaboration.</p>
+          </article>
+          <article className="preview-card preview-card-map">
+            <span className="frame-label">Google Maps</span>
+            <h2>Keep route logic visible while planning</h2>
+            <p>Review the trip geographically so timing, clustering, and movement stay grounded in the real route.</p>
+          </article>
+          <article className="preview-card preview-card-agent">
+            <span className="frame-label">Voyage agent</span>
+            <h2>Revise plans faster when priorities change</h2>
+            <p>Use AI support to rebalance days, update stops, and respond quickly to new requests.</p>
+          </article>
         </div>
       </section>
 
-      {/* Samples Section */}
-      <section className="landing-section">
-        <span className="frame-label">Planned by Voyage</span>
-        <h2 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Curated Expeditions</h2>
-        <p className="lede">Sample itineraries generated by the Voyage Agent for refined travelers.</p>
-        
-        <div className="sample-grid">
-          {voyageSamples.map((sample) => (
-            <div key={sample.id} className="sample-card">
-              <div className="sample-image-placeholder" />
-              <div className="sample-content">
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                  {sample.tags.map(tag => (
-                    <span key={tag} style={{ fontSize: '0.65rem', padding: '4px 8px', background: 'var(--accent-glow)', border: '1px solid var(--accent)', borderRadius: '4px', color: 'var(--accent)' }}>
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <h3 style={{ fontSize: '1.5rem', marginBottom: '4px' }}>{sample.title}</h3>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-dim)' }}>{sample.subtitle}</p>
-              </div>
-            </div>
+      <section className="landing-section" id="plan">
+        <div className="section-heading">
+          <span className="frame-label">Product overview</span>
+          <h2>What is Voyage?</h2>
+          <p className="lede">
+            Voyage is a planning workspace that connects trip briefs, itinerary structure, route awareness, and AI
+            revision tools so travel planning feels coordinated from the first draft to the final share.
+          </p>
+        </div>
+
+        <div className="feature-grid">
+          {featureHighlights.map((feature) => (
+            <article key={feature.title} className="marketing-card">
+              <span className="frame-label">{feature.title}</span>
+              <p>{feature.description}</p>
+            </article>
           ))}
         </div>
       </section>
 
-      {/* Feature Section: The Atlas */}
+      <section className="landing-section" id="how-it-works">
+        <div className="section-heading">
+          <span className="frame-label">Workflow</span>
+          <h2>How Voyage works</h2>
+          <p className="lede">
+            Move from a rough request to a map-aware itinerary in a four-step flow built for iteration instead of
+            scattered planning tools.
+          </p>
+        </div>
+
+        <div className="workflow-grid">
+          {workflowSteps.map((step) => (
+            <article key={step.step} className="workflow-card">
+              <span className="frame-label">{step.step}</span>
+              <h3>{step.title}</h3>
+              <p>{step.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="landing-section">
-        <div className="frame-panel" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px', alignItems: 'center' }}>
-          <div>
-            <span className="frame-label">01. The Atlas</span>
-            <h2 style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>Itinerary-first thinking.</h2>
-            <p className="lede">
-              The itinerary is the operating system of your trip. We prioritize daily rhythm, 
-              clustering stops logically and leaving room for the unplanned.
-            </p>
-          </div>
-          <div className="day-card" style={{ transform: 'rotate(2deg)', opacity: 0.8 }}>
-            <span className="frame-label">Prototype Wireframe</span>
-            <div style={{ height: '200px', background: 'var(--bg-glass)', borderRadius: '8px', border: '1px dashed var(--border-bright)' }}></div>
-          </div>
+        <div className="section-heading">
+          <span className="frame-label">Audience</span>
+          <h2>Built for every kind of planner</h2>
+          <p className="lede">
+            Whether you are coordinating client travel or mapping your own trip, Voyage keeps the planning logic in one
+            place.
+          </p>
+        </div>
+
+        <div className="audience-grid">
+          {audienceCards.map((audience) => (
+            <article key={audience.id} className="audience-card" id={audience.id}>
+              <h3>{audience.title}</h3>
+              <ul>
+                {audience.benefits.map((benefit) => (
+                  <li key={benefit}>{benefit}</li>
+                ))}
+              </ul>
+            </article>
+          ))}
         </div>
       </section>
 
-      {/* Feature Section: The Agent */}
-      <section className="landing-section">
-        <div className="frame-panel" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px', alignItems: 'center' }}>
-          <div className="day-card" style={{ transform: 'rotate(-2deg)', opacity: 0.8, order: 2 }}>
-            <span className="frame-label">Agent Interface</span>
-            <div style={{ height: '200px', background: 'var(--bg-glass)', borderRadius: '8px', border: '1px dashed var(--border-bright)' }}></div>
-          </div>
-          <div style={{ order: 1 }}>
-            <span className="frame-label">02. The Copilot</span>
-            <h2 style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>Intelligence on call.</h2>
-            <p className="lede">
-              The Voyage Agent isn't just a chatbot. It's a spatial engine that understands 
-              distance, tempo, and your personal priorities.
-            </p>
+      <section className="landing-section" id="voyage-agent">
+        <div className="frame-panel">
+          <span className="frame-label">Voyage agent</span>
+          <h2>Keep every revision connected to the plan</h2>
+          <p className="lede">
+            Voyage helps you revise with context, keep route awareness visible, and move from draft planning to a
+            confident itinerary without restarting the workflow.
+          </p>
+          <div className="button-stack">
+            <button className="button button-primary" onClick={onStart} type="button">
+              Open the planner
+            </button>
+            <a className="button button-secondary" href="#plan">
+              Review the product overview
+            </a>
           </div>
         </div>
       </section>
-
-      {/* Final CTA */}
-      <section className="landing-section" style={{ textAlign: 'center', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '3.5rem', marginBottom: '2rem' }}>Ready to depart?</h2>
-        <button className="button button-primary" onClick={onStart} style={{ padding: '20px 48px', fontSize: '1.2rem' }}>
-          Begin Planning
-        </button>
-      </section>
-
-      <footer style={{ padding: '60px 0', borderTop: '1px solid var(--border-glass)', marginTop: '80px', color: 'var(--text-dim)', fontSize: '0.9rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>© 2026 Voyage Intelligence. All rights reserved.</span>
-          <div style={{ display: 'flex', gap: '24px' }}>
-            <span>Privacy</span>
-            <span>Terms</span>
-            <span>Atlas API</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
@@ -172,12 +264,12 @@ function EntryScreen({ email, onEmailChange, onGuest }) {
           />
         </div>
 
-        <div style={{ marginBottom: '2rem', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+        <div style={{ marginBottom: "2rem", fontSize: "0.8rem", color: "var(--text-dim)" }}>
           Social authentication (Google, Apple) will be available in the release version.
         </div>
 
-        <button className="button button-primary" onClick={onGuest} style={{ width: '100%' }}>
-          Continue as Guest
+        <button className="button button-primary" onClick={onGuest} style={{ width: "100%" }}>
+          Continue as guest
         </button>
       </div>
     </section>
@@ -189,7 +281,7 @@ function TripBriefScreen({ onContinue, tripBrief }) {
     <section className="screen-frame">
       <div className="frame-panel">
         <span className="frame-label">Project Brief</span>
-        <h2>Defining the scope</h2>
+        <h2>Build your trip brief</h2>
         <p className="lede">The foundation of every great Voyage starts with a clear brief.</p>
 
         <div className="field-grid">
@@ -201,8 +293,8 @@ function TripBriefScreen({ onContinue, tripBrief }) {
           ))}
         </div>
 
-        <button className="button button-primary" onClick={onContinue} style={{ width: '100%' }}>
-          Initialize Voyage Agent
+        <button className="button button-primary" onClick={onContinue} style={{ width: "100%" }}>
+          Continue to Voyage agent
         </button>
       </div>
     </section>
@@ -212,21 +304,28 @@ function TripBriefScreen({ onContinue, tripBrief }) {
 function AgentKickoffScreen({ onOpenWorkspace, tripBrief }) {
   return (
     <section className="screen-frame">
-      <div className="frame-panel" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '40px' }}>
+      <div className="frame-panel" style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "40px" }}>
         <div>
-          <span className="frame-label">Agent Sync</span>
-          <h2>Your copilot is ready.</h2>
+          <span className="frame-label">Voyage agent</span>
+          <h2>Bring in Voyage agent as your planning copilot</h2>
           <p className="lede">
-            The Voyage Agent has processed your brief for {tripBrief.destination}. 
-            We've mapped out potential clusters and optimized for your {tripBrief.pace} pace.
+            The Voyage Agent has processed your brief for {tripBrief.destination}. We've mapped out potential clusters
+            and optimized for your {tripBrief.pace} pace.
           </p>
 
-          <button className="button button-primary" onClick={onOpenWorkspace} style={{ marginTop: '2rem' }}>
-            Enter Workspace
+          <button className="button button-primary" onClick={onOpenWorkspace} style={{ marginTop: "2rem" }}>
+            Open workspace
           </button>
         </div>
 
-        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '24px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-glass)' }}>
+        <div
+          style={{
+            background: "rgba(255,255,255,0.02)",
+            padding: "24px",
+            borderRadius: "var(--radius-md)",
+            border: "1px solid var(--border-glass)",
+          }}
+        >
           <div className="detail-block">
             <p>Processing...</p>
             <ul>
@@ -237,7 +336,7 @@ function AgentKickoffScreen({ onOpenWorkspace, tripBrief }) {
           </div>
           <div className="detail-block" style={{ marginBottom: 0 }}>
             <p>Module Status</p>
-            <ul style={{ color: 'var(--accent-secondary)' }}>
+            <ul style={{ color: "var(--accent-secondary)" }}>
               <li>Itinerary Engine: OK</li>
               <li>Map Overlay: Ready</li>
               <li>Agent Memory: Initialized</li>
@@ -264,21 +363,23 @@ function WorkspaceScreen({
 }) {
   return (
     <section className="screen-frame screen-editor">
-      {/* Navigation Sidebar */}
-      <aside className="frame-panel frame-panel-nav" style={{ padding: '0', background: 'transparent', border: 'none', boxShadow: 'none' }}>
-        <div className="frame-panel" style={{ padding: '24px', marginBottom: '24px' }}>
+      <aside
+        className="frame-panel frame-panel-nav"
+        style={{ padding: "0", background: "transparent", border: "none", boxShadow: "none" }}
+      >
+        <div className="frame-panel" style={{ padding: "24px", marginBottom: "24px" }}>
           <span className="frame-label">Voyage</span>
-          <h3 style={{ fontSize: '1.5rem' }}>{tripBrief.destination}</h3>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginTop: '8px' }}>
-            {tripBrief.travelWindow}
-          </p>
+          <h3 style={{ fontSize: "1.5rem" }}>{tripBrief.destination}</h3>
+          <p style={{ fontSize: "0.8rem", color: "var(--text-dim)", marginTop: "8px" }}>{tripBrief.travelWindow}</p>
         </div>
 
-        <div style={{ display: 'grid', gap: '12px', marginBottom: '24px' }}>
+        <div role="tablist" aria-label="Workspace sections" style={{ display: "grid", gap: "12px", marginBottom: "24px" }}>
           {workspaceTabs.map((tab) => (
             <button
               key={tab.id}
-              className={`topbar-chip ${activeWorkspaceTab === tab.id ? 'active' : ''}`}
+              className={`topbar-chip ${activeWorkspaceTab === tab.id ? "active" : ""}`}
+              role="tab"
+              aria-selected={activeWorkspaceTab === tab.id}
               onClick={() => onTabChange(tab.id)}
             >
               {tab.label}
@@ -286,54 +387,61 @@ function WorkspaceScreen({
           ))}
         </div>
 
-        <div className="frame-panel" style={{ padding: '24px' }}>
+        <div className="frame-panel" style={{ padding: "24px" }}>
           <span className="frame-label">Timeline</span>
-          <div style={{ marginTop: '16px' }}>
+          <div style={{ marginTop: "16px" }}>
             {days.map((day) => (
               <button
                 key={day.id}
-                className={`day-pill ${selectedDayId === day.id ? 'active' : ''}`}
-                style={{ width: '100%', textAlign: 'left' }}
+                className={`day-pill ${selectedDayId === day.id ? "active" : ""}`}
+                style={{ width: "100%", textAlign: "left" }}
                 onClick={() => onSelectDay(day.id)}
               >
                 <span>{day.label}</span>
-                <strong style={{ fontSize: '0.9rem' }}>{day.title}</strong>
+                <strong style={{ fontSize: "0.9rem" }}>{day.title}</strong>
               </button>
             ))}
           </div>
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="frame-panel frame-panel-board">
         {activeWorkspaceTab === "trip" && (
           <div className="day-split">
             <div>
-              <span className="frame-label">Itinerary Editor</span>
+              <span className="frame-label">Voyage agent</span>
               <h3>{selectedDay?.title ?? "Planning Overview"}</h3>
-              <p className="lede" style={{ marginBottom: '1rem' }}>
+              <p className="lede" style={{ marginBottom: "1rem" }}>
                 Refine the rhythm of your days. Drag and drop stops to reorder.
               </p>
             </div>
 
-            <div style={{ display: 'grid', gap: '20px' }}>
+            <div style={{ display: "grid", gap: "20px" }}>
               {days.map((day) => (
-                <article key={day.id} className={`day-card ${selectedDayId === day.id ? 'selected' : ''}`} style={{ borderLeft: selectedDayId === day.id ? '4px solid var(--accent)' : '' }}>
+                <article
+                  key={day.id}
+                  className={`day-card ${selectedDayId === day.id ? "selected" : ""}`}
+                  style={{ borderLeft: selectedDayId === day.id ? "4px solid var(--accent)" : "" }}
+                >
                   <div className="day-card-head">
                     <div>
                       <span className="frame-label">{day.label}</span>
-                      <strong style={{ fontSize: '1.3rem' }}>{day.title}</strong>
+                      <strong style={{ fontSize: "1.3rem" }}>{day.title}</strong>
                     </div>
-                    <button className="button button-secondary" style={{ padding: '8px 16px', fontSize: '0.8rem' }} onClick={() => onSelectDay(day.id)}>
-                      {selectedDayId === day.id ? 'Active' : 'Focus'}
+                    <button
+                      className="button button-secondary"
+                      style={{ padding: "8px 16px", fontSize: "0.8rem" }}
+                      onClick={() => onSelectDay(day.id)}
+                    >
+                      {selectedDayId === day.id ? "Active" : "Focus"}
                     </button>
                   </div>
-                  
-                  <div style={{ display: 'grid', gap: '8px' }}>
+
+                  <div style={{ display: "grid", gap: "8px" }}>
                     {day.stops.map((stop) => (
                       <div key={stop} className="activity-chip">
                         <span className="chip-drag"></span>
-                        <span style={{ fontSize: '0.95rem' }}>{stop}</span>
+                        <span style={{ fontSize: "0.95rem" }}>{stop}</span>
                       </div>
                     ))}
                   </div>
@@ -351,22 +459,26 @@ function WorkspaceScreen({
               <p className="lede">Anchors and potential stops clustered for efficiency.</p>
             </div>
 
-            <div className="day-card" style={{ background: 'var(--accent-glow)', borderColor: 'var(--accent)' }}>
-              <span className="frame-label" style={{ color: 'var(--text-main)' }}>Focused Anchor</span>
-              <h4 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>{selectedPlace?.name ?? "Select a point on the map"}</h4>
-              <p style={{ color: 'var(--text-main)', opacity: 0.8 }}>{selectedPlace?.note}</p>
+            <div className="day-card" style={{ background: "var(--accent-glow)", borderColor: "var(--accent)" }}>
+              <span className="frame-label" style={{ color: "var(--text-main)" }}>
+                Selected place
+              </span>
+              <h4 style={{ fontSize: "1.2rem", marginBottom: "8px" }}>
+                {selectedPlace?.name ?? "Select a point on the map"}
+              </h4>
+              <p style={{ color: "var(--text-main)", opacity: 0.8 }}>{selectedPlace?.note}</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "16px" }}>
               {prototypeData.mapPlaces.map((place) => (
                 <button
                   key={place.id}
-                  className={`day-card ${selectedPlace?.id === place.id ? 'selected' : ''}`}
-                  style={{ textAlign: 'left', cursor: 'pointer' }}
+                  className={`day-card ${selectedPlace?.id === place.id ? "selected" : ""}`}
+                  style={{ textAlign: "left", cursor: "pointer" }}
                   onClick={() => onSelectPlace(place.id)}
                 >
-                  <span style={{ fontSize: '0.7rem', color: 'var(--accent)' }}>{place.district}</span>
-                  <strong style={{ display: 'block', fontSize: '1rem', marginTop: '4px' }}>{place.name}</strong>
+                  <span style={{ fontSize: "0.7rem", color: "var(--accent)" }}>{place.district}</span>
+                  <strong style={{ display: "block", fontSize: "1rem", marginTop: "4px" }}>{place.name}</strong>
                 </button>
               ))}
             </div>
@@ -376,22 +488,37 @@ function WorkspaceScreen({
         {activeWorkspaceTab === "agent" && (
           <div className="day-split">
             <div>
-              <span className="frame-label">AI Intelligence</span>
+              <span className="frame-label">Voyage agent</span>
               <h3>Voyage Agent</h3>
               <p className="lede">Conversational refinement for your itinerary.</p>
             </div>
 
-            <div style={{ display: 'grid', gap: '16px' }}>
+            <div style={{ display: "grid", gap: "16px" }}>
               {agentMessages.map((msg) => (
-                <div key={msg.id} className="share-row" style={{ borderLeft: msg.role === 'assistant' ? '2px solid var(--accent)' : '2px solid var(--text-dim)' }}>
-                  <strong>{msg.role === 'assistant' ? 'Voyage Agent' : 'You'}</strong>
+                <div
+                  key={msg.id}
+                  className="share-row"
+                  style={{ borderLeft: msg.role === "assistant" ? "2px solid var(--accent)" : "2px solid var(--text-dim)" }}
+                >
+                  <strong>{msg.role === "assistant" ? "Voyage Agent" : "You"}</strong>
                   <p>{msg.text}</p>
                 </div>
               ))}
             </div>
-            
-            <div className="input-row" style={{ marginTop: '20px' }}>
-              <input type="text" placeholder="Ask about reservations, clusters, or pace..." style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-md)', padding: '16px', color: '#fff', width: '100%' }} />
+
+            <div className="input-row" style={{ marginTop: "20px" }}>
+              <input
+                type="text"
+                placeholder="Ask about reservations, clusters, or pace..."
+                style={{
+                  background: "var(--bg-glass)",
+                  border: "1px solid var(--border-glass)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "16px",
+                  color: "#fff",
+                  width: "100%",
+                }}
+              />
             </div>
           </div>
         )}
@@ -405,22 +532,21 @@ function WorkspaceScreen({
             </div>
             <div className="day-card">
               <p>Ready to deploy your itinerary for {tripBrief.destination}.</p>
-              <button className="button button-primary" style={{ marginTop: '16px' }} onClick={onReviewTrip}>
-                Review & Export
+              <button className="button button-primary" style={{ marginTop: "16px" }} onClick={onReviewTrip}>
+                Review trip
               </button>
             </div>
           </div>
         )}
       </main>
 
-      {/* Detail Panel */}
       <aside className="frame-panel frame-panel-detail">
         <span className="frame-label">Quick Insights</span>
-        
+
         <div className="detail-block">
           <p>Context</p>
-          <strong style={{ fontSize: '1rem', marginBottom: '8px', display: 'block' }}>{tripBrief.destination}</strong>
-          <ul style={{ fontSize: '0.85rem' }}>
+          <strong style={{ fontSize: "1rem", marginBottom: "8px", display: "block" }}>{tripBrief.destination}</strong>
+          <ul style={{ fontSize: "0.85rem" }}>
             <li>{tripBrief.travelers} Travelers</li>
             <li>{tripBrief.pace}</li>
             <li>Budget: {tripBrief.budget}</li>
@@ -430,16 +556,18 @@ function WorkspaceScreen({
         {selectedDay && (
           <div className="detail-block">
             <p>Active Day: {selectedDay.label}</p>
-            <strong style={{ fontSize: '1rem', marginBottom: '8px', display: 'block' }}>{selectedDay.title}</strong>
+            <strong style={{ fontSize: "1rem", marginBottom: "8px", display: "block" }}>{selectedDay.title}</strong>
             <ul>
-              {selectedDay.stops.map(stop => <li key={stop}>{stop}</li>)}
+              {selectedDay.stops.map((stop) => (
+                <li key={stop}>{stop}</li>
+              ))}
             </ul>
           </div>
         )}
 
-        <div style={{ marginTop: 'auto' }}>
-          <button className="button button-primary" style={{ width: '100%' }} onClick={onReviewTrip}>
-            Final Review
+        <div style={{ marginTop: "auto" }}>
+          <button className="button button-primary" style={{ width: "100%" }} onClick={onReviewTrip}>
+            Review trip
           </button>
         </div>
       </aside>
@@ -452,15 +580,17 @@ function ReviewScreen({ days, onBackToWorkspace, onShare, tripBrief }) {
     <section className="screen-frame">
       <div className="frame-panel">
         <span className="frame-label">Review</span>
-        <h2>The Grand Tour</h2>
+        <h2>Trip review</h2>
         <p className="lede">Final check of your itinerary for {tripBrief.destination}.</p>
 
-        <div style={{ display: 'grid', gap: '12px', marginBottom: '32px' }}>
+        <div style={{ display: "grid", gap: "12px", marginBottom: "32px" }}>
           {days.map((day) => (
-            <div key={day.id} className="day-card" style={{ padding: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <strong>{day.label}: {day.title}</strong>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{day.stops.length} stops</span>
+            <div key={day.id} className="day-card" style={{ padding: "16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <strong>
+                  {day.label}: {day.title}
+                </strong>
+                <span style={{ fontSize: "0.8rem", color: "var(--text-dim)" }}>{day.stops.length} stops</span>
               </div>
             </div>
           ))}
@@ -471,7 +601,7 @@ function ReviewScreen({ days, onBackToWorkspace, onShare, tripBrief }) {
             Adjust Plans
           </button>
           <button className="button button-primary" onClick={onShare}>
-            Confirm Voyage
+            Share trip
           </button>
         </div>
       </div>
@@ -484,7 +614,7 @@ function ShareScreen({ onBackToWorkspace }) {
     <section className="screen-frame">
       <div className="frame-panel">
         <span className="frame-label">Transmission</span>
-        <h2>Share your Voyage</h2>
+        <h2>Share and export</h2>
         <p className="lede">Project your itinerary to collaborators and devices.</p>
 
         <div className="share-list">
@@ -502,7 +632,7 @@ function ShareScreen({ onBackToWorkspace }) {
           </div>
         </div>
 
-        <button className="button button-primary" onClick={onBackToWorkspace} style={{ marginTop: '32px', width: '100%' }}>
+        <button className="button button-primary" onClick={onBackToWorkspace} style={{ marginTop: "32px", width: "100%" }}>
           Return to Workspace
         </button>
       </div>
@@ -526,30 +656,30 @@ export default function HomePage() {
   } = usePrototypeState();
 
   const currentScreen = activeScreen === "landing" ? "welcome" : activeScreen;
-  const currentWorkspaceTab = activeWorkspaceTab === 'overview' || activeWorkspaceTab === 'itinerary' ? 'trip' : activeWorkspaceTab;
-  
+  const currentWorkspaceTab =
+    activeWorkspaceTab === "overview" || activeWorkspaceTab === "itinerary" ? "trip" : activeWorkspaceTab;
+
   const selectedDay = days.find((day) => day.id === selectedDayId) || days[0];
   const selectedPlace = prototypeData.mapPlaces.find((place) => place.id === selectedPlaceId) || prototypeData.mapPlaces[0];
-  
+
   const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    const shells = Array.from(document.querySelectorAll("main.system-shell"));
+    if (shells.length <= 1) return;
+
+    shells.slice(0, -1).forEach((shell) => shell.remove());
+  }, []);
 
   return (
     <main className="system-shell">
       <div className="system-grain" aria-hidden="true" />
 
       <section className="wireframe-section">
-        {currentScreen === "welcome" && (
-          <LandingPage
-            onStart={() => setActiveScreen("entry")}
-          />
-        )}
+        {currentScreen === "welcome" && <LandingPage onStart={() => setActiveScreen("entry")} />}
 
         {currentScreen === "entry" && (
-          <EntryScreen
-            email={email}
-            onEmailChange={setEmail}
-            onGuest={() => setActiveScreen("trip-brief")}
-          />
+          <EntryScreen email={email} onEmailChange={setEmail} onGuest={() => setActiveScreen("trip-brief")} />
         )}
 
         {currentScreen === "trip-brief" && (
@@ -557,10 +687,7 @@ export default function HomePage() {
         )}
 
         {currentScreen === "agent-kickoff" && (
-          <AgentKickoffScreen
-            onOpenWorkspace={() => setActiveScreen("workspace")}
-            tripBrief={tripBrief}
-          />
+          <AgentKickoffScreen onOpenWorkspace={() => setActiveScreen("workspace")} tripBrief={tripBrief} />
         )}
 
         {currentScreen === "workspace" && (
@@ -573,7 +700,7 @@ export default function HomePage() {
             onSelectPlace={setSelectedPlaceId}
             onTabChange={(tab) => {
               setActiveWorkspaceTab(tab);
-              if (tab === 'map' && !selectedPlaceId) setSelectedPlaceId(prototypeData.mapPlaces[0].id);
+              if (tab === "map" && !selectedPlaceId) setSelectedPlaceId(prototypeData.mapPlaces[0].id);
             }}
             selectedDay={selectedDay}
             selectedDayId={selectedDayId}
@@ -591,9 +718,7 @@ export default function HomePage() {
           />
         )}
 
-        {currentScreen === "share" && (
-          <ShareScreen onBackToWorkspace={() => setActiveScreen("workspace")} />
-        )}
+        {currentScreen === "share" && <ShareScreen onBackToWorkspace={() => setActiveScreen("workspace")} />}
       </section>
     </main>
   );
