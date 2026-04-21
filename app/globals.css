@@ -1563,3 +1563,59 @@ input[type="password"]:focus {
     display: none;
   }
 }
+
+/* PWA Mobile App Adjustments */
+@media (max-width: 1024px) {
+  .screen-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .agent-kickoff-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .landing-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-grid, .workflow-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .audience-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-tabs-container {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    gap: 8px;
+  }
+
+  .topbar-chip {
+    flex-shrink: 0;
+    width: auto;
+  }
+
+  .workspace-days-container {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 8px;
+  }
+
+  .day-pill {
+    flex-shrink: 0;
+    width: auto !important;
+    min-width: 140px;
+    margin-bottom: 0;
+  }
+
+  .system-shell {
+    padding: 16px 12px 32px;
+  }
+}
