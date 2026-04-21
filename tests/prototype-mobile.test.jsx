@@ -17,17 +17,27 @@ function setMobileViewport() {
   window.dispatchEvent(new Event("resize"));
 }
 
+function startFromHero() {
+  const heroSection = screen
+    .getByRole("heading", {
+      name: "Plan smarter trips with AI, itinerary logic, and map-aware routing",
+    })
+    .closest("section");
+
+  fireEvent.click(within(heroSection).getByRole("button", { name: "Start planning" }));
+}
+
 describe("prototype mobile workspace", () => {
   it("keeps the workspace navigation labels visible after entering the workspace", () => {
     setMobileViewport();
     render(<HomePage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Start planning" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue as guest" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue to Voyage agent" }));
-    fireEvent.click(screen.getByRole("button", { name: "Open workspace" }));
+    startFromHero();
+    fireEvent.click(screen.getByRole("button", { name: "Continue as Guest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Initialize Voyage Agent" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enter Workspace" }));
 
-    const workspaceTabs = within(screen.getByRole("tablist", { name: "Workspace tabs" }));
+    const workspaceTabs = within(screen.getByRole("tablist", { name: "Workspace sections" }));
 
     expect(workspaceTabs.getByRole("tab", { name: "Trip" })).toBeInTheDocument();
     expect(workspaceTabs.getByRole("tab", { name: "Map" })).toBeInTheDocument();

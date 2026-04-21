@@ -1,7 +1,17 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import HomePage from "../app/page.jsx";
+
+function getHeroStartPlanningButton() {
+  const heroSection = screen
+    .getByRole("heading", {
+      name: "Plan smarter trips with AI, itinerary logic, and map-aware routing",
+    })
+    .closest("section");
+
+  return within(heroSection).getByRole("button", { name: "Start planning" });
+}
 
 describe("landing page", () => {
   it("renders the marketing navigation and explainer sections", () => {
@@ -28,8 +38,9 @@ describe("landing page", () => {
   it("keeps the start planning CTA connected to the entry flow", () => {
     render(<HomePage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Start planning" }));
+    fireEvent.click(getHeroStartPlanningButton());
 
     expect(screen.getByRole("heading", { name: "Continue your journey" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue as Guest" })).toBeInTheDocument();
   });
 });
