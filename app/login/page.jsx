@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const socialProviders = [
   {
@@ -44,6 +45,7 @@ function FloatingOrb({ delay, size, left, top }) {
 }
 
 export default function LoginPage() {
+  const router = useRouter();
   const [mode, setMode] = useState("login"); // "login" | "register"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -66,9 +68,19 @@ export default function LoginPage() {
     }, 280);
   };
 
+  const loginAndRedirect = (name, providerEmail) => {
+    const user = {
+      name: name || fullName || "Voyager",
+      email: providerEmail || email || "voyager@example.com",
+      loggedInAt: new Date().toISOString(),
+    };
+    localStorage.setItem("voyage-user", JSON.stringify(user));
+    router.push("/?authenticated=1");
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Prototype — no actual auth
+    loginAndRedirect();
   };
 
   return (
@@ -173,6 +185,7 @@ export default function LoginPage() {
                     className="auth-social-btn"
                     type="button"
                     id={`auth-social-${provider.id}`}
+                    onClick={() => loginAndRedirect("Voyager", `voyager+${provider.id}@example.com`)}
                   >
                     {provider.icon}
                     <span>{provider.label}</span>
