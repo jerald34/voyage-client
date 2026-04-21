@@ -1,23 +1,23 @@
 :root {
-  --voyage-primary: #003566;
-  --voyage-secondary: #20b2aa;
-  --voyage-accent: #ffc300;
-  --voyage-background: #f8f9fa;
+  --voyage-primary: #223843;
+  --voyage-secondary: #d77a61;
+  --voyage-accent: #d8b4a0;
+  --voyage-background: #eff1f3;
   --voyage-surface: #ffffff;
-  --voyage-surface-alt: #eef5f8;
-  --voyage-border: rgba(0, 53, 102, 0.12);
-  --voyage-border-strong: rgba(0, 53, 102, 0.2);
-  --voyage-text: #0f2942;
-  --voyage-text-muted: #4f6478;
-  --voyage-text-soft: #6b8091;
-  --voyage-shadow: 0 20px 60px rgba(0, 53, 102, 0.12);
-  --voyage-shadow-soft: 0 12px 32px rgba(0, 53, 102, 0.08);
+  --voyage-surface-alt: #dbd3d8;
+  --voyage-border: rgba(34, 56, 67, 0.12);
+  --voyage-border-strong: rgba(34, 56, 67, 0.2);
+  --voyage-text: #223843;
+  --voyage-text-muted: #4a5d67;
+  --voyage-text-soft: #7d8c94;
+  --voyage-shadow: 0 20px 60px rgba(34, 56, 67, 0.12);
+  --voyage-shadow-soft: 0 12px 32px rgba(34, 56, 67, 0.08);
   --voyage-radius-lg: 28px;
   --voyage-radius-md: 18px;
   --voyage-radius-sm: 12px;
   --voyage-radius-pill: 999px;
-  --space-hero: clamp(72px, 11vh, 132px);
-  --section-gap: clamp(72px, 10vw, 120px);
+  --space-hero: clamp(80px, 12vh, 160px);
+  --section-gap: clamp(100px, 12vw, 160px);
 
   /* Compatibility aliases for the existing prototype screens. */
   --bg-deep: var(--voyage-background);
@@ -29,7 +29,7 @@
   --text-dim: var(--voyage-text-muted);
   --text-faint: var(--voyage-text-soft);
   --accent: var(--voyage-accent);
-  --accent-glow: rgba(255, 195, 0, 0.18);
+  --accent-glow: rgba(216, 180, 160, 0.18);
   --accent-secondary: var(--voyage-secondary);
   --radius-sm: var(--voyage-radius-sm);
   --radius-md: var(--voyage-radius-md);
@@ -52,9 +52,9 @@ html {
 
 body {
   background:
-    radial-gradient(circle at top left, rgba(32, 178, 170, 0.12), transparent 32%),
-    radial-gradient(circle at top right, rgba(255, 195, 0, 0.18), transparent 28%),
-    linear-gradient(180deg, #ffffff 0%, var(--voyage-background) 48%, #edf3f7 100%);
+    radial-gradient(circle at top left, rgba(215, 122, 97, 0.12), transparent 32%),
+    radial-gradient(circle at top right, rgba(216, 180, 160, 0.18), transparent 28%),
+    linear-gradient(180deg, #ffffff 0%, var(--voyage-background) 48%, #e1e7e9 100%);
   color: var(--voyage-text);
   font-family: "Plus Jakarta Sans", sans-serif;
   line-height: 1.6;
@@ -68,9 +68,9 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(circle at 18% 18%, rgba(32, 178, 170, 0.08), transparent 22%),
-    radial-gradient(circle at 82% 14%, rgba(255, 195, 0, 0.12), transparent 18%),
-    linear-gradient(180deg, rgba(248, 249, 250, 0.65), rgba(248, 249, 250, 0.28));
+    radial-gradient(circle at 18% 18%, rgba(215, 122, 97, 0.08), transparent 22%),
+    radial-gradient(circle at 82% 14%, rgba(216, 180, 160, 0.12), transparent 18%),
+    linear-gradient(180deg, rgba(239, 241, 243, 0.65), rgba(239, 241, 243, 0.28));
   pointer-events: none;
   z-index: -2;
 }
@@ -126,7 +126,7 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  margin-bottom: 0.9rem;
+  margin-bottom: 1.25rem;
   color: var(--voyage-secondary);
   font-size: 0.76rem;
   font-weight: 800;
@@ -170,11 +170,11 @@ a {
   width: min(100%, 1220px);
   margin: 0 auto;
   padding: 18px 26px;
-  background: rgba(248, 249, 250, 0.86);
-  border: 1px solid rgba(0, 53, 102, 0.08);
+  background: rgba(239, 241, 243, 0.86);
+  border: 1px solid rgba(34, 56, 67, 0.08);
   border-radius: 999px;
   backdrop-filter: blur(18px);
-  box-shadow: 0 18px 40px rgba(0, 53, 102, 0.08);
+  box-shadow: 0 18px 40px rgba(34, 56, 67, 0.08);
 }
 
 .landing-brand {
@@ -233,7 +233,7 @@ a {
 .landing-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
-  gap: 42px;
+  gap: clamp(40px, 6vw, 80px);
   align-items: center;
   min-height: calc(100vh - 92px);
   padding: var(--space-hero) 0 64px;
@@ -250,25 +250,58 @@ a {
 
 .landing-hero-panel {
   position: relative;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 18px;
   padding: 22px;
   border-radius: calc(var(--voyage-radius-lg) + 8px);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(238, 245, 248, 0.72)),
-    radial-gradient(circle at top, rgba(32, 178, 170, 0.14), transparent 42%);
-  border: 1px solid rgba(0, 53, 102, 0.08);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(219, 211, 216, 0.72)),
+    radial-gradient(circle at top, rgba(216, 180, 160, 0.14), transparent 42%);
+  border: 1px solid rgba(34, 56, 67, 0.08);
   box-shadow: var(--voyage-shadow);
 }
-
 .landing-hero-panel::after {
   content: "";
   position: absolute;
   inset: 18px;
   border-radius: calc(var(--voyage-radius-lg) + 2px);
-  border: 1px dashed rgba(0, 53, 102, 0.08);
+  border: 1px dashed rgba(0, 53, 102, 0.08); /* Fallback */
+  border: 1px dashed rgba(45, 52, 54, 0.08);
   pointer-events: none;
+}
+
+.carousel-view {
+  min-height: 200px;
+  flex-grow: 1;
+}
+
+.carousel-indicators {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.carousel-dot {
+  width: 48px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(45, 52, 54, 0.15);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  padding: 0;
+}
+
+.carousel-dot:hover {
+  background: rgba(45, 52, 54, 0.3);
+}
+
+.carousel-dot.active {
+  background: var(--voyage-secondary);
+  transform: scaleY(1.4);
 }
 
 .preview-card {
@@ -280,6 +313,31 @@ a {
   border: 1px solid var(--voyage-border);
   box-shadow: var(--voyage-shadow-soft);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-card-image {
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--voyage-border);
+}
+
+.preview-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.preview-card:hover .preview-card-image img {
+  transform: scale(1.05);
+}
+
+.preview-card-content {
+  padding: 28px;
+  flex-grow: 1;
 }
 
 .preview-card::before {
@@ -305,20 +363,20 @@ a {
 }
 
 .preview-card-brief {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(238, 245, 248, 0.94));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 243, 238, 0.94));
 }
 
 .preview-card-itinerary {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 243, 205, 0.84));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(253, 245, 230, 0.84));
 }
 
 .preview-card-map {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(222, 246, 244, 0.92));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(219, 211, 216, 0.92));
 }
 
 .preview-card-agent {
-  background: linear-gradient(180deg, rgba(0, 53, 102, 0.94), rgba(15, 41, 66, 0.92));
-  border-color: rgba(0, 53, 102, 0.28);
+  background: linear-gradient(180deg, rgba(45, 52, 54, 0.94), rgba(45, 52, 54, 0.92));
+  border-color: rgba(45, 52, 54, 0.28);
 }
 
 .preview-card-agent h2,
@@ -332,7 +390,7 @@ a {
 }
 
 .landing-section {
-  padding: calc(var(--section-gap) * 0.82) 0;
+  padding: var(--section-gap) 0;
   display: flex;
   flex-direction: column;
 }
@@ -347,7 +405,7 @@ a {
 
 .section-heading {
   max-width: 720px;
-  margin-bottom: 32px;
+  margin-bottom: clamp(48px, 5vw, 72px);
 }
 
 .section-heading .lede {
@@ -358,7 +416,7 @@ a {
 .workflow-grid,
 .audience-grid {
   display: grid;
-  gap: 20px;
+  gap: clamp(24px, 3vw, 40px);
 }
 
 .feature-grid,
@@ -383,7 +441,7 @@ a {
 .marketing-card,
 .workflow-card,
 .audience-card {
-  padding: 28px;
+  padding: clamp(24px, 4vw, 40px);
 }
 
 .marketing-card {
@@ -510,34 +568,57 @@ a {
 
 .button-primary {
   background: var(--voyage-accent);
-  color: var(--voyage-primary);
+  color: #fff;
   border-color: transparent;
-  box-shadow: 0 16px 32px rgba(255, 195, 0, 0.26);
+  box-shadow: 0 16px 32px rgba(216, 180, 160, 0.26);
 }
 
 .button-primary:hover,
 .button-primary:focus-visible {
-  background: #ffd64d;
-  box-shadow: 0 20px 36px rgba(255, 195, 0, 0.3);
+  background: #dbbfae;
+  box-shadow: 0 20px 36px rgba(216, 180, 160, 0.3);
 }
 
 .button-secondary {
   background: rgba(255, 255, 255, 0.75);
   color: var(--voyage-primary);
-  border-color: rgba(0, 53, 102, 0.18);
+  border-color: rgba(34, 56, 67, 0.18);
 }
 
 .button-secondary:hover,
 .button-secondary:focus-visible {
-  background: rgba(32, 178, 170, 0.08);
-  border-color: rgba(32, 178, 170, 0.32);
+  background: rgba(216, 180, 160, 0.08);
+  border-color: rgba(216, 180, 160, 0.32);
 }
 
 .button-stack {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
-  margin-top: 18px;
+  margin-top: 32px;
+}
+
+.agent-kickoff-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 40px;
+}
+
+.workspace-header-container {
+  padding: 24px;
+  marginBottom: 24px;
+}
+
+.workspace-tabs-container {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.workspace-days-container {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
 }
 
 .lede {
@@ -794,6 +875,11 @@ input[type="text"]:focus {
   .screen-editor {
     grid-template-columns: 1fr;
   }
+
+  .agent-kickoff-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -832,9 +918,13 @@ input[type="text"]:focus {
   }
 
   .landing-hero-panel,
-  .button-stack,
   .day-card-head {
     grid-template-columns: 1fr;
+  }
+
+  .button-stack {
+    display: flex;
+    flex-direction: column;
   }
 
   .preview-card,
@@ -857,5 +947,41 @@ input[type="text"]:focus {
 
   .field-grid {
     grid-template-columns: 1fr;
+  }
+
+  .workspace-tabs-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .workspace-tabs-container .topbar-chip {
+    flex: 1 1 calc(50% - 8px);
+    padding: 10px;
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  .workspace-days-container {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 12px;
+    padding-bottom: 12px;
+    scrollbar-width: none;
+  }
+
+  .workspace-days-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .day-pill {
+    flex-shrink: 0;
+    width: 160px;
+    margin-bottom: 0;
+  }
+
+  .workspace-header-container {
+    padding: 16px;
+    margin-bottom: 16px;
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import prototypeData from "./prototype-data";
 import { usePrototypeState } from "./prototype-state";
 
@@ -98,7 +98,51 @@ function formatTripBriefValue(key, value) {
   return value;
 }
 
+const heroCarouselItems = [
+  {
+    id: "brief",
+    label: "Trip brief",
+    title: "Turn direction into a clear planning brief",
+    description: "Capture destination, dates, pace, and planning priorities before the itinerary starts to take shape.",
+    colorClass: "preview-card-brief",
+    image: "https://images.unsplash.com/photo-1499529112087-3cb3b73cec95?q=80&w=1000&auto=format&fit=crop"
+  },
+  {
+    id: "itinerary",
+    label: "Itinerary",
+    title: "Shape daily flow with structured stops",
+    description: "Build day-by-day plans that stay readable, editable, and ready for collaboration.",
+    colorClass: "preview-card-itinerary",
+    image: "https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?q=80&w=1000&auto=format&fit=crop"
+  },
+  {
+    id: "map",
+    label: "Google Maps",
+    title: "Keep route logic visible while planning",
+    description: "Review the trip geographically so timing, clustering, and movement stay grounded in the real route.",
+    colorClass: "preview-card-map",
+    image: "https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1000&auto=format&fit=crop"
+  },
+  {
+    id: "agent",
+    label: "Voyage agent",
+    title: "Revise plans faster when priorities change",
+    description: "Use AI support to rebalance days, update stops, and respond quickly to new requests.",
+    colorClass: "preview-card-agent",
+    image: "https://images.unsplash.com/photo-1542204165-65bf26472b9b?q=80&w=1000&auto=format&fit=crop"
+  },
+];
+
 function LandingPage({ onStart }) {
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % heroCarouselItems.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div className="landing-shell">
       <header className="landing-header">
@@ -136,26 +180,39 @@ function LandingPage({ onStart }) {
         </div>
 
         <div className="landing-hero-panel" aria-label="Voyage product preview">
-          <article className="preview-card preview-card-brief">
-            <span className="frame-label">Trip brief</span>
-            <h2>Turn direction into a clear planning brief</h2>
-            <p>Capture destination, dates, pace, and planning priorities before the itinerary starts to take shape.</p>
-          </article>
-          <article className="preview-card preview-card-itinerary">
-            <span className="frame-label">Itinerary</span>
-            <h2>Shape daily flow with structured stops</h2>
-            <p>Build day-by-day plans that stay readable, editable, and ready for collaboration.</p>
-          </article>
-          <article className="preview-card preview-card-map">
-            <span className="frame-label">Google Maps</span>
-            <h2>Keep route logic visible while planning</h2>
-            <p>Review the trip geographically so timing, clustering, and movement stay grounded in the real route.</p>
-          </article>
-          <article className="preview-card preview-card-agent">
-            <span className="frame-label">Voyage agent</span>
-            <h2>Revise plans faster when priorities change</h2>
-            <p>Use AI support to rebalance days, update stops, and respond quickly to new requests.</p>
-          </article>
+          <div className="carousel-view">
+            {heroCarouselItems.map((item, index) => (
+              <div 
+                key={item.id} 
+                style={{ 
+                  display: index === activeSlide ? "block" : "none",
+                  animation: index === activeSlide ? "fade-in 0.4s ease-out" : "none"
+                }}
+              >
+                <article className={`preview-card ${item.colorClass}`} style={{ padding: 0 }}>
+                  <div className="preview-card-image">
+                    <img src={item.image} alt={item.label} />
+                  </div>
+                  <div className="preview-card-content">
+                    <span className="frame-label">{item.label}</span>
+                    <h2>{item.title}</h2>
+                    <p>{item.description}</p>
+                  </div>
+                </article>
+              </div>
+            ))}
+          </div>
+          
+          <div className="carousel-indicators">
+            {heroCarouselItems.map((item, index) => (
+              <button
+                key={item.id}
+                className={`carousel-dot ${index === activeSlide ? "active" : ""}`}
+                onClick={() => setActiveSlide(index)}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
       </section>
 
@@ -304,7 +361,7 @@ function TripBriefScreen({ onContinue, tripBrief }) {
 function AgentKickoffScreen({ onOpenWorkspace, tripBrief }) {
   return (
     <section className="screen-frame">
-      <div className="frame-panel" style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "40px" }}>
+      <div className="frame-panel agent-kickoff-layout">
         <div>
           <span className="frame-label">Agent Sync</span>
           <h2>Your copilot is ready.</h2>
@@ -367,13 +424,13 @@ function WorkspaceScreen({
         className="frame-panel frame-panel-nav"
         style={{ padding: "0", background: "transparent", border: "none", boxShadow: "none" }}
       >
-        <div className="frame-panel" style={{ padding: "24px", marginBottom: "24px" }}>
+        <div className="frame-panel workspace-header-container">
           <span className="frame-label">Voyage</span>
           <h3 style={{ fontSize: "1.5rem" }}>{tripBrief.destination}</h3>
           <p style={{ fontSize: "0.8rem", color: "var(--text-dim)", marginTop: "8px" }}>{tripBrief.travelWindow}</p>
         </div>
 
-        <div role="tablist" aria-label="Workspace sections" style={{ display: "grid", gap: "12px", marginBottom: "24px" }}>
+        <div role="tablist" aria-label="Workspace sections" className="workspace-tabs-container">
           {workspaceTabs.map((tab) => (
             <button
               key={tab.id}
@@ -389,7 +446,7 @@ function WorkspaceScreen({
 
         <div className="frame-panel" style={{ padding: "24px" }}>
           <span className="frame-label">Timeline</span>
-          <div style={{ marginTop: "16px" }}>
+          <div className="workspace-days-container">
             {days.map((day) => (
               <button
                 key={day.id}
