@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import prototypeData from "./prototype-data";
 import { usePrototypeState } from "./prototype-state";
 
@@ -156,9 +157,14 @@ function LandingPage({ onStart }) {
             </a>
           ))}
         </nav>
-        <button className="button button-primary landing-header-cta" onClick={onStart} type="button">
-          Start Planning
-        </button>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexShrink: 0 }}>
+          <Link href="/login" className="button button-secondary landing-header-cta" style={{ minHeight: "44px", padding: "10px 22px" }}>
+            Login
+          </Link>
+          <button className="button button-primary landing-header-cta" onClick={onStart} type="button" style={{ minHeight: "44px", padding: "10px 22px" }}>
+            Start Planning
+          </button>
+        </div>
       </header>
 
       <section className="landing-hero" id="home">
