@@ -5,6 +5,10 @@ export const metadata = {
   description:
     "A responsive Voyage prototype for itinerary-first travel planning across welcome, entry, and trip brief screens.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-icon.png",
+  },
 };
 
 export const viewport = {
@@ -18,10 +22,8 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet" />
+      <body suppressHydrationWarning>
+        {children}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -33,8 +35,7 @@ export default function RootLayout({ children }) {
             `,
           }}
         />
-      </head>
-      <body>{children}</body>
+      </body>
     </html>
   );
 }

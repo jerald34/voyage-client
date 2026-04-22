@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  distDir: process.env.VERCEL ? undefined : "voyage-dist",
+  /* config options here */
 };
 
 export default nextConfig;
