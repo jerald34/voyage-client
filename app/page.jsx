@@ -6,12 +6,12 @@ import prototypeData from "./data/prototype/trip-dashboard.js";
 import { usePrototypeState } from "./hooks/usePrototypeState.js";
 import { useTripDashboard } from "./hooks/useTripDashboard.js";
 
-import LandingPage from "./components/LandingPage";
-import HomePage from "./components/HomePage";
-import AgentKickoffScreen from "./components/AgentKickoffScreen";
-import WorkspaceScreen from "./components/WorkspaceScreen";
-import ReviewScreen from "./components/ReviewScreen";
-import ShareScreen from "./components/ShareScreen";
+import LandingPage from "./components/landing/LandingPage.jsx";
+import HomePage from "./components/trip-dashboard/HomePage.jsx";
+import AgentKickoffScreen from "./components/agent/AgentKickoffScreen.jsx";
+import WorkspaceScreen from "./components/workspace/WorkspaceScreen.jsx";
+import ReviewScreen from "./components/review/ReviewScreen.jsx";
+import ShareScreen from "./components/share/ShareScreen.jsx";
 
 function HomePageInner() {
   const router = useRouter();
