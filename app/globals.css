@@ -779,7 +779,7 @@ input[type="password"]:focus {
   display: grid;
   gap: 16px;
   width: 100%;
-  padding-top: 12px;
+  padding-top: 20px;
 }
 
 .trip-dashboard-header {
@@ -806,8 +806,9 @@ input[type="password"]:focus {
 .trip-dashboard-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
-  gap: 16px;
-  padding: 20px 24px;
+  gap: 24px;
+  padding: 28px 32px;
+  align-items: center;
   background:
     radial-gradient(circle at top left, rgba(215, 122, 97, 0.16), transparent 32%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 243, 238, 0.94));
@@ -861,11 +862,11 @@ input[type="password"]:focus {
 .trip-summary-strip {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  gap: 12px;
 }
 
 .trip-summary-card {
-  padding: 12px 16px;
+  padding: 16px 18px;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--voyage-border);
   border-radius: var(--voyage-radius-md);
@@ -881,8 +882,11 @@ input[type="password"]:focus {
 
 .trip-map-panel {
   display: grid;
-  gap: 24px;
-  padding: 16px 20px;
+  align-self: start;
+  position: sticky;
+  top: 110px;
+  gap: 20px;
+  padding: 20px 24px;
 }
 
 .trip-map-canvas {
