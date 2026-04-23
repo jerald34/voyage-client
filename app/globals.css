@@ -900,6 +900,44 @@ input[type="password"]:focus {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
 
+.trip-map-canvas.has-live-map {
+  background: rgba(255, 255, 255, 0.7);
+  overflow: hidden;
+}
+
+.trip-map-canvas.has-live-map::before,
+.trip-map-canvas.has-live-map::after {
+  display: none;
+}
+
+.trip-map-live {
+  width: 100%;
+  min-height: 260px;
+  height: 100%;
+}
+
+.trip-map-overlay {
+  position: absolute;
+  inset: auto 14px 14px;
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(34, 56, 67, 0.12);
+  box-shadow: var(--voyage-shadow-soft);
+}
+
+.trip-map-overlay strong {
+  color: var(--voyage-primary);
+  font-size: 0.85rem;
+}
+
+.trip-map-overlay span {
+  color: var(--voyage-text-muted);
+  font-size: 0.78rem;
+}
+
 .trip-map-canvas::before,
 .trip-map-canvas::after {
   content: "";
