@@ -15,11 +15,9 @@ export default function HomePage({
   tripBrief,
   tripProgress,
 }) {
-  const destination = tripBrief?.destination || "Active trip";
-
   return (
-    <div className="landing-shell system-shell" style={{ paddingTop: "20px", maxWidth: "1220px", display: "grid", gap: "24px" }}>
-      <header className="landing-header" style={{ position: "relative", marginBottom: 0, width: "100%" }}>
+    <div className="trip-dashboard-shell">
+      <header className="landing-header trip-dashboard-header">
         <a className="landing-brand" href="#home">
           Voyage
         </a>
@@ -36,7 +34,9 @@ export default function HomePage({
             >
               Active trip
             </span>
-            <strong style={{ fontSize: "0.95rem", color: "var(--voyage-text)" }}>Traveler</strong>
+            <strong style={{ fontSize: "0.95rem", color: "var(--voyage-text)" }}>
+              {tripBrief?.destination || "Traveler"}
+            </strong>
           </div>
           <div
             style={{
@@ -54,7 +54,7 @@ export default function HomePage({
               boxShadow: "var(--voyage-shadow-soft)",
             }}
           >
-            T
+            V
           </div>
         </div>
       </header>
@@ -68,9 +68,9 @@ export default function HomePage({
 
       <TripSummaryStrip nextActiveDay={nextActiveDay} tripBrief={tripBrief} tripProgress={tripProgress} />
 
-      <div style={{ display: "grid", gap: "24px", gridTemplateColumns: "minmax(280px, 0.9fr) minmax(0, 1.3fr)" }}>
-        <MapOverviewPanel destination={destination} mapHighlights={mapHighlights} />
+      <div className="trip-dashboard-grid">
         <ItineraryTimeline days={days} onMarkDayDone={onMarkDayDone} onToggleLocation={onToggleLocation} />
+        <MapOverviewPanel tripBrief={tripBrief} mapHighlights={mapHighlights} />
       </div>
     </div>
   );

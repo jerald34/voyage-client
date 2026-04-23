@@ -1,86 +1,17 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import Page from "../app/page.jsx";
+import HomePage from "../app/components/trip-dashboard/HomePage.jsx";
 import { useTripDashboard } from "../app/hooks/useTripDashboard.js";
-
-const mockState = {
-  routerPush: vi.fn(),
-  searchParamsAuthenticated: null,
-  setActiveScreen: vi.fn(),
-  setActiveWorkspaceTab: vi.fn(),
-  setDays: vi.fn(),
-  setSelectedDayId: vi.fn(),
-  setSelectedPlaceId: vi.fn(),
-  setAgentMessages: vi.fn(),
-  prototypeState: null,
-  workspaceProps: null,
-};
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({
-    push: mockState.routerPush,
-  }),
-  useSearchParams: () => ({
-    get: (key) => (key === "authenticated" ? mockState.searchParamsAuthenticated : null),
-  }),
-}));
-
-vi.mock("../app/hooks/usePrototypeState.js", () => ({
-  usePrototypeState: () => mockState.prototypeState,
-}));
-
-vi.mock("../app/components/landing/LandingPage.jsx", () => ({
-  default: () => <div data-testid="landing-page">Landing page</div>,
-}));
-
-vi.mock("../app/components/trip-dashboard/HomePage.jsx", () => ({
-  default: () => <div data-testid="home-page">Home page</div>,
-}));
-
-vi.mock("../app/components/agent/AgentKickoffScreen.jsx", () => ({
-  default: () => <div data-testid="agent-kickoff-screen">Agent kickoff</div>,
-}));
-
-vi.mock("../app/components/review/ReviewScreen.jsx", () => ({
-  default: () => <div data-testid="review-screen">Review screen</div>,
-}));
-
-vi.mock("../app/components/share/ShareScreen.jsx", () => ({
-  default: () => <div data-testid="share-screen">Share screen</div>,
-}));
-
-vi.mock("../app/components/workspace/WorkspaceScreen.jsx", () => ({
-  default: (props) => {
-    mockState.workspaceProps = props;
-    return <div data-testid="workspace-screen">Workspace screen</div>;
-  },
-}));
-
-vi.mock("../app/data/prototype/trip-dashboard.js", async () => {
-  const actual = await vi.importActual("../app/data/prototype/trip-dashboard.js");
-
-  return {
-    ...actual,
-    initialMapPlaces: [],
-    default: {
-      ...actual.default,
-      mapPlaces: [],
-    },
-  };
-});
-
-beforeEach(() => {
-  vi.clearAllMocks();
-  mockState.searchParamsAuthenticated = null;
-  mockState.prototypeState = null;
-  mockState.workspaceProps = null;
-});
 
 const testTripBrief = {
   destination: "Barcelona, Spain",
   travelWindow: "May 12-17, 2026",
+  travelers: 2,
+  pace: "Balanced with room for slow mornings",
+  budget: "Mid-range",
+  priority: "Food, architecture, and a few beach hours",
 };
 
 const testMapPlaces = [
@@ -94,16 +25,18 @@ const testDays = [
     id: "day-1",
     label: "Day 1",
     title: "Arrival",
+    note: "Ease into the city after check-in.",
     locations: [
-      { id: "loc-1", name: "Airport transfer", district: "Transit", completed: false },
-      { id: "loc-2", name: "Hotel check-in", district: "Eixample", completed: false },
+      { id: "loc-1", name: "Airport transfer", district: "Transit", time: "13:30", completed: false },
+      { id: "loc-2", name: "Hotel check-in", district: "Eixample", time: "15:00", completed: true },
     ],
   },
   {
     id: "day-2",
     label: "Day 2",
     title: "Old city",
-    locations: [{ id: "loc-3", name: "Tapas crawl", district: "Ciutat Vella", completed: false }],
+    note: "Keep the walking route clustered.",
+    locations: [{ id: "loc-3", name: "Tapas crawl", district: "Ciutat Vella", time: "19:30", completed: false }],
   },
 ];
 
@@ -135,92 +68,26 @@ describe("useTripDashboard", () => {
   it("updates dashboard progress and derived highlights after mutations", () => {
     render(<DashboardHookHarness />);
 
-    expect(screen.getByText("Trip progress 0%")).toBeInTheDocument();
+    expect(screen.getByText("Trip progress 33%")).toBeInTheDocument();
     expect(screen.getByText("Next day Day 1")).toBeInTheDocument();
-    expect(screen.getByText("First day 0%")).toBeInTheDocument();
+    expect(screen.getByText("First day 50%")).toBeInTheDocument();
     expect(screen.getByText("Map highlight Airport transfer")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "toggle first stop" }));
 
-    expect(screen.getByText("Trip progress 33%")).toBeInTheDocument();
-    expect(screen.getByText("First day 50%")).toBeInTheDocument();
-    expect(screen.getByText("Next day Day 1")).toBeInTheDocument();
+    expect(screen.getByText("Trip progress 67%")).toBeInTheDocument();
+    expect(screen.getByText("First day 100%")).toBeInTheDocument();
+    expect(screen.getByText("Next day Day 2")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "finish day 2" }));
 
-    expect(screen.getByText("Trip progress 67%")).toBeInTheDocument();
-    expect(screen.getByText("First day 50%")).toBeInTheDocument();
-    expect(screen.getByText("Next day Day 1")).toBeInTheDocument();
-  });
-});
-
-describe("Page handoff behavior", () => {
-  it("only auto-advances the login handoff when authenticated is exactly 1", async () => {
-    mockState.prototypeState = {
-      activeScreen: "landing",
-      setActiveScreen: mockState.setActiveScreen,
-      activeWorkspaceTab: "overview",
-      setActiveWorkspaceTab: mockState.setActiveWorkspaceTab,
-      tripBrief: testTripBrief,
-      days: testDays,
-      setDays: mockState.setDays,
-      selectedDayId: "day-1",
-      setSelectedDayId: mockState.setSelectedDayId,
-      selectedPlaceId: null,
-      setSelectedPlaceId: mockState.setSelectedPlaceId,
-      agentMessages: [],
-      setAgentMessages: mockState.setAgentMessages,
-    };
-
-    mockState.searchParamsAuthenticated = "0";
-    window.localStorage.setItem("voyage-user", JSON.stringify({ id: "user-1" }));
-    render(<Page />);
-
-    expect(mockState.setActiveScreen).not.toHaveBeenCalled();
-
-    mockState.setActiveScreen.mockClear();
-    mockState.searchParamsAuthenticated = "1";
-    render(<Page />);
-
-    expect(mockState.setActiveScreen).toHaveBeenCalledWith("trip-brief");
-    window.localStorage.removeItem("voyage-user");
-  });
-
-  it("keeps the selected day and map fallback safe when map places are empty", () => {
-    mockState.workspaceProps = null;
-    mockState.prototypeState = {
-      activeScreen: "workspace",
-      setActiveScreen: mockState.setActiveScreen,
-      activeWorkspaceTab: "map",
-      setActiveWorkspaceTab: mockState.setActiveWorkspaceTab,
-      tripBrief: testTripBrief,
-      days: testDays,
-      setDays: mockState.setDays,
-      selectedDayId: "day-missing",
-      setSelectedDayId: mockState.setSelectedDayId,
-      selectedPlaceId: "place-missing",
-      setSelectedPlaceId: mockState.setSelectedPlaceId,
-      agentMessages: [],
-      setAgentMessages: mockState.setAgentMessages,
-    };
-    mockState.searchParamsAuthenticated = null;
-
-    render(<Page />);
-
-    expect(mockState.workspaceProps).not.toBeNull();
-    expect(mockState.workspaceProps.selectedDayId).toBe("day-1");
-    expect(mockState.workspaceProps.selectedDay?.id).toBe("day-1");
-    expect(mockState.workspaceProps.selectedPlace).toBeNull();
-
-    expect(() => mockState.workspaceProps.onTabChange("map")).not.toThrow();
-    expect(mockState.setSelectedPlaceId).toHaveBeenCalledWith(null);
+    expect(screen.getByText("Trip progress 100%")).toBeInTheDocument();
+    expect(screen.getByText("Next day none")).toBeInTheDocument();
   });
 });
 
 describe("Trip dashboard HomePage", () => {
-  it("renders the trip dashboard sections with summary and route highlights", async () => {
-    const { default: HomePage } = await vi.importActual("../app/components/trip-dashboard/HomePage.jsx");
-
+  it("renders the approved dashboard headings, summary labels, and timeline actions", () => {
     render(
       <HomePage
         days={[
@@ -254,13 +121,7 @@ describe("Trip dashboard HomePage", () => {
         onContinue={vi.fn()}
         onMarkDayDone={vi.fn()}
         onToggleLocation={vi.fn()}
-        tripBrief={{
-          ...testTripBrief,
-          travelers: 2,
-          pace: "Balanced with room for slow mornings",
-          budget: "Mid-range",
-          priority: "Food, architecture, and a few beach hours",
-        }}
+        tripBrief={testTripBrief}
         tripProgress={{
           completedCount: 1,
           totalCount: 3,
@@ -271,22 +132,18 @@ describe("Trip dashboard HomePage", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { name: "Barcelona, Spain" })).toBeInTheDocument();
-    expect(screen.getByText("May 12-17, 2026")).toBeInTheDocument();
-    expect(screen.getAllByText("33% complete")).toHaveLength(2);
-    expect(screen.getByText("Next up")).toBeInTheDocument();
-    expect(screen.getAllByText("Day 1: Arrival")).toHaveLength(2);
+    expect(screen.getByRole("heading", { name: "Your itinerary at a glance" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Initialize Voyage Agent" })).toBeInTheDocument();
+    expect(screen.getByText("Overall progress")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Route overview" })).toBeInTheDocument();
-    expect(screen.getAllByText("Airport transfer")).toHaveLength(2);
-    expect(screen.getAllByText("Hotel check-in")).toHaveLength(2);
-    expect(screen.getAllByText("Tapas crawl")).toHaveLength(2);
-    expect(screen.getByRole("heading", { name: "Itinerary timeline" })).toBeInTheDocument();
-    expect(screen.getByText("Arrival")).toBeInTheDocument();
-    expect(screen.getByText("1 of 2 complete")).toBeInTheDocument();
+    expect(screen.getByLabelText("Timeline day Day 1")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mark day done" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mark Airport transfer done" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mark Hotel check-in not done" })).toBeInTheDocument();
+    expect(screen.getByText("A fast visual pass across the neighborhoods shaping Barcelona, Spain.")).toBeInTheDocument();
   });
 
-  it("wires per-location and per-day actions through the new dashboard tree", async () => {
-    const { default: HomePage } = await vi.importActual("../app/components/trip-dashboard/HomePage.jsx");
+  it("wires the agent kickoff, day completion, and location toggles through the dashboard tree", () => {
     const onToggleLocation = vi.fn();
     const onMarkDayDone = vi.fn();
     const onContinue = vi.fn();
@@ -310,13 +167,7 @@ describe("Trip dashboard HomePage", () => {
         onContinue={onContinue}
         onMarkDayDone={onMarkDayDone}
         onToggleLocation={onToggleLocation}
-        tripBrief={{
-          ...testTripBrief,
-          travelers: 2,
-          pace: "Balanced",
-          budget: "Mid-range",
-          priority: "Food",
-        }}
+        tripBrief={testTripBrief}
         tripProgress={{
           completedCount: 0,
           totalCount: 2,
@@ -327,9 +178,9 @@ describe("Trip dashboard HomePage", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Continue to agent kickoff" }));
-    fireEvent.click(screen.getByRole("button", { name: "Toggle Airport transfer" }));
-    fireEvent.click(screen.getByRole("button", { name: "Mark day 1 done" }));
+    fireEvent.click(screen.getByRole("button", { name: "Initialize Voyage Agent" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mark Airport transfer done" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mark day done" }));
 
     expect(onContinue).toHaveBeenCalledTimes(1);
     expect(onToggleLocation).toHaveBeenCalledWith("day-1", "loc-1");

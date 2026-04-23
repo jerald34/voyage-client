@@ -2,10 +2,14 @@ const summaryItems = [
   { id: "travelers", label: "Travelers", getValue: (tripBrief) => `${tripBrief?.travelers ?? 0}` },
   { id: "pace", label: "Pace", getValue: (tripBrief) => tripBrief?.pace || "Set the rhythm" },
   { id: "budget", label: "Budget", getValue: (tripBrief) => tripBrief?.budget || "Budget pending" },
-  { id: "progress", label: "Progress", getValue: (_tripBrief, tripProgress) => `${tripProgress?.percent ?? 0}% complete` },
+  {
+    id: "progress",
+    label: "Overall progress",
+    getValue: (_tripBrief, tripProgress) => `${tripProgress?.percent ?? 0}%`,
+  },
   {
     id: "next",
-    label: "Next up",
+    label: "Next active day",
     getValue: (_tripBrief, _tripProgress, nextActiveDay) =>
       nextActiveDay ? `${nextActiveDay.label}: ${nextActiveDay.title}` : "Everything is lined up",
   },
@@ -13,24 +17,11 @@ const summaryItems = [
 
 export default function TripSummaryStrip({ nextActiveDay, tripBrief, tripProgress }) {
   return (
-    <section
-      aria-label="Trip summary"
-      style={{
-        display: "grid",
-        gap: "14px",
-        gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-      }}
-    >
+    <section aria-label="Trip summary" className="trip-summary-strip">
       {summaryItems.map((item) => (
-        <article
-          key={item.id}
-          className="frame-panel"
-          style={{ padding: "18px 20px", background: "rgba(255,255,255,0.72)" }}
-        >
+        <article key={item.id} className="trip-summary-card">
           <span className="frame-label">{item.label}</span>
-          <strong style={{ display: "block", marginTop: "10px", fontSize: "1rem" }}>
-            {item.getValue(tripBrief, tripProgress, nextActiveDay)}
-          </strong>
+          <strong>{item.getValue(tripBrief, tripProgress, nextActiveDay)}</strong>
         </article>
       ))}
     </section>

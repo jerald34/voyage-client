@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import prototypeData from "./data/prototype/trip-dashboard.js";
 import { usePrototypeState } from "./hooks/usePrototypeState.js";
@@ -16,6 +16,8 @@ import ShareScreen from "./components/share/ShareScreen.jsx";
 function HomePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const authenticatedParam = searchParams.get("authenticated");
+  const [shouldBypassLanding, setShouldBypassLanding] = useState(false);
   const {
     activeScreen,
     setActiveScreen,
@@ -38,14 +40,16 @@ function HomePageInner() {
     mapPlaces,
   });
 
-  // If arriving from /login with ?authenticated=1, skip landing and go to trip-brief
   useEffect(() => {
-    const isAuthenticated = searchParams.get("authenticated");
-    const user = typeof window !== "undefined" && localStorage.getItem("voyage-user");
-    if (isAuthenticated === "1" && user) {
+    const storedUser = typeof window !== "undefined" ? localStorage.getItem("voyage-user") : null;
+    setShouldBypassLanding(authenticatedParam === "1" && Boolean(storedUser));
+  }, [authenticatedParam]);
+
+  useEffect(() => {
+    if (shouldBypassLanding && activeScreen === "landing") {
       setActiveScreen("trip-brief");
     }
-  }, [searchParams, setActiveScreen]);
+  }, [activeScreen, setActiveScreen, shouldBypassLanding]);
 
   const currentScreen = activeScreen === "landing" ? "welcome" : activeScreen;
   const currentWorkspaceTab =
@@ -84,6 +88,7 @@ function HomePageInner() {
             activeWorkspaceTab={currentWorkspaceTab}
             agentMessages={agentMessages}
             days={dashboard.days}
+            mapPlaces={mapPlaces}
             onReviewTrip={() => setActiveScreen("review")}
             onSelectDay={setSelectedDayId}
             onSelectPlace={setSelectedPlaceId}

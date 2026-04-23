@@ -47,56 +47,34 @@ function getCountdownLabel(travelWindow) {
 }
 
 export default function DashboardHero({ nextActiveDay, onContinue, tripBrief, tripProgress }) {
-  const destination = tripBrief?.destination || "Active trip";
+  const destination = tripBrief?.destination || "Trip in planning";
   const travelWindow = tripBrief?.travelWindow || "Dates pending";
 
   return (
-    <section
-      className="frame-panel"
-      style={{
-        display: "grid",
-        gap: "24px",
-        gridTemplateColumns: "minmax(0, 1.7fr) minmax(260px, 1fr)",
-        alignItems: "start",
-      }}
-    >
-      <div style={{ display: "grid", gap: "14px" }}>
-        <span className="frame-label">Planner Dashboard</span>
-        <h1 style={{ fontSize: "clamp(2.4rem, 4vw, 4rem)", margin: 0 }}>{destination}</h1>
-        <p className="lede" style={{ margin: 0 }}>
-          {travelWindow}
-        </p>
-        <p style={{ margin: 0, color: "var(--voyage-text-muted)" }}>
-          Stay on top of the route, knock out each location, and keep the next day ready before you enter the full
-          workspace.
+    <section className="trip-dashboard-hero frame-panel">
+      <div className="trip-hero-copy">
+        <span className="frame-label">Active trip</span>
+        <h1>Your itinerary at a glance</h1>
+        <p className="lede">
+          Keep {destination} moving with a timeline-first dashboard, route context, and quick completion actions before
+          you hand things off to the Voyage Agent.
         </p>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gap: "14px",
-          padding: "20px",
-          borderRadius: "var(--voyage-radius-md)",
-          background: "rgba(255,255,255,0.55)",
-          border: "1px solid var(--voyage-border)",
-        }}
-      >
-        <span className="frame-label">{getCountdownLabel(travelWindow)}</span>
-        <div>
-          <strong style={{ display: "block", fontSize: "1.05rem" }}>{tripProgress?.percent ?? 0}% complete</strong>
-          <span style={{ color: "var(--voyage-text-muted)", fontSize: "0.92rem" }}>
-            {(tripProgress?.completedCount ?? 0)} of {(tripProgress?.totalCount ?? 0)} itinerary stops checked off
-          </span>
+      <div className="trip-hero-summary">
+        <strong>{destination}</strong>
+        <p>{travelWindow}</p>
+
+        <div className="trip-hero-badges">
+          <span>{getCountdownLabel(travelWindow)}</span>
+          <span>{tripProgress?.percent ?? 0}% complete</span>
+          <span>{nextActiveDay ? `${nextActiveDay.label}: ${nextActiveDay.title}` : "Timeline ready"}</span>
         </div>
-        <div>
-          <strong style={{ display: "block", fontSize: "1rem" }}>Next active day</strong>
-          <span style={{ color: "var(--voyage-text-muted)", fontSize: "0.92rem" }}>
-            {nextActiveDay ? `${nextActiveDay.label}: ${nextActiveDay.title}` : "Timeline ready to plan"}
-          </span>
-        </div>
+
+        <p className="trip-hero-note">A little momentum here means a smoother agent kickoff and a more confident trip.</p>
+
         <button className="button button-primary" type="button" onClick={onContinue}>
-          Continue to agent kickoff
+          Initialize Voyage Agent
         </button>
       </div>
     </section>

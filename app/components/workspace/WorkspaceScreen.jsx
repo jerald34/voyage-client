@@ -1,5 +1,3 @@
-import { initialMapPlaces } from "../../data/prototype/trip-dashboard.js";
-
 const workspaceTabs = [
   { id: "trip", label: "Trip" },
   { id: "map", label: "Map" },
@@ -11,6 +9,7 @@ export default function WorkspaceScreen({
   activeWorkspaceTab,
   agentMessages,
   days,
+  mapPlaces,
   onReviewTrip,
   onSelectDay,
   onSelectPlace,
@@ -20,7 +19,7 @@ export default function WorkspaceScreen({
   selectedPlace,
   tripBrief,
 }) {
-  const mapPlaces = Array.isArray(initialMapPlaces) ? initialMapPlaces : [];
+  const safeMapPlaces = Array.isArray(mapPlaces) ? mapPlaces : [];
 
   return (
     <section className="screen-frame screen-editor">
@@ -131,7 +130,7 @@ export default function WorkspaceScreen({
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "16px" }}>
-              {mapPlaces.map((place) => (
+              {safeMapPlaces.map((place) => (
                 <button
                   key={place.id}
                   className={`day-card ${selectedPlace?.id === place.id ? "selected" : ""}`}
@@ -159,7 +158,9 @@ export default function WorkspaceScreen({
                 <div
                   key={msg.id}
                   className="share-row"
-                  style={{ borderLeft: msg.role === "assistant" ? "2px solid var(--accent)" : "2px solid var(--text-dim)" }}
+                  style={{
+                    borderLeft: msg.role === "assistant" ? "2px solid var(--accent)" : "2px solid var(--text-dim)",
+                  }}
                 >
                   <strong>{msg.role === "assistant" ? "Voyage Agent" : "You"}</strong>
                   <p>{msg.text}</p>
