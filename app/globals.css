@@ -777,9 +777,9 @@ input[type="password"]:focus {
 
 .trip-dashboard-shell {
   display: grid;
-  gap: 32px;
+  gap: 16px;
   width: 100%;
-  padding-top: 20px;
+  padding-top: 12px;
 }
 
 .trip-dashboard-header {
@@ -791,7 +791,7 @@ input[type="password"]:focus {
 .trip-dashboard-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.18fr) minmax(280px, 0.82fr);
-  gap: 24px;
+  gap: 16px;
   align-items: start;
 }
 
@@ -806,8 +806,8 @@ input[type="password"]:focus {
 .trip-dashboard-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
-  gap: 28px;
-  padding: clamp(28px, 5vw, 40px);
+  gap: 16px;
+  padding: 20px 24px;
   background:
     radial-gradient(circle at top left, rgba(215, 122, 97, 0.16), transparent 32%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 243, 238, 0.94));
@@ -861,11 +861,11 @@ input[type="password"]:focus {
 .trip-summary-strip {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 18px;
+  gap: 8px;
 }
 
 .trip-summary-card {
-  padding: 18px 20px;
+  padding: 12px 16px;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--voyage-border);
   border-radius: var(--voyage-radius-md);
@@ -875,19 +875,19 @@ input[type="password"]:focus {
 .trip-summary-card strong {
   display: block;
   margin-top: 10px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--voyage-primary);
 }
 
 .trip-map-panel {
   display: grid;
   gap: 24px;
-  padding: clamp(24px, 4vw, 36px);
+  padding: 16px 20px;
 }
 
 .trip-map-canvas {
   position: relative;
-  min-height: 320px;
+  min-height: 260px;
   border-radius: calc(var(--voyage-radius-lg) - 4px);
   background:
     linear-gradient(135deg, rgba(223, 230, 233, 0.85), rgba(255, 255, 255, 0.95)),
@@ -969,7 +969,7 @@ input[type="password"]:focus {
 .trip-day-card {
   display: grid;
   gap: 18px;
-  padding: 24px;
+  padding: 16px;
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid var(--voyage-border);
   border-radius: var(--voyage-radius-lg);
