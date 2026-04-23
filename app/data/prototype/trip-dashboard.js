@@ -6,20 +6,20 @@ export const prototypeWorkspaceTabs = [
 ];
 
 export const initialTripBrief = {
-  destination: "Barcelona, Spain",
+  destination: "Olongapo City, Zambales",
   travelWindow: "May 12-17, 2026",
   travelers: 2,
-  pace: "Balanced with room for slow mornings",
+  pace: "Balanced with room for city walks and Subic Bay views",
   budget: "Mid-range",
-  priority: "Food, architecture, and a few beach hours",
+  priority: "Subic Bay history, city landmarks, and nearby coastal stops",
 };
 
 export const initialItineraryDays = [
   {
     id: "day-1",
     label: "Day 1",
-    title: "Arrival and settle in",
-    note: "Keep the first evening light and walkable.",
+    title: "Arrival and city orientation",
+    note: "Start with a light first evening around the civic core and shoreline.",
     locations: [
       {
         id: "day-1-loc-1",
@@ -31,14 +31,14 @@ export const initialItineraryDays = [
       {
         id: "day-1-loc-2",
         name: "Hotel check-in",
-        district: "Eixample",
+        district: "City center",
         time: "15:00",
         completed: false,
       },
       {
         id: "day-1-loc-3",
-        name: "Late dinner in Eixample",
-        district: "Eixample",
+        name: "Subic Bay Boardwalk sunset walk",
+        district: "Waterfront",
         time: "20:00",
         completed: false,
       },
@@ -47,27 +47,27 @@ export const initialItineraryDays = [
   {
     id: "day-2",
     label: "Day 2",
-    title: "Old city exploration",
-    note: "Stack the walking stops close together.",
+    title: "History and barangay routes",
+    note: "Explore the city's civic story and a few of its 17 barangays.",
     locations: [
       {
         id: "day-2-loc-1",
-        name: "Breakfast near the Gothic Quarter",
-        district: "Ciutat Vella",
+        name: "Olongapo City Hall",
+        district: "City center",
         time: "09:00",
         completed: false,
       },
       {
         id: "day-2-loc-2",
-        name: "Cathedral walk",
-        district: "Ciutat Vella",
+        name: "Rizal Triangle",
+        district: "West Bajac-Bajac",
         time: "11:00",
         completed: false,
       },
       {
         id: "day-2-loc-3",
-        name: "Tapas crawl",
-        district: "Ciutat Vella",
+        name: "Local lunch and market stop",
+        district: "Kalaklan",
         time: "19:30",
         completed: false,
       },
@@ -76,27 +76,27 @@ export const initialItineraryDays = [
   {
     id: "day-3",
     label: "Day 3",
-    title: "Gaudi and seaside",
-    note: "Use the beach as the late-afternoon reset point.",
+    title: "Subic Bay shoreline",
+    note: "Use the coast for the slower reset and the best water views.",
     locations: [
       {
         id: "day-3-loc-1",
-        name: "Sagrada Familia",
-        district: "Eixample",
+        name: "Subic Bay boardwalk morning loop",
+        district: "Transit",
         time: "09:30",
         completed: false,
       },
       {
         id: "day-3-loc-2",
-        name: "Park Guell",
-        district: "Gracia",
+        name: "Harbor Point lunch stop",
+        district: "Waterfront",
         time: "13:00",
         completed: false,
       },
       {
         id: "day-3-loc-3",
-        name: "Beach sunset",
-        district: "Barceloneta",
+        name: "Subic Bay hillside sunset viewpoint",
+        district: "Subic Bay",
         time: "18:30",
         completed: false,
       },
@@ -107,21 +107,21 @@ export const initialItineraryDays = [
 export const initialMapPlaces = [
   {
     id: "place-1",
-    name: "Sagrada Familia",
-    district: "Eixample",
-    note: "Anchor the second full day with an early entry.",
+    name: "Subic Bay",
+    district: "Waterfront",
+    note: "Anchor the trip with the bayfront and the city's shoreline identity.",
   },
   {
     id: "place-2",
-    name: "Gothic Quarter",
-    district: "Ciutat Vella",
-    note: "Cluster lunch and walking stops here.",
+    name: "Rizal Triangle",
+    district: "West Bajac-Bajac",
+    note: "Cluster civic and walking stops here for an easy route through the center.",
   },
   {
     id: "place-3",
-    name: "Barceloneta Beach",
-    district: "Barceloneta",
-    note: "Use as the late-afternoon reset point.",
+    name: "City barangay loop",
+    district: "17 barangays",
+    note: "Use as the late-afternoon reset point for a neighborhood-focused itinerary.",
   },
 ];
 
@@ -143,3 +143,4 @@ export const prototypeData = {
 };
 
 export default prototypeData;
+

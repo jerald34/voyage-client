@@ -51,7 +51,7 @@ export default function ItineraryDayCard({ day, isPrimaryDay = false, onMarkDayD
       {progress.isEmpty ? (
         <p style={{ margin: 0, color: "var(--voyage-text-muted)" }}>No locations have been added yet for this day.</p>
       ) : (
-        <div style={{ display: "grid", gap: "10px" }}>
+        <div className="trip-location-list">
           {locations.map((location) => (
             <LocationChecklistRow
               key={location.id}
