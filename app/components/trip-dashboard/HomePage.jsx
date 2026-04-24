@@ -1,23 +1,30 @@
 "use client";
 
-import DashboardHero from "./DashboardHero.jsx";
-import TripSummaryStrip from "./TripSummaryStrip.jsx";
-import MapOverviewPanel from "./MapOverviewPanel.jsx";
-import ItineraryTimeline from "./ItineraryTimeline.jsx";
+import { initialAgencyPortfolioTrips } from "../../data/prototype/agency-portfolio.js";
+import {
+  getAgencyPortfolioSummary,
+  getAgentCommandInsights,
+  getAgentPriorityQueue,
+  getApprovalBlockers,
+  getUrgentDepartures,
+} from "../../lib/agency-dashboard/selectors.js";
+import AgentCommandCenter from "./AgentCommandCenter.jsx";
+import AgencyMetricStrip from "./AgencyMetricStrip.jsx";
+import AgentPriorityQueue from "./AgentPriorityQueue.jsx";
+import ApprovalQueuePanel from "./ApprovalQueuePanel.jsx";
+import ClientTripPortfolio from "./ClientTripPortfolio.jsx";
+import UrgentDeparturesPanel from "./UrgentDeparturesPanel.jsx";
 
-export default function HomePage({
-  days,
-  mapHighlights,
-  nextActiveDay,
-  onContinue,
-  onMarkDayDone,
-  onToggleLocation,
-  tripBrief,
-  tripProgress,
-}) {
+export default function HomePage({ agencyTrips = initialAgencyPortfolioTrips, onContinue }) {
+  const summary = getAgencyPortfolioSummary(agencyTrips);
+  const insights = getAgentCommandInsights(agencyTrips);
+  const priorityQueue = getAgentPriorityQueue(agencyTrips);
+  const urgentDepartures = getUrgentDepartures(agencyTrips);
+  const approvalBlockers = getApprovalBlockers(agencyTrips);
+
   return (
-    <div className="trip-dashboard-shell">
-      <header className="landing-header trip-dashboard-header">
+    <div id="home" className="trip-dashboard-shell agency-dashboard-shell">
+      <header className="landing-header trip-dashboard-header agency-dashboard-header">
         <a className="landing-brand" href="#home">
           Voyage
         </a>
@@ -32,10 +39,10 @@ export default function HomePage({
                 fontWeight: "700",
               }}
             >
-              Active trip
+              Agency Portfolio
             </span>
             <strong style={{ fontSize: "0.95rem", color: "var(--voyage-text)" }}>
-              {tripBrief?.destination || "Traveler"}
+              Operations desk
             </strong>
           </div>
           <div
@@ -54,24 +61,24 @@ export default function HomePage({
               boxShadow: "var(--voyage-shadow-soft)",
             }}
           >
-            V
+            A
           </div>
         </div>
       </header>
 
-      <DashboardHero
-        nextActiveDay={nextActiveDay}
-        onContinue={onContinue}
-        tripBrief={tripBrief}
-        tripProgress={tripProgress}
-      />
+      <AgentCommandCenter insights={insights} onRunReview={onContinue} />
 
-      <TripSummaryStrip nextActiveDay={nextActiveDay} tripBrief={tripBrief} tripProgress={tripProgress} />
+      <AgencyMetricStrip summary={summary} />
 
-      <div className="trip-dashboard-grid">
-        <ItineraryTimeline days={days} onMarkDayDone={onMarkDayDone} onToggleLocation={onToggleLocation} />
-        <MapOverviewPanel tripBrief={tripBrief} mapHighlights={mapHighlights} />
+      <div className="agency-dashboard-grid">
+        <AgentPriorityQueue trips={priorityQueue} />
+        <div className="agency-dashboard-side-stack">
+          <UrgentDeparturesPanel trips={urgentDepartures} />
+          <ApprovalQueuePanel trips={approvalBlockers} />
+        </div>
       </div>
+
+      <ClientTripPortfolio trips={agencyTrips} />
     </div>
   );
 }

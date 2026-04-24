@@ -25,7 +25,7 @@ async function renderAuthenticatedPage() {
   mockNavigationState.authenticated = "1";
   window.localStorage.setItem("voyage-user", JSON.stringify({ id: "user-1" }));
   render(<Page />);
-  await screen.findByRole("heading", { name: "Your itinerary at a glance" });
+  await screen.findByRole("heading", { name: "Agent Command Center" });
 }
 
 beforeEach(() => {
@@ -44,7 +44,7 @@ describe("prototype entry points", () => {
     landingPage.unmount();
     await renderAuthenticatedPage();
 
-    fireEvent.click(screen.getByRole("button", { name: "Initialize Voyage Agent" }));
+    fireEvent.click(screen.getByRole("button", { name: "Run Agency Review" }));
     fireEvent.click(screen.getByRole("button", { name: "Enter Workspace" }));
     fireEvent.click(screen.getByRole("tab", { name: "Share" }));
     fireEvent.click(screen.getByRole("button", { name: "Review & Export" }));
@@ -63,7 +63,10 @@ describe("prototype entry points", () => {
       expect(screen.queryByText("Continue your journey")).not.toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Initialize Voyage Agent" }));
+    expect(screen.getByRole("heading", { name: "Agent Command Center" })).toBeInTheDocument();
+    expect(screen.getByText("Agency Portfolio")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Run Agency Review" }));
 
     expect(screen.getByRole("heading", { name: "Your copilot is ready." })).toBeInTheDocument();
     expect(screen.getByText(/The Voyage Agent has processed your brief/i)).toBeInTheDocument();
