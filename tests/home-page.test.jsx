@@ -140,6 +140,16 @@ describe("Agency portfolio HomePage", () => {
     expect(onContinue).toHaveBeenCalledTimes(1);
   });
 
+  it("wires portfolio open trip actions through the homepage", () => {
+    const onOpenTrip = vi.fn();
+
+    render(<HomePage agencyTrips={agencyTrips} onContinue={vi.fn()} onOpenTrip={onOpenTrip} />);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Open trip" })[0]);
+
+    expect(onOpenTrip).toHaveBeenCalledWith(agencyTrips[0]);
+  });
+
   it("renders empty states for an empty portfolio", () => {
     render(<HomePage agencyTrips={[]} onContinue={vi.fn()} />);
 

@@ -81,4 +81,16 @@ describe("prototype entry points", () => {
 
     expect(screen.getByText("Selected place")).toBeInTheDocument();
   }, 10000);
+
+  it("opens the internal workspace from the agency portfolio trip cards", async () => {
+    await renderAuthenticatedPage();
+
+    const enabledOpenTripButton = screen.getAllByRole("button", { name: "Open trip" }).find((button) => !button.disabled);
+
+    expect(enabledOpenTripButton).toBeDefined();
+    fireEvent.click(enabledOpenTripButton);
+
+    expect(await screen.findByRole("tab", { name: "Trip", selected: true })).toBeInTheDocument();
+    expect(screen.getByRole("tablist", { name: "Workspace sections" })).toBeInTheDocument();
+  }, 10000);
 });

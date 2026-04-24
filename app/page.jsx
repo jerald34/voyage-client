@@ -70,6 +70,10 @@ function HomePageInner() {
           <HomePage
             agencyTrips={prototypeData.agencyPortfolioTrips}
             onContinue={() => setActiveScreen("agent-kickoff")}
+            onOpenTrip={() => {
+              setActiveWorkspaceTab("trip");
+              setActiveScreen("workspace");
+            }}
           />
         )}
 

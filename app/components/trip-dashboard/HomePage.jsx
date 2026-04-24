@@ -15,7 +15,7 @@ import ApprovalQueuePanel from "./ApprovalQueuePanel.jsx";
 import ClientTripPortfolio from "./ClientTripPortfolio.jsx";
 import UrgentDeparturesPanel from "./UrgentDeparturesPanel.jsx";
 
-export default function HomePage({ agencyTrips = initialAgencyPortfolioTrips, onContinue }) {
+export default function HomePage({ agencyTrips = initialAgencyPortfolioTrips, onContinue, onOpenTrip }) {
   const summary = getAgencyPortfolioSummary(agencyTrips);
   const insights = getAgentCommandInsights(agencyTrips);
   const priorityQueue = getAgentPriorityQueue(agencyTrips);
@@ -49,7 +49,7 @@ export default function HomePage({ agencyTrips = initialAgencyPortfolioTrips, on
         </div>
       </div>
 
-      <ClientTripPortfolio trips={agencyTrips} />
+      <ClientTripPortfolio trips={agencyTrips} onOpenTrip={onOpenTrip} />
     </div>
   );
 }
