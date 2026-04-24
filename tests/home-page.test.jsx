@@ -114,6 +114,8 @@ describe("Agency portfolio HomePage", () => {
 
     expect(screen.getByText("Agency Portfolio")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Agent Command Center" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Agent Command Center" }).closest(".agency-agent-panel")).not.toBeNull();
+    expect(screen.getByLabelText("Agency portfolio metrics")).toHaveClass("agency-metric-strip");
     expect(screen.getByRole("button", { name: "Run Agency Review" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Prepare today's client follow-ups" })).toBeInTheDocument();
     expect(screen.getByText("2 approvals blocking production")).toBeInTheDocument();

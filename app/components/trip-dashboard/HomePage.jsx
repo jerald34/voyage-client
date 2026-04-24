@@ -28,41 +28,12 @@ export default function HomePage({ agencyTrips = initialAgencyPortfolioTrips, on
         <a className="landing-brand" href="#home">
           Voyage
         </a>
-        <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-          <div style={{ textAlign: "right", display: "flex", flexDirection: "column" }}>
-            <span
-              style={{
-                fontSize: "0.78rem",
-                color: "var(--voyage-text-muted)",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                fontWeight: "700",
-              }}
-            >
-              Agency Portfolio
-            </span>
-            <strong style={{ fontSize: "0.95rem", color: "var(--voyage-text)" }}>
-              Operations desk
-            </strong>
+        <div>
+          <div className="agency-header-context">
+            <span>Agency Portfolio</span>
+            <strong>Operations desk</strong>
           </div>
-          <div
-            style={{
-              width: "44px",
-              height: "44px",
-              borderRadius: "50%",
-              background: "var(--voyage-accent)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff",
-              fontWeight: "bold",
-              fontSize: "1.1rem",
-              border: "2px solid rgba(255,255,255,0.8)",
-              boxShadow: "var(--voyage-shadow-soft)",
-            }}
-          >
-            A
-          </div>
+          <div className="agency-avatar">A</div>
         </div>
       </header>
 
