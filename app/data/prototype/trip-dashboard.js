@@ -1,3 +1,5 @@
+import { initialAgencyPortfolioTrips } from "./agency-portfolio.js";
+
 export const prototypeWorkspaceTabs = [
   { id: "overview", label: "Overview" },
   { id: "itinerary", label: "Itinerary" },
@@ -140,7 +142,7 @@ export const prototypeData = {
   itineraryDays: initialItineraryDays,
   mapPlaces: initialMapPlaces,
   agentMessages: initialAgentMessages,
+  agencyPortfolioTrips: initialAgencyPortfolioTrips,
 };
 
 export default prototypeData;
-

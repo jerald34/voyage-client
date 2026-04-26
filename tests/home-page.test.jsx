@@ -5,15 +5,6 @@ import { describe, expect, it, vi } from "vitest";
 import HomePage from "../app/components/trip-dashboard/HomePage.jsx";
 import { useTripDashboard } from "../app/hooks/useTripDashboard.js";
 
-const testTripBrief = {
-  destination: "Barcelona, Spain",
-  travelWindow: "May 12-17, 2026",
-  travelers: 2,
-  pace: "Balanced with room for slow mornings",
-  budget: "Mid-range",
-  priority: "Food, architecture, and a few beach hours",
-};
-
 const testMapPlaces = [
   { id: "place-1", name: "Airport transfer", district: "Transit", note: "Arrival route" },
   { id: "place-2", name: "Hotel check-in", district: "Eixample", note: "Drop bags first" },
@@ -86,104 +77,84 @@ describe("useTripDashboard", () => {
   });
 });
 
-describe("Trip dashboard HomePage", () => {
-  it("renders the approved dashboard headings, summary labels, and timeline actions", () => {
-    render(
-      <HomePage
-        days={[
-          {
-            ...testDays[0],
-            progress: {
-              completedCount: 1,
-              totalCount: 2,
-              percent: 50,
-              isComplete: false,
-              isEmpty: false,
-            },
-          },
-          {
-            ...testDays[1],
-            progress: {
-              completedCount: 0,
-              totalCount: 1,
-              percent: 0,
-              isComplete: false,
-              isEmpty: false,
-            },
-          },
-        ]}
-        mapHighlights={[
-          { label: "Transit", value: "Airport transfer" },
-          { label: "Eixample", value: "Hotel check-in" },
-          { label: "Ciutat Vella", value: "Tapas crawl" },
-        ]}
-        nextActiveDay={{ id: "day-1", label: "Day 1", title: "Arrival" }}
-        onContinue={vi.fn()}
-        onMarkDayDone={vi.fn()}
-        onToggleLocation={vi.fn()}
-        tripBrief={testTripBrief}
-        tripProgress={{
-          completedCount: 1,
-          totalCount: 3,
-          percent: 33,
-          completedDays: 0,
-          totalDays: 2,
-        }}
-      />,
-    );
+describe("Agency portfolio HomePage", () => {
+  const agencyTrips = [
+    {
+      id: "trip-1",
+      clientName: "Santos Family",
+      destination: "Olongapo City",
+      travelWindow: "May 12-17, 2026",
+      departureDate: "2026-05-12",
+      assignedOrganizer: "Mara",
+      readinessPercent: 68,
+      approvalStatus: "Awaiting itinerary approval",
+      riskLevel: "Medium",
+      nextAction: "Draft client approval reminder",
+      agentInsight: "Departure is inside 30 days and itinerary approval is still pending.",
+      status: "active",
+    },
+    {
+      id: "trip-2",
+      clientName: "Reyes Group",
+      destination: "Baguio",
+      travelWindow: "May 2-5, 2026",
+      departureDate: "2026-05-02",
+      assignedOrganizer: "Luis",
+      readinessPercent: 82,
+      approvalStatus: "Final confirmation pending",
+      riskLevel: "High",
+      nextAction: "Review readiness",
+      agentInsight: "High-risk trip departs soon and still needs final confirmation.",
+      status: "active",
+    },
+  ];
 
-    expect(screen.getByRole("heading", { name: "Your itinerary at a glance" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Initialize Voyage Agent" })).toBeInTheDocument();
-    expect(screen.getByText("Overall progress")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Route overview" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Timeline day Day 1")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Mark day done" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Mark Airport transfer done" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Mark Hotel check-in not done" })).toBeInTheDocument();
-    expect(screen.getByText("A fast visual pass across the neighborhoods shaping Barcelona, Spain.")).toBeInTheDocument();
+  it("renders the Agent-centered agency portfolio dashboard", () => {
+    render(<HomePage agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    expect(screen.getByText("Agency Portfolio")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Agent Command Center" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Agent Command Center" }).closest(".agency-agent-panel")).not.toBeNull();
+    expect(screen.getByLabelText("Agency portfolio metrics")).toHaveClass("agency-metric-strip");
+    expect(screen.getByRole("button", { name: "Run Agency Review" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Prepare today's client follow-ups" })).toBeInTheDocument();
+    expect(screen.getByText("2 approvals blocking production")).toBeInTheDocument();
+    expect(screen.getByText("Active trips")).toBeInTheDocument();
+    expect(screen.getByText("Departures in 30 days")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Priority Queue" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Urgent Departures" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Approval Blockers" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Client Trip Portfolio" })).toBeInTheDocument();
+    expect(screen.getAllByText("Santos Family").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Olongapo City").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Ready 68%").length).toBeGreaterThan(0);
   });
 
-  it("wires the agent kickoff, day completion, and location toggles through the dashboard tree", () => {
-    const onToggleLocation = vi.fn();
-    const onMarkDayDone = vi.fn();
+  it("wires Agent command actions through the homepage", () => {
     const onContinue = vi.fn();
 
-    render(
-      <HomePage
-        days={[
-          {
-            ...testDays[0],
-            progress: {
-              completedCount: 0,
-              totalCount: 2,
-              percent: 0,
-              isComplete: false,
-              isEmpty: false,
-            },
-          },
-        ]}
-        mapHighlights={[{ label: "Transit", value: "Airport transfer" }]}
-        nextActiveDay={{ id: "day-1", label: "Day 1", title: "Arrival" }}
-        onContinue={onContinue}
-        onMarkDayDone={onMarkDayDone}
-        onToggleLocation={onToggleLocation}
-        tripBrief={testTripBrief}
-        tripProgress={{
-          completedCount: 0,
-          totalCount: 2,
-          percent: 0,
-          completedDays: 0,
-          totalDays: 1,
-        }}
-      />,
-    );
+    render(<HomePage agencyTrips={agencyTrips} onContinue={onContinue} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Initialize Voyage Agent" }));
-    fireEvent.click(screen.getByRole("button", { name: "Mark Airport transfer done" }));
-    fireEvent.click(screen.getByRole("button", { name: "Mark day done" }));
+    fireEvent.click(screen.getByRole("button", { name: "Run Agency Review" }));
 
     expect(onContinue).toHaveBeenCalledTimes(1);
-    expect(onToggleLocation).toHaveBeenCalledWith("day-1", "loc-1");
-    expect(onMarkDayDone).toHaveBeenCalledWith("day-1");
+  });
+
+  it("wires portfolio open trip actions through the homepage", () => {
+    const onOpenTrip = vi.fn();
+
+    render(<HomePage agencyTrips={agencyTrips} onContinue={vi.fn()} onOpenTrip={onOpenTrip} />);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Open trip" })[0]);
+
+    expect(onOpenTrip).toHaveBeenCalledWith(agencyTrips[0]);
+  });
+
+  it("renders empty states for an empty portfolio", () => {
+    render(<HomePage agencyTrips={[]} onContinue={vi.fn()} />);
+
+    expect(screen.getAllByText("No active client trips yet.").length).toBeGreaterThan(0);
+    expect(screen.getByText("No departures need attention this week.")).toBeInTheDocument();
+    expect(screen.getByText("No client approvals are blocking production.")).toBeInTheDocument();
   });
 });

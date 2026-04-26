@@ -68,14 +68,12 @@ function HomePageInner() {
 
         {currentScreen === "trip-brief" && (
           <HomePage
-            days={dashboard.days}
-            mapHighlights={dashboard.mapHighlights}
-            nextActiveDay={dashboard.nextActiveDay}
+            agencyTrips={prototypeData.agencyPortfolioTrips}
             onContinue={() => setActiveScreen("agent-kickoff")}
-            onMarkDayDone={dashboard.markDayDone}
-            onToggleLocation={dashboard.toggleLocationComplete}
-            tripBrief={tripBrief}
-            tripProgress={dashboard.tripProgress}
+            onOpenTrip={() => {
+              setActiveWorkspaceTab("trip");
+              setActiveScreen("workspace");
+            }}
           />
         )}
 

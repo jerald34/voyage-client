@@ -35,7 +35,7 @@ async function renderAuthenticatedPage() {
   mockNavigationState.authenticated = "1";
   window.localStorage.setItem("voyage-user", JSON.stringify({ id: "user-1" }));
   render(<Page />);
-  await screen.findByRole("heading", { name: "Your itinerary at a glance" });
+  await screen.findByRole("heading", { name: "Agent Command Center" });
 }
 
 beforeEach(() => {
@@ -49,7 +49,7 @@ describe("prototype mobile workspace", () => {
     setMobileViewport();
     await renderAuthenticatedPage();
 
-    fireEvent.click(screen.getByRole("button", { name: "Initialize Voyage Agent" }));
+    fireEvent.click(screen.getByRole("button", { name: "Run Agency Review" }));
     fireEvent.click(screen.getByRole("button", { name: "Enter Workspace" }));
 
     const workspaceTabs = within(screen.getByRole("tablist", { name: "Workspace sections" }));
