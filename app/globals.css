@@ -261,12 +261,14 @@ a {
   border: 1px solid rgba(34, 56, 67, 0.08);
   box-shadow: var(--voyage-shadow);
 }
+
 .landing-hero-panel::after {
   content: "";
   position: absolute;
   inset: 18px;
   border-radius: calc(var(--voyage-radius-lg) + 2px);
-  border: 1px dashed rgba(0, 53, 102, 0.08); /* Fallback */
+  border: 1px dashed rgba(0, 53, 102, 0.08);
+  /* Fallback */
   border: 1px dashed rgba(45, 52, 54, 0.08);
   pointer-events: none;
 }
@@ -395,7 +397,7 @@ a {
   flex-direction: column;
 }
 
-.landing-section + .landing-section {
+.landing-section+.landing-section {
   border-top: 1px solid rgba(0, 53, 102, 0.06);
 }
 
@@ -777,15 +779,17 @@ input[type="password"]:focus {
 
 .trip-dashboard-shell {
   display: grid;
-  gap: 16px;
+  gap: 24px;
   width: 100%;
-  padding-top: 20px;
+  padding-top: 0;
 }
 
 .trip-dashboard-header {
-  position: relative;
-  margin-bottom: 0;
+  position: sticky;
+  top: 12px;
+  z-index: 100;
   width: 100%;
+  margin: 0 auto 12px;
 }
 
 .trip-dashboard-grid {
@@ -1104,14 +1108,14 @@ input[type="password"]:focus {
 }
 
 .agency-dashboard-shell {
-  gap: clamp(16px, 2vw, 24px);
+  gap: 24px;
 }
 
 .agency-dashboard-header {
   min-width: 0;
 }
 
-.agency-dashboard-header > div,
+.agency-dashboard-header>div,
 .agency-header-context {
   display: flex;
   align-items: center;
@@ -1248,7 +1252,7 @@ input[type="password"]:focus {
 .agency-dashboard-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.22fr) minmax(300px, 0.78fr);
-  gap: 16px;
+  gap: 24px;
   align-items: start;
 }
 
@@ -1307,7 +1311,7 @@ input[type="password"]:focus {
   padding: 18px;
 }
 
-.agency-priority-item > p {
+.agency-priority-item>p {
   margin: 0;
 }
 
@@ -1324,9 +1328,9 @@ input[type="password"]:focus {
   font-size: 1rem;
 }
 
-.agency-priority-item > div:first-child > span,
-.agency-compact-row > div:first-child > span,
-.agency-trip-card-header > div > span {
+.agency-priority-item>div:first-child>span,
+.agency-compact-row>div:first-child>span,
+.agency-trip-card-header>div>span {
   display: block;
   margin-top: 3px;
   color: var(--voyage-text-muted);
@@ -1400,7 +1404,7 @@ input[type="password"]:focus {
   gap: 10px;
 }
 
-.agency-readiness > div:first-child {
+.agency-readiness>div:first-child {
   display: flex;
   justify-content: space-between;
   gap: 14px;
@@ -1658,7 +1662,7 @@ input[type="password"]:focus {
     border-radius: 24px;
   }
 
-  .agency-dashboard-header > div,
+  .agency-dashboard-header>div,
   .agency-header-context {
     align-items: flex-start;
     text-align: left;
@@ -1674,7 +1678,7 @@ input[type="password"]:focus {
   }
 
   .agency-command-buttons,
-  .agency-readiness > div:first-child,
+  .agency-readiness>div:first-child,
   .agency-trip-card-header {
     display: grid;
   }
@@ -1810,22 +1814,34 @@ input[type="password"]:focus {
 .auth-floating-orb {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(216, 180, 160, 0.18) 0%,
-    rgba(215, 122, 97, 0.08) 50%,
-    transparent 70%
-  );
+  background: radial-gradient(circle,
+      rgba(216, 180, 160, 0.18) 0%,
+      rgba(215, 122, 97, 0.08) 50%,
+      transparent 70%);
   animation: auth-orb-drift 14s ease-in-out infinite alternate;
   filter: blur(2px);
 }
 
 @keyframes auth-orb-drift {
-  0% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(12px, -18px) scale(1.06); }
-  50% { transform: translate(-8px, 14px) scale(0.95); }
-  75% { transform: translate(16px, 8px) scale(1.03); }
-  100% { transform: translate(-6px, -12px) scale(1); }
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  25% {
+    transform: translate(12px, -18px) scale(1.06);
+  }
+
+  50% {
+    transform: translate(-8px, 14px) scale(0.95);
+  }
+
+  75% {
+    transform: translate(16px, 8px) scale(1.03);
+  }
+
+  100% {
+    transform: translate(-6px, -12px) scale(1);
+  }
 }
 
 .auth-brand-content {
@@ -2019,13 +2035,27 @@ input[type="password"]:focus {
 }
 
 @keyframes auth-slide-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes auth-slide-out {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-8px); }
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
 }
 
 .auth-form-heading {
@@ -2117,8 +2147,15 @@ input[type="password"]:focus {
 }
 
 @keyframes auth-field-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .auth-field label {
@@ -2165,7 +2202,7 @@ input[type="password"]:focus {
   padding-left: 46px;
 }
 
-.auth-input-wrap input:focus ~ .auth-input-icon,
+.auth-input-wrap input:focus~.auth-input-icon,
 .auth-input-wrap:focus-within .auth-input-icon {
   color: var(--voyage-secondary);
 }
@@ -2357,7 +2394,8 @@ input[type="password"]:focus {
     grid-template-columns: 1fr;
   }
 
-  .feature-grid, .workflow-grid {
+  .feature-grid,
+  .workflow-grid {
     grid-template-columns: 1fr !important;
   }
 
