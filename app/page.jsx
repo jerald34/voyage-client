@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import prototypeData from "./data/prototype/trip-dashboard.js";
 import { usePrototypeState } from "./hooks/usePrototypeState.js";
 import { useTripDashboard } from "./hooks/useTripDashboard.js";
+import { fetchApi } from "./lib/api";
 
 import LandingPage from "./components/landing/LandingPage.jsx";
 import HomePage from "./components/trip-dashboard/HomePage.jsx";
@@ -41,8 +42,29 @@ function HomePageInner() {
   });
 
   useEffect(() => {
+    if (authenticatedParam !== "1") return;
+
     const storedUser = typeof window !== "undefined" ? localStorage.getItem("voyage-user") : null;
-    setShouldBypassLanding(authenticatedParam === "1" && Boolean(storedUser));
+
+    if (storedUser) {
+      setShouldBypassLanding(true);
+      return;
+    }
+
+    // OAuth callback: server set a session cookie but we have no cached user.
+    // Fetch the real user from /auth/me and cache it.
+    let cancelled = false;
+    fetchApi("/auth/me")
+      .then((data) => {
+        if (cancelled) return;
+        localStorage.setItem("voyage-user", JSON.stringify(data.user));
+        setShouldBypassLanding(true);
+      })
+      .catch(() => {
+        // No valid session — stay on landing so user can click to login.
+      });
+
+    return () => { cancelled = true; };
   }, [authenticatedParam]);
 
   useEffect(() => {

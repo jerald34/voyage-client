@@ -2264,11 +2264,32 @@ input[type="password"]:focus {
   text-decoration: underline;
 }
 
+/* ─── Error message ─── */
+
+.auth-error {
+  padding: 12px 16px;
+  border-radius: var(--voyage-radius-sm);
+  background: rgba(220, 38, 38, 0.06);
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  color: #b91c1c;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+  animation: auth-field-in 0.25s ease both;
+}
+
 /* ─── Submit ─── */
 
 .auth-submit {
   width: 100%;
   margin-top: 8px;
+}
+
+.auth-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* ─── Switch prompt ─── */
