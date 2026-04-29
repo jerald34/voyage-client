@@ -312,57 +312,39 @@ The composer should remain reachable without covering itinerary content. Text mu
 
 ## Visual Direction
 
-The UI should feel like a premium agency operations workspace:
+The UI should adopt a **Dense Industrial / Premium Terminal** aesthetic to serve as a high-efficiency operations center for agency staff. 
 
-- dense but readable,
-- calm and professional,
-- travel-aware without decorative tourism visuals,
-- focused on repeated staff use,
-- no oversized landing-page hero treatment,
-- no decorative orbs or generic gradient blobs,
-- modest card radii,
-- clear status chips,
-- restrained motion for live updates.
+Key visual principles:
+- **Information Density:** High density, allowing staff to monitor chat, live work, and itinerary updates simultaneously without excessive scrolling.
+- **Typography:** Pair existing `DM Serif Display` (headers) with `Plus Jakarta Sans` (body), and introduce a **monospaced font** for the "Live Work" rail (tool calls, JSON snippets) to emphasize the technical "agent at work" feel.
+- **Component Styling:** Crisp 1px borders (`--voyage-border-strong`), modest border radii (4px-8px), and distinct panels over large pill shapes.
+- **Motion:** Restrained and technical. Instant state changes for data, but smooth 150ms reveals for streaming text and task completions.
+- **Color:** Utilize existing Voyage tokens (`--voyage-primary` deep teal for grounding/navigation, `--voyage-background` warm neutrals for chat surfaces, pristine white for data canvas, and `--voyage-secondary` terracotta for primary actions).
 
-Use existing Voyage tokens where possible:
+The agent interface clearly distinguishes:
+- Conversational chat (warm, soft contrast)
+- Technical tool activity (monospaced, crisp, data-focused)
+- Structured itinerary state (tabular/card lists)
 
-- primary deep teal,
-- terracotta action/accent,
-- warm neutral surfaces,
-- compact panel and card treatments.
+## Component & State Architecture
 
-The agent interface should distinguish:
+### Core Components
+- `AgencyAgentWorkspace`: The top-level 3-zone layout grid (Left Rail, Center Chat, Right Panel).
+- `AgentThreadRail`: Left rail for navigation and context.
+- `AgentChatPanel` & `AgentComposer`: Central messaging interface. Composer disables during active runs and shows suggested prompts when empty.
+- `AgentLiveWorkRail`: Right rail technical list of tasks (`AgentTask`) and tool calls (`AgentToolCall`). Expandable for debugging JSON.
+- `ItineraryCanvas`: Right side data-dense structured preview. Highlights recently updated rows.
+- `AgentSourcesDrawer`: Slide-out panel for web/map `AgentSource` inspection.
 
-- messages,
-- tool activity,
-- structured itinerary state,
-- sources,
-- review controls.
+### State Management & Data Flow
+The frontend heavily relies on the backend Server-Sent Events (SSE) system to stream `AgentRunEvent` records.
 
-## Component Direction
-
-Likely components:
-
-- `AgencyAgentWorkspace`
-- `AgentThreadRail`
-- `AgentChatPanel`
-- `AgentMessageList`
-- `AgentComposer`
-- `AgentLiveWorkRail`
-- `AgentTaskList`
-- `AgentToolCallList`
-- `ItineraryCanvas`
-- `ItineraryDayPanel`
-- `ItineraryItemRow`
-- `AgentSourcesDrawer`
-- `AgentReviewBar`
-
-Likely hooks/services:
-
-- `useAgentThread`
-- `useAgentRunStream`
-- `useItineraryDraft`
-- `agentApi`
+- `useAgentRunStream` (Hook): Connects to `GET /agencies/:agencyId/agent/runs/:runId/stream`. Parses incoming events and triggers local React state updates:
+  - `run.started` / `run.completed` / `run.failed`: Manages UI locking, streaming indicators, and error surfaces.
+  - `message.delta` / `message.completed`: Appends streaming chunks to the active assistant `AgentMessage`.
+  - `task.updated` / `tool.started` / `tool.completed`: Dynamically patches the Live Work Rail lists.
+  - `source.added`: Appends to the Sources Drawer.
+  - `itinerary.updated`: Triggers a refetch or optimistic patch of the `ItineraryCanvas` structure.
 
 The existing `WorkspaceScreen` can be refactored or replaced later, but the spec should guide the final agent workspace rather than preserving the current prototype chat as-is.
 
