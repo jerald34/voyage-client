@@ -97,15 +97,15 @@
 
 **Goal:** Build the structured preview of the generated trip.
 
-- [ ] **Step 1: Build `ItineraryItemRow`**
+- [x] **Step 1: Build `ItineraryItemRow`**
   Create `app/components/agent/itinerary/ItineraryItemRow.jsx`.
   - Render an item with its type (Activity, Meal, Transfer, Check-in), title, and time.
   - Apply dense tabular styling with crisp borders.
-- [ ] **Step 2: Build `ItineraryDayPanel`**
+- [x] **Step 2: Build `ItineraryDayPanel`**
   Create `app/components/agent/itinerary/ItineraryDayPanel.jsx`. This component receives an array of items for a specific day and renders a list of `ItineraryItemRow`s under a Day header.
-- [ ] **Step 3: Assemble `ItineraryCanvas`**
+- [x] **Step 3: Assemble `ItineraryCanvas`**
   Combine multiple Day panels. Add the high-level Trip Title, Travel Dates, and Traveler Count at the top. Ensure the background is pristine white (`--voyage-surface`).
-- [ ] **Step 4: Implement Highlighting Logic**
+- [x] **Step 4: Implement Highlighting Logic**
   Add a CSS animation or class (`flash-update`) that triggers when a row's data props change, briefly highlighting the background to indicate a live update.
 
 ---
