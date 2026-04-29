@@ -79,16 +79,16 @@
 
 **Goal:** Build the technical, data-dense right rail components.
 
-- [ ] **Step 1: Build `AgentTaskList`**
+- [x] **Step 1: Build `AgentTaskList`**
   Create `app/components/agent/live-work/AgentTaskList.jsx`. Render a simple checklist showing task status (Pending, Running, Completed). Use a small, crisp font size.
-- [ ] **Step 2: Build `AgentToolCallList`**
+- [x] **Step 2: Build `AgentToolCallList`**
   Create `app/components/agent/live-work/AgentToolCallList.jsx`.
   - Use the monospaced font for the tool name (e.g., `Searching Google Maps`).
   - Add status badges (Running, Completed, Failed).
   - Include a toggle to expand/collapse the raw JSON input/output.
-- [ ] **Step 3: Assemble `AgentLiveWorkRail`**
+- [x] **Step 3: Assemble `AgentLiveWorkRail`**
   Combine the Task List and Tool Call List. Add a header displaying the overall `RunStatus`.
-- [ ] **Step 4: Build `AgentSourcesDrawer`**
+- [x] **Step 4: Build `AgentSourcesDrawer`**
   Create `app/components/agent/sources/AgentSourcesDrawer.jsx`. This will list URLs, snippets, and Google Place metadata retrieved by the agent. It can be a slide-out panel or a separate tab in the right column.
 
 ---
