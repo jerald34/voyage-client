@@ -14,28 +14,28 @@
 
 **Goal:** Scaffold the core directories, routing structure, and placeholder components.
 
-- [ ] **Step 1: Create Page Route**
+- [x] **Step 1: Create Page Route**
   Create `app/agency/[agencyId]/trip/[tripId]/agent/page.jsx` (or `.tsx`). This is the main entry point for an existing trip.
   Create `app/agency/[agencyId]/agent/page.jsx` for starting a new trip without a `tripId`.
-- [ ] **Step 2: Create Component Directories**
+- [x] **Step 2: Create Component Directories**
   Inside `app/components/agent/`, create the following subdirectories:
   - `layout/`
   - `chat/`
   - `live-work/`
   - `itinerary/`
   - `sources/`
-- [ ] **Step 3: Create Stub Components**
+- [x] **Step 3: Create Stub Components**
   Create basic shell exports for the following components (just returning a `div` with their name):
   - `app/components/agent/layout/AgencyAgentWorkspace.jsx`
   - `app/components/agent/layout/AgentThreadRail.jsx`
   - `app/components/agent/chat/AgentChatPanel.jsx`
   - `app/components/agent/live-work/AgentLiveWorkRail.jsx`
   - `app/components/agent/itinerary/ItineraryCanvas.jsx`
-- [ ] **Step 4: Update Global CSS**
+- [x] **Step 4: Update Global CSS**
   Add the specific typography and spacing tokens to `app/globals.css`.
   - Add a monospaced font stack for technical data (`--font-mono`).
   - Ensure `--voyage-primary`, `--voyage-secondary`, `--voyage-background`, and `--voyage-border-strong` exist.
-- [ ] **Step 5: Verify Setup**
+- [x] **Step 5: Verify Setup**
   Ensure the new routes render the `AgencyAgentWorkspace` component without crashing.
 
 ---
