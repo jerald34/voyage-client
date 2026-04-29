@@ -61,16 +61,16 @@
 
 **Goal:** Build the conversational UI for the center panel.
 
-- [ ] **Step 1: Build `AgentMessageList` Component**
+- [x] **Step 1: Build `AgentMessageList` Component**
   Create `app/components/agent/chat/AgentMessageList.jsx`. Use a dense vertical stack for messages. Style Assistant messages slightly offset from User messages. Use the `--voyage-background` for the chat area background.
-- [ ] **Step 2: Build `AgentComposer` Component**
+- [x] **Step 2: Build `AgentComposer` Component**
   Create `app/components/agent/chat/AgentComposer.jsx`.
   - Include a multiline `textarea` that auto-expands.
   - Add a primary `Send` button colored with `--voyage-secondary` (terracotta).
   - Implement a disabled state when the input is empty or `isLoading` is true.
-- [ ] **Step 3: Implement Suggested Prompts**
+- [x] **Step 3: Implement Suggested Prompts**
   Inside the chat panel, implement suggested prompt chips (e.g., "Build a food-focused Tokyo plan"). Clicking a chip should populate the composer.
-- [ ] **Step 4: Assemble `AgentChatPanel`**
+- [x] **Step 4: Assemble `AgentChatPanel`**
   Combine the Message List and Composer into the `AgentChatPanel`. Ensure the composer is pinned to the bottom and the message list is scrollable.
 
 ---
