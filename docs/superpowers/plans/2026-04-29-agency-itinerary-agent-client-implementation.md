@@ -44,15 +44,15 @@
 
 **Goal:** Implement the "Dense Industrial / Premium Terminal" three-zone desktop layout.
 
-- [ ] **Step 1: Implement `AgencyAgentWorkspace` Layout Grid**
+- [x] **Step 1: Implement `AgencyAgentWorkspace` Layout Grid**
   Build the top-level CSS Grid layout. It should define three main columns on desktop: Left Rail (250px), Center Chat (flexible), Right Panel (450px+). Ensure it collapses into a tabbed layout on mobile devices.
-- [ ] **Step 2: Build `AgentThreadRail`**
+- [x] **Step 2: Build `AgentThreadRail`**
   Implement the left rail. Include:
   - Agency Name header.
   - "New Itinerary Draft" button.
   - A mocked list of recent threads with status chips (e.g., `Draft`, `Needs review`).
   - A back link to the main Agency Dashboard.
-- [ ] **Step 3: Layout Integration**
+- [x] **Step 3: Layout Integration**
   Render `AgentThreadRail` in the left column, and placeholders for the Chat and Right Panel in the `AgencyAgentWorkspace`. Add crisp `1px` borders (`--voyage-border-strong`) between panels.
 
 ---
