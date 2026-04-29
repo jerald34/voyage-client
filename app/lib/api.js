@@ -33,3 +33,21 @@ export async function fetchApi(path, options = {}) {
     throw error;
   }
 }
+
+export async function createAgentThread(agencyId, tripId = null) {
+  return fetchApi(`/agencies/${agencyId}/agent/threads`, {
+    method: 'POST',
+    body: JSON.stringify({ tripId })
+  });
+}
+
+export async function sendMessage(agencyId, threadId, content) {
+  return fetchApi(`/agencies/${agencyId}/agent/threads/${threadId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ content })
+  });
+}
+
+export async function fetchItineraryDraft(agencyId, itineraryId) {
+  return fetchApi(`/agencies/${agencyId}/itineraries/${itineraryId}`);
+}

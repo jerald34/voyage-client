@@ -114,16 +114,16 @@
 
 **Goal:** Connect the UI to the backend Server-Sent Events stream.
 
-- [ ] **Step 1: Build API Utilities**
+- [x] **Step 1: Build API Utilities**
   In `app/lib/api.js` (or create `agentApi.js`), add helper functions:
   - `createAgentThread(agencyId, tripId?)`
   - `sendMessage(agencyId, threadId, content)`
   - `fetchItineraryDraft(agencyId, itineraryId)`
-- [ ] **Step 2: Build `useAgentRunStream` Hook**
+- [x] **Step 2: Build `useAgentRunStream` Hook**
   Create `app/hooks/useAgentRunStream.js`.
   - Initialize an `EventSource` pointing to `GET /agencies/:agencyId/agent/runs/:runId/stream`.
   - Handle authentication credentials (`withCredentials: true` if needed).
-- [ ] **Step 3: Manage Local Event State**
+- [x] **Step 3: Manage Local Event State**
   Inside the hook, set up local state reducers for the specific backend events:
   - `message.delta`: Append text to the active assistant message.
   - `task.updated` & `tool.started`/`completed`: Update the live work arrays.
