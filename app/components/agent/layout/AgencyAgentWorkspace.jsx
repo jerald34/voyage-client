@@ -1,7 +1,5 @@
 "use client";
-import AgentThreadRail from './AgentThreadRail';
-
-export default function AgencyAgentWorkspace({ children, chatPanel, liveWorkPanel }) {
+export default function AgencyAgentWorkspace({ children, chatPanel, liveWorkPanel, inspectorFooter }) {
   return (
     <div className="agency-agent-layout">
       {/* Left Rail */}
@@ -16,7 +14,14 @@ export default function AgencyAgentWorkspace({ children, chatPanel, liveWorkPane
 
       {/* Right Panel (Live Work / Itinerary) */}
       <aside className="agent-inspector">
-        {liveWorkPanel}
+        <div className="inspector-content">
+          {liveWorkPanel}
+        </div>
+        {inspectorFooter && (
+          <footer className="inspector-footer">
+            {inspectorFooter}
+          </footer>
+        )}
       </aside>
 
       <style jsx global>{`
@@ -49,9 +54,18 @@ export default function AgencyAgentWorkspace({ children, chatPanel, liveWorkPane
           border-left: 1px solid var(--voyage-border-strong);
           background: rgba(255, 255, 255, 0.4);
           backdrop-filter: blur(10px);
-          overflow-y: auto;
           display: flex;
           flex-direction: column;
+          overflow: hidden;
+        }
+
+        .inspector-content {
+          flex-grow: 1;
+          overflow-y: auto;
+        }
+
+        .inspector-footer {
+          flex-shrink: 0;
         }
 
         @media (max-width: 1200px) {
@@ -59,7 +73,7 @@ export default function AgencyAgentWorkspace({ children, chatPanel, liveWorkPane
             grid-template-columns: 240px 1fr 0px;
           }
           .agent-inspector {
-            display: none; /* Mobile/Tablet layout will need tabs later */
+            display: none;
           }
         }
 

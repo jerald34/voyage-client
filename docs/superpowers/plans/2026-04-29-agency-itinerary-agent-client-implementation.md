@@ -137,14 +137,14 @@
 
 **Goal:** Wire the React components to the state hook and finalize the experience.
 
-- [ ] **Step 1: Wire Up `AgencyAgentWorkspace`**
+- [x] **Step 1: Wire Up `AgencyAgentWorkspace`**
   Initialize `useAgentRunStream` and pass the derived state down to the Chat, Live Work, and Itinerary Canvas components.
-- [ ] **Step 2: Wire Up `AgentComposer`**
+- [x] **Step 2: Wire Up `AgentComposer`**
   Hook the `Send` button to call the `sendMessage` API endpoint and immediately trigger the streaming hook listener for the new run ID. Disable the composer while `isStreaming` is true.
-- [ ] **Step 3: Implement Review Actions**
+- [x] **Step 3: Implement Review Actions**
   Add the `AgentReviewBar` component at the bottom of the right panel with buttons: `Ask agent to revise`, `Edit draft`, and a visually disabled `Send to client`.
-- [ ] **Step 4: Error Handling & Empty States**
+- [x] **Step 4: Error Handling & Empty States**
   - Add an empty state to the Chat Panel with the suggested prompt chips.
   - If a run fails (e.g. `LOCAL_MODEL_UNAVAILABLE`), render the backend error gracefully in the Live Work rail and offer a `Retry` button.
-- [ ] **Step 5: Mobile Responsiveness Verification**
+- [x] **Step 5: Mobile Responsiveness Verification**
   Ensure the 3-column layout collapses gracefully into tabs (Chat, Itinerary, Work, Sources) on mobile screens as specified in the design doc.
