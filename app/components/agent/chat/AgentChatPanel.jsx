@@ -15,21 +15,39 @@ export default function AgentChatPanel({
 
   // Combine static messages with the active streaming message
   const displayMessages = [...messages];
-  if (streamingMessage) {
-    displayMessages.push({ 
-      role: 'assistant', 
-      content: streamingMessage, 
-      isStreaming: true 
-    });
+  const hasStreamingMessage = typeof streamingMessage === 'string' && streamingMessage.length > 0;
+  const latestAssistantMessage = [...messages].reverse().find((message) => message?.role === 'assistant');
+  const shouldShowStreamingBubble = hasStreamingMessage && latestAssistantMessage?.content !== streamingMessage;
+
+  if (shouldShowStreamingBubble) {
+    const lastMessage = displayMessages[displayMessages.length - 1];
+
+    if (lastMessage?.role === 'assistant' && lastMessage?.isStreaming) {
+      displayMessages[displayMessages.length - 1] = {
+        ...lastMessage,
+        content: streamingMessage,
+        isStreaming: true
+      };
+    } else {
+      displayMessages.push({
+        role: 'assistant',
+        content: streamingMessage,
+        isStreaming: true,
+        time: 'Live'
+      });
+    }
   }
 
   return (
     <div className="chat-panel-container">
       <div className="chat-messages-area">
-        <AgentMessageList messages={displayMessages} />
+        <AgentMessageList
+          messages={displayMessages}
+          isStreaming={shouldShowStreamingBubble}
+        />
       </div>
       
-      {messages.length < 2 && !streamingMessage && (
+      {messages.length < 2 && !shouldShowStreamingBubble && (
         <SuggestedPrompts onSelect={handlePromptSelect} />
       )}
 

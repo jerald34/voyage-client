@@ -12,11 +12,14 @@ export function useAgentRunStream(agencyId) {
   const [error, setError] = useState(null);
 
   const eventSourceRef = useRef(null);
+  const streamInstanceRef = useRef(0);
 
   const startStream = (runId) => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
+
+    const streamInstanceId = ++streamInstanceRef.current;
 
     setIsStreaming(true);
     setRunStatus('running');
@@ -33,146 +36,171 @@ export function useAgentRunStream(agencyId) {
     const es = new EventSource(url, { withCredentials: true });
     eventSourceRef.current = es;
 
+    const isCurrentStream = () => {
+      return streamInstanceRef.current === streamInstanceId && eventSourceRef.current === es;
+    };
+
+    const parseEventData = (event) => {
+      try {
+        return JSON.parse(event.data);
+      } catch (err) {
+        console.error('Error parsing SSE event:', err);
+        return null;
+      }
+    };
+
+    const finishStream = () => {
+      if (eventSourceRef.current === es) {
+        eventSourceRef.current = null;
+      }
+      streamInstanceRef.current += 1;
+      es.close();
+    };
+
     // Server sends: { type: "message.delta", payload: { delta: "..." } }
     es.addEventListener('message.delta', (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        setAssistantMessage(prev => prev + (data.payload?.delta || ''));
-      } catch (err) {
-        console.error('Error parsing message.delta:', err);
-      }
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      if (!data) return;
+
+      const delta = data.payload?.delta;
+      if (delta == null) return;
+
+      setAssistantMessage(prev => prev + String(delta));
     });
 
     // Server sends: { type: "message.completed", payload: { messageId, content } }
     es.addEventListener('message.completed', (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        if (data.payload?.content) {
-          setAssistantMessage(data.payload.content);
-        }
-      } catch (err) {
-        console.error('Error parsing message.completed:', err);
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      if (!data) return;
+
+      if (typeof data.payload?.content === 'string') {
+        setAssistantMessage(data.payload.content);
       }
     });
 
     // Server sends: { type: "task.updated", payload: { label, status, sortOrder } }
     es.addEventListener('task.updated', (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        const task = data.payload;
-        if (!task) return;
-        setTasks(prev => {
-          const existingIndex = prev.findIndex(t => t.label === task.label);
-          if (existingIndex > -1) {
-            const newTasks = [...prev];
-            newTasks[existingIndex] = { ...newTasks[existingIndex], ...task };
-            return newTasks;
-          }
-          return [...prev, task];
-        });
-      } catch (err) {
-        console.error('Error parsing task.updated:', err);
-      }
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      const task = data?.payload;
+      if (!task) return;
+
+      setTasks(prev => {
+        const existingIndex = prev.findIndex(t => t.label === task.label);
+        if (existingIndex > -1) {
+          const newTasks = [...prev];
+          newTasks[existingIndex] = { ...newTasks[existingIndex], ...task };
+          return newTasks;
+        }
+        return [...prev, task];
+      });
     });
 
     // Server sends: { type: "tool.started", payload: { name, input } }
     es.addEventListener('tool.started', (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        const tool = data.payload;
-        if (!tool) return;
-        setToolCalls(prev => [...prev, { ...tool, status: 'Running' }]);
-      } catch (err) {
-        console.error('Error parsing tool.started:', err);
-      }
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      const tool = data?.payload;
+      if (!tool) return;
+
+      setToolCalls(prev => [...prev, { ...tool, status: 'Running' }]);
     });
 
     // Server sends: { type: "tool.completed", payload: { name, output } }
     es.addEventListener('tool.completed', (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        const tool = data.payload;
-        if (!tool) return;
-        setToolCalls(prev => prev.map(t =>
-          t.name === tool.name && t.status === 'Running'
-            ? { ...t, ...tool, status: 'Completed' }
-            : t
-        ));
-      } catch (err) {
-        console.error('Error parsing tool.completed:', err);
-      }
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      const tool = data?.payload;
+      if (!tool) return;
+
+      setToolCalls(prev => prev.map(t =>
+        t.name === tool.name && t.status === 'Running'
+          ? { ...t, ...tool, status: 'Completed' }
+          : t
+      ));
     });
 
     // Server sends: { type: "tool.failed", payload: { name, code, message } }
     es.addEventListener('tool.failed', (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        const tool = data.payload;
-        if (!tool) return;
-        setToolCalls(prev => prev.map(t =>
-          t.name === tool.name && t.status === 'Running'
-            ? { ...t, ...tool, status: 'Failed' }
-            : t
-        ));
-      } catch (err) {
-        console.error('Error parsing tool.failed:', err);
-      }
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      const tool = data?.payload;
+      if (!tool) return;
+
+      setToolCalls(prev => prev.map(t =>
+        t.name === tool.name && t.status === 'Running'
+          ? { ...t, ...tool, status: 'Failed' }
+          : t
+      ));
     });
 
     // Server sends: { type: "source.added", payload: { sourceType, title, url, snippet } }
     es.addEventListener('source.added', (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        if (data.payload) {
-          setSources(prev => [...prev, data.payload]);
-        }
-      } catch (err) {
-        console.error('Error parsing source.added:', err);
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      if (data.payload) {
+        setSources(prev => [...prev, data.payload]);
       }
     });
 
     // Server sends: { type: "itinerary.updated", payload: { itineraryId, ... } }
     es.addEventListener('itinerary.updated', (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        setLastItineraryUpdate(data.payload?.itineraryId || null);
-      } catch (err) {
-        console.error('Error parsing itinerary.updated:', err);
-      }
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      setLastItineraryUpdate(data?.payload?.itineraryId || null);
     });
 
     // Server sends: { type: "run.started", payload: { runId } }
     es.addEventListener('run.started', () => {
+      if (!isCurrentStream()) return;
+
       setRunStatus('running');
     });
 
     // Server sends: { type: "run.completed", payload: { runId } }
     es.addEventListener('run.completed', () => {
+      if (!isCurrentStream()) return;
+
       setIsStreaming(false);
       setRunStatus('completed');
-      es.close();
+      finishStream();
     });
 
     // Server sends: { type: "run.failed", payload: { code, message } }
     es.addEventListener('run.failed', (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        setIsStreaming(false);
-        setRunStatus('failed');
-        setError(data.payload?.message || 'Agent run failed');
-        es.close();
-      } catch (err) {
-        console.error('Error parsing run.failed:', err);
-        setIsStreaming(false);
-        setRunStatus('failed');
-        es.close();
-      }
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      setIsStreaming(false);
+      setRunStatus('failed');
+      setError(data?.payload?.message || 'Agent run failed');
+      finishStream();
     });
 
     es.onerror = (err) => {
       // EventSource will automatically attempt to reconnect on many errors.
-      // We'll log it for debugging.
+      // Keep the stream state alive during transient reconnects and only
+      // surface a failure if the browser has actually closed the connection.
+      if (!isCurrentStream()) return;
+
       console.debug('SSE Connection issue:', err);
+
+      if (es.readyState === EventSource.CLOSED) {
+        setIsStreaming(false);
+        setRunStatus('failed');
+        setError('Connection lost while streaming the agent response');
+        finishStream();
+      }
     };
   };
 

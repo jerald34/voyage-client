@@ -1,8 +1,34 @@
 "use client";
 
+import { useEffect, useMemo, useRef } from 'react';
 import MarkdownContent from './AgentMarkdown';
 
-export default function AgentMessageList({ messages = [] }) {
+export default function AgentMessageList({ messages = [], isStreaming = false }) {
+  const bottomRef = useRef(null);
+
+  const messageSignature = useMemo(() => {
+    return messages
+      .map((msg, index) => {
+        const content = typeof msg.content === 'string' ? msg.content : '';
+        return `${index}:${msg.role}:${msg.isStreaming ? '1' : '0'}:${content.length}:${content.slice(-24)}`;
+      })
+      .join('|');
+  }, [messages]);
+
+  useEffect(() => {
+    if (!bottomRef.current) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({
+        block: 'end',
+        inline: 'nearest',
+        behavior: 'auto'
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [messageSignature, isStreaming]);
+
   // If no messages, we'll show an empty state later or just nothing
   if (messages.length === 0) {
     return (
@@ -12,25 +38,40 @@ export default function AgentMessageList({ messages = [] }) {
     );
   }
 
-  return (
-    <div className="agent-message-list">
+    return (
+    <div className="agent-message-list" aria-live="polite" aria-relevant="additions text">
       {messages.map((msg, index) => (
         <div key={index} className={`message-wrapper ${msg.role}`}>
           <div className={`message-bubble ${msg.role === 'assistant' ? 'markdown-bubble' : 'plain-bubble'}`}>
             <div className={`message-content ${msg.role === 'assistant' ? 'markdown-content' : 'plain-content'}`}>
               {msg.role === 'assistant' ? (
-                <MarkdownContent content={msg.content} />
+                <div className="assistant-message-body">
+                  <MarkdownContent content={msg.content} />
+                  {msg.isStreaming && (
+                    <span className="typing-cursor" aria-hidden="true" />
+                  )}
+                </div>
               ) : (
                 msg.content
               )}
             </div>
             <div className="message-meta">
               <span className="message-role">{msg.role === 'assistant' ? 'Voyage Agent' : 'You'}</span>
-              <span className="message-time">{msg.time || 'Just now'}</span>
+              <span className="message-time">
+                {msg.isStreaming ? (
+                  <span className="live-status">
+                    <span className="live-dot" aria-hidden="true" />
+                    Live
+                  </span>
+                ) : (
+                  msg.time || 'Just now'
+                )}
+              </span>
             </div>
           </div>
         </div>
       ))}
+      <div ref={bottomRef} aria-hidden="true" />
 
       <style jsx>{`
         .agent-message-list {
@@ -40,6 +81,7 @@ export default function AgentMessageList({ messages = [] }) {
           padding: 24px;
           flex-grow: 1;
           overflow-y: auto;
+          scroll-behavior: auto;
         }
 
         .message-wrapper {
@@ -82,6 +124,13 @@ export default function AgentMessageList({ messages = [] }) {
           font-size: 14px;
           line-height: 1.5;
           min-width: 0;
+        }
+
+        .assistant-message-body {
+          display: flex;
+          align-items: flex-end;
+          flex-wrap: wrap;
+          gap: 4px;
         }
 
         .plain-content {
@@ -185,6 +234,34 @@ export default function AgentMessageList({ messages = [] }) {
           word-break: break-word;
         }
 
+        .typing-cursor {
+          display: inline-block;
+          width: 1px;
+          height: 1.05em;
+          margin-left: 1px;
+          background: var(--voyage-secondary);
+          border-radius: 999px;
+          vertical-align: -0.15em;
+          animation: typing-caret-blink 1s steps(2, start) infinite;
+          flex: 0 0 auto;
+        }
+
+        .live-status {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          color: var(--voyage-secondary);
+        }
+
+        .live-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 999px;
+          background: currentColor;
+          box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.03);
+          animation: live-dot-pulse 1.4s ease-in-out infinite;
+        }
+
         .message-meta {
           display: flex;
           justify-content: space-between;
@@ -206,6 +283,26 @@ export default function AgentMessageList({ messages = [] }) {
           font-size: 14px;
           text-align: center;
           padding: 40px;
+        }
+
+        @keyframes typing-caret-blink {
+          0%, 49% {
+            opacity: 1;
+          }
+          50%, 100% {
+            opacity: 0.25;
+          }
+        }
+
+        @keyframes live-dot-pulse {
+          0%, 100% {
+            transform: scale(0.9);
+            opacity: 0.7;
+          }
+          50% {
+            transform: scale(1);
+            opacity: 1;
+          }
         }
       `}</style>
     </div>
