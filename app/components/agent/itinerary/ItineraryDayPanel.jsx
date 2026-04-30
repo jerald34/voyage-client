@@ -1,11 +1,11 @@
 "use client";
 import ItineraryItemRow from './ItineraryItemRow';
 
-export default function ItineraryDayPanel({ dayNumber, date, items = [] }) {
+export default function ItineraryDayPanel({ dayNumber, date, title, items = [] }) {
   return (
     <div className="itinerary-day-panel">
       <header className="day-header">
-        <div className="day-label">Day {dayNumber}</div>
+        <div className="day-label">Day {dayNumber}{title ? ` — ${title}` : ''}</div>
         <div className="day-date">{date}</div>
       </header>
       <div className="day-content">

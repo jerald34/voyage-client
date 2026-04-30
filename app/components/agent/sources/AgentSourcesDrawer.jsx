@@ -7,26 +7,33 @@ export default function AgentSourcesDrawer({ sources = [] }) {
     <div className="agent-sources-drawer">
       <h3 className="section-title">Knowledge Sources</h3>
       <div className="sources-list">
-        {sources.map((source, index) => (
-          <a 
-            key={index} 
-            href={source.url} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="source-card"
-          >
-            <div className="source-header">
-              <span className="source-title">{source.title}</span>
-              <svg className="external-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <line x1="10" y1="14" x2="21" y2="3"></line>
-              </svg>
-            </div>
-            <p className="source-snippet">{source.snippet}</p>
-            <span className="source-url">{new URL(source.url).hostname}</span>
-          </a>
-        ))}
+        {sources.map((source, index) => {
+          const hasUrl = Boolean(source.url);
+          const hostname = hasUrl ? (() => { try { return new URL(source.url).hostname; } catch { return source.url; } })() : null;
+          const Tag = hasUrl ? 'a' : 'div';
+          const linkProps = hasUrl ? { href: source.url, target: '_blank', rel: 'noopener noreferrer' } : {};
+          return (
+            <Tag 
+              key={index} 
+              {...linkProps}
+              className="source-card"
+            >
+              <div className="source-header">
+                <span className="source-title">{source.title}</span>
+                {hasUrl && (
+                  <svg className="external-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                  </svg>
+                )}
+              </div>
+              {source.snippet && <p className="source-snippet">{source.snippet}</p>}
+              {hostname && <span className="source-url">{hostname}</span>}
+              {source.sourceType && <span className="source-type-badge">{source.sourceType}</span>}
+            </Tag>
+          );
+        })}
       </div>
 
       <style jsx>{`

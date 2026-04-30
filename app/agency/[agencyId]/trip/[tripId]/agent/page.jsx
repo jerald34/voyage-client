@@ -1,14 +1,14 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import AgencyAgentWorkspace from '@/app/components/agent/layout/AgencyAgentWorkspace';
 import AgentChatPanel from '@/app/components/agent/chat/AgentChatPanel';
 import AgentLiveWorkRail from '@/app/components/agent/live-work/AgentLiveWorkRail';
 import AgentReviewBar from '@/app/components/agent/layout/AgentReviewBar';
 import { useAgentRunStream } from '@/app/hooks/useAgentRunStream';
-import { sendMessage, fetchItineraryDraft } from '@/app/lib/api';
+import { createAgentThread, sendMessage, fetchItineraryDraft } from '@/app/lib/api';
 
 export default function AgencyTripAgentPage({ params }) {
-  const { agencyId, tripId } = params;
+  const { agencyId, tripId } = use(params);
   const [messages, setMessages] = useState([
     { 
       role: 'assistant', 
@@ -46,7 +46,7 @@ export default function AgencyTripAgentPage({ params }) {
   useEffect(() => {
     if (lastItineraryUpdate) {
       fetchItineraryDraft(agencyId, lastItineraryUpdate)
-        .then(setItinerary)
+        .then(res => setItinerary(res.itinerary || res))
         .catch(err => console.error('Failed to fetch itinerary:', err));
     }
   }, [lastItineraryUpdate, agencyId]);
@@ -61,16 +61,16 @@ export default function AgencyTripAgentPage({ params }) {
     setMessages(prev => [...prev, userMsg]);
 
     try {
-      // 1. Send message to backend
-      // Note: tripId is passed to associate the thread if it's new
-      const result = await sendMessage(agencyId, threadId || `new-trip-${tripId}`, content);
-      
-      // 2. Start streaming the run returned by the message
-      if (result.runId) {
-        startStream(result.runId);
+      let activeThreadId = threadId;
+      if (!activeThreadId) {
+        const threadResult = await createAgentThread(agencyId, tripId);
+        activeThreadId = threadResult.thread.id;
+        setThreadId(activeThreadId);
       }
-      if (result.threadId) {
-        setThreadId(result.threadId);
+      const result = await sendMessage(agencyId, activeThreadId, content);
+      const runId = result.runId || result.run?.id;
+      if (runId) {
+        startStream(runId);
       }
     } catch (err) {
       console.error('Failed to send message:', err);

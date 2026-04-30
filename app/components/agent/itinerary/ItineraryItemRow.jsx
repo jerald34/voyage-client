@@ -1,30 +1,33 @@
 "use client";
 
 export default function ItineraryItemRow({ item }) {
-  const { type, time, title, subtitle, metadata, isNew } = item;
+  const { type, startTime, endTime, title, description, staffNotes } = item;
 
-  const getTypeIcon = (type) => {
-    switch (type.toLowerCase()) {
-      case 'activity': return '📍';
-      case 'meal': return '🍽️';
-      case 'transfer': return '🚗';
-      case 'check-in': return '🔑';
+  const getTypeIcon = (itemType) => {
+    switch ((itemType || '').toUpperCase()) {
+      case 'ACTIVITY': return '📍';
+      case 'MEAL': return '🍽️';
+      case 'TRANSFER': return '🚗';
+      case 'CHECK_IN': return '🔑';
+      case 'CHECK_OUT': return '🏨';
+      case 'FREE_TIME': return '☀️';
+      case 'NOTE': return '📝';
       default: return '•';
     }
   };
 
+  const timeDisplay = [startTime, endTime].filter(Boolean).join(' – ');
+
   return (
-    <div className={`itinerary-item-row ${isNew ? 'flash-update' : ''}`}>
-      <div className="item-time">{time}</div>
+    <div className="itinerary-item-row">
+      <div className="item-time">{timeDisplay}</div>
       <div className="item-icon">{getTypeIcon(type)}</div>
       <div className="item-details">
         <div className="item-title">{title}</div>
-        {subtitle && <div className="item-subtitle">{subtitle}</div>}
-        {metadata && (
+        {description && <div className="item-subtitle">{description}</div>}
+        {staffNotes && (
           <div className="item-metadata">
-            {metadata.location && <span className="meta-badge location">{metadata.location}</span>}
-            {metadata.duration && <span className="meta-badge duration">{metadata.duration}</span>}
-            {metadata.source && <span className="meta-badge source">{metadata.source}</span>}
+            <span className="meta-badge">{staffNotes}</span>
           </div>
         )}
       </div>

@@ -35,9 +35,11 @@ export async function fetchApi(path, options = {}) {
 }
 
 export async function createAgentThread(agencyId, tripId = null) {
+  const body = {};
+  if (tripId) body.tripId = tripId;
   return fetchApi(`/agencies/${agencyId}/agent/threads`, {
     method: 'POST',
-    body: JSON.stringify({ tripId })
+    body: JSON.stringify(body)
   });
 }
 

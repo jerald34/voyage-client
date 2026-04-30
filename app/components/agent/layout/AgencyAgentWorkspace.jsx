@@ -1,4 +1,6 @@
 "use client";
+import AgentThreadRail from './AgentThreadRail';
+
 export default function AgencyAgentWorkspace({ children, chatPanel, liveWorkPanel, inspectorFooter }) {
   return (
     <div className="agency-agent-layout">

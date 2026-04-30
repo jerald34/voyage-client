@@ -19,6 +19,7 @@ function HomePageInner() {
   const searchParams = useSearchParams();
   const authenticatedParam = searchParams.get("authenticated");
   const [shouldBypassLanding, setShouldBypassLanding] = useState(false);
+  const [user, setUser] = useState(null);
   const {
     activeScreen,
     setActiveScreen,
@@ -44,24 +45,23 @@ function HomePageInner() {
   useEffect(() => {
     if (authenticatedParam !== "1") return;
 
-    const storedUser = typeof window !== "undefined" ? localStorage.getItem("voyage-user") : null;
-
-    if (storedUser) {
-      setShouldBypassLanding(true);
-      return;
-    }
-
-    // OAuth callback: server set a session cookie but we have no cached user.
-    // Fetch the real user from /auth/me and cache it.
+    // Always try to fetch fresh user data (includes memberships).
+    // Fall back to cached data if the fetch fails.
     let cancelled = false;
     fetchApi("/auth/me")
       .then((data) => {
         if (cancelled) return;
         localStorage.setItem("voyage-user", JSON.stringify(data.user));
+        setUser(data.user);
         setShouldBypassLanding(true);
       })
       .catch(() => {
-        // No valid session — stay on landing so user can click to login.
+        // Fetch failed — try to use cached user as fallback.
+        const storedUser = typeof window !== "undefined" ? localStorage.getItem("voyage-user") : null;
+        if (!cancelled && storedUser) {
+          try { setUser(JSON.parse(storedUser)); } catch {}
+          setShouldBypassLanding(true);
+        }
       });
 
     return () => { cancelled = true; };
@@ -90,6 +90,7 @@ function HomePageInner() {
 
         {currentScreen === "trip-brief" && (
           <HomePage
+            user={user}
             agencyTrips={prototypeData.agencyPortfolioTrips}
             onContinue={() => setActiveScreen("agent-kickoff")}
             onOpenTrip={() => {

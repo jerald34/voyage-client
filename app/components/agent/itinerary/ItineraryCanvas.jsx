@@ -12,24 +12,32 @@ export default function ItineraryCanvas({ itinerary }) {
     );
   }
 
-  const { title, travelDates, travelerCount, days = [] } = itinerary;
+  const { title, summary, status, version, days = [] } = itinerary;
 
   return (
     <div className="itinerary-canvas">
       <header className="canvas-header">
         <div className="trip-meta-top">
-          <span className="draft-badge">Draft Itinerary</span>
+          <span className="draft-badge">{status === 'DRAFT' ? 'Draft Itinerary' : status}</span>
           <h1 className="trip-title">{title}</h1>
         </div>
         <div className="trip-meta-details">
+          {summary && (
+            <div className="meta-item">
+              <span className="meta-label">Summary</span>
+              <span className="meta-value">{summary}</span>
+            </div>
+          )}
           <div className="meta-item">
-            <span className="meta-label">Dates</span>
-            <span className="meta-value">{travelDates}</span>
+            <span className="meta-label">Days</span>
+            <span className="meta-value">{days.length}</span>
           </div>
-          <div className="meta-item">
-            <span className="meta-label">Travelers</span>
-            <span className="meta-value">{travelerCount}</span>
-          </div>
+          {version > 1 && (
+            <div className="meta-item">
+              <span className="meta-label">Version</span>
+              <span className="meta-value">v{version}</span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -39,6 +47,7 @@ export default function ItineraryCanvas({ itinerary }) {
             key={index}
             dayNumber={day.dayNumber}
             date={day.date}
+            title={day.title}
             items={day.items}
           />
         ))}

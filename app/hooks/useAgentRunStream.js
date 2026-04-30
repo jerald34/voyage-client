@@ -33,89 +33,133 @@ export function useAgentRunStream(agencyId) {
     const es = new EventSource(url, { withCredentials: true });
     eventSourceRef.current = es;
 
+    // Server sends: { type: "message.delta", payload: { delta: "..." } }
     es.addEventListener('message.delta', (e) => {
       try {
         const data = JSON.parse(e.data);
-        setAssistantMessage(prev => prev + (data.delta || ''));
+        setAssistantMessage(prev => prev + (data.payload?.delta || ''));
       } catch (err) {
         console.error('Error parsing message.delta:', err);
       }
     });
 
+    // Server sends: { type: "message.completed", payload: { messageId, content } }
+    es.addEventListener('message.completed', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.payload?.content) {
+          setAssistantMessage(data.payload.content);
+        }
+      } catch (err) {
+        console.error('Error parsing message.completed:', err);
+      }
+    });
+
+    // Server sends: { type: "task.updated", payload: { label, status, sortOrder } }
     es.addEventListener('task.updated', (e) => {
       try {
         const data = JSON.parse(e.data);
+        const task = data.payload;
+        if (!task) return;
         setTasks(prev => {
-          const existingIndex = prev.findIndex(t => t.id === data.id);
+          const existingIndex = prev.findIndex(t => t.label === task.label);
           if (existingIndex > -1) {
             const newTasks = [...prev];
-            newTasks[existingIndex] = { ...newTasks[existingIndex], ...data };
+            newTasks[existingIndex] = { ...newTasks[existingIndex], ...task };
             return newTasks;
           }
-          return [...prev, data];
+          return [...prev, task];
         });
       } catch (err) {
         console.error('Error parsing task.updated:', err);
       }
     });
 
+    // Server sends: { type: "tool.started", payload: { name, input } }
     es.addEventListener('tool.started', (e) => {
       try {
         const data = JSON.parse(e.data);
-        setToolCalls(prev => [...prev, { ...data, status: 'Running' }]);
+        const tool = data.payload;
+        if (!tool) return;
+        setToolCalls(prev => [...prev, { ...tool, status: 'Running' }]);
       } catch (err) {
         console.error('Error parsing tool.started:', err);
       }
     });
 
+    // Server sends: { type: "tool.completed", payload: { name, output } }
     es.addEventListener('tool.completed', (e) => {
       try {
         const data = JSON.parse(e.data);
-        setToolCalls(prev => prev.map(t => t.id === data.id ? { ...t, ...data, status: 'Completed' } : t));
+        const tool = data.payload;
+        if (!tool) return;
+        setToolCalls(prev => prev.map(t =>
+          t.name === tool.name && t.status === 'Running'
+            ? { ...t, ...tool, status: 'Completed' }
+            : t
+        ));
       } catch (err) {
         console.error('Error parsing tool.completed:', err);
       }
     });
 
+    // Server sends: { type: "tool.failed", payload: { name, code, message } }
     es.addEventListener('tool.failed', (e) => {
       try {
         const data = JSON.parse(e.data);
-        setToolCalls(prev => prev.map(t => t.id === data.id ? { ...t, ...data, status: 'Failed' } : t));
+        const tool = data.payload;
+        if (!tool) return;
+        setToolCalls(prev => prev.map(t =>
+          t.name === tool.name && t.status === 'Running'
+            ? { ...t, ...tool, status: 'Failed' }
+            : t
+        ));
       } catch (err) {
         console.error('Error parsing tool.failed:', err);
       }
     });
 
+    // Server sends: { type: "source.added", payload: { sourceType, title, url, snippet } }
     es.addEventListener('source.added', (e) => {
       try {
         const data = JSON.parse(e.data);
-        setSources(prev => [...prev, data]);
+        if (data.payload) {
+          setSources(prev => [...prev, data.payload]);
+        }
       } catch (err) {
         console.error('Error parsing source.added:', err);
       }
     });
 
+    // Server sends: { type: "itinerary.updated", payload: { itineraryId, ... } }
     es.addEventListener('itinerary.updated', (e) => {
       try {
         const data = JSON.parse(e.data);
-        setLastItineraryUpdate(data.itineraryId);
+        setLastItineraryUpdate(data.payload?.itineraryId || null);
       } catch (err) {
         console.error('Error parsing itinerary.updated:', err);
       }
     });
 
+    // Server sends: { type: "run.started", payload: { runId } }
+    es.addEventListener('run.started', () => {
+      setRunStatus('running');
+    });
+
+    // Server sends: { type: "run.completed", payload: { runId } }
     es.addEventListener('run.completed', () => {
       setIsStreaming(false);
       setRunStatus('completed');
       es.close();
     });
 
+    // Server sends: { type: "run.failed", payload: { code, message } }
     es.addEventListener('run.failed', (e) => {
       try {
         const data = JSON.parse(e.data);
         setIsStreaming(false);
         setRunStatus('failed');
-        setError(data.error || 'Agent run failed');
+        setError(data.payload?.message || 'Agent run failed');
         es.close();
       } catch (err) {
         console.error('Error parsing run.failed:', err);
