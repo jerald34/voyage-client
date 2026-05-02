@@ -27,11 +27,26 @@ export default function AgentCommandCenter({
   isSending,
   agentError,
   user,
+  activeTrip,
+  availableTrips = [],
+  onTripChange,
+  onNewItinerary,
   activeMessages = 0,
 }) {
   const [expandedMessageIds, setExpandedMessageIds] = useState({});
+  const [isClientMenuOpen, setIsClientMenuOpen] = useState(false);
   const messageClampLength = 220;
   const messagesEndRef = useRef(null);
+  const clientMenuRef = useRef(null);
+
+  const safeTrips = useMemo(() => (Array.isArray(availableTrips) ? availableTrips.filter(Boolean) : []), [availableTrips]);
+  const hasTrips = safeTrips.length > 0;
+  const selectedTrip = activeTrip ?? safeTrips[0] ?? null;
+  const activeTripClientName = String(selectedTrip?.clientName ?? "").trim();
+  const activeTripInitials = activeTripClientName ? getInitials(activeTripClientName) : "";
+  const activeTripOrganizerInitials = selectedTrip?.assignedOrganizer ? getInitials(selectedTrip.assignedOrganizer) : "";
+  const clientMenuEmptyTitle = "No client trips available";
+  const clientMenuEmptyBody = "Use New Itinerary to create the first trip.";
 
   const displayedMessages = useMemo(() => {
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -63,7 +78,19 @@ export default function AgentCommandCenter({
   const userInitials = getInitials(userName);
 
   useEffect(() => {
-    if (messagesEndRef.current) {
+    function handleOutsideClick(event) {
+      if (!clientMenuRef.current) return;
+      if (!clientMenuRef.current.contains(event.target)) {
+        setIsClientMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  useEffect(() => {
+    if (messagesEndRef.current && typeof messagesEndRef.current.scrollIntoView === "function") {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [displayedMessages, assistantMessage, activeToolCalls]);
@@ -85,10 +112,6 @@ export default function AgentCommandCenter({
     void dispatchAgentMessage(composerInput);
   }
 
-  function handleQuickAction(action) {
-    void dispatchAgentMessage(action);
-  }
-
   return (
     <div className="agent-command-center">
       <header className="chat-header">
@@ -98,9 +121,86 @@ export default function AgentCommandCenter({
               <path d="M2 12h4l3-9 5 18 3-9h5" />
             </svg>
           </div>
-          <div>
-            <h2>Agent Command Center</h2>
-            <p>Live planning thread for itinerary updates, approvals, and route changes</p>
+          <div className="header-tools">
+            <button
+              className="new-itinerary-button"
+              onClick={() => onNewItinerary?.()}
+              type="button"
+            >
+              <span className="new-itinerary-icon" aria-hidden="true">
+                +
+              </span>
+              New Itinerary
+            </button>
+            <div className="client-switcher-wrap" ref={clientMenuRef}>
+              <span className="client-switcher-label">Current client</span>
+              <button
+                className={`client-switcher ${isClientMenuOpen ? "open" : ""}`}
+                onClick={() => setIsClientMenuOpen((current) => !current)}
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded={isClientMenuOpen}
+                aria-label={hasTrips ? `Current client: ${activeTripClientName}` : clientMenuEmptyTitle}
+              >
+                {activeTripClientName ? (
+                  <>
+                    <span className="client-badge-stack" aria-hidden="true">
+                      <span className="client-badge primary">{activeTripInitials}</span>
+                      {activeTripOrganizerInitials && <span className="client-badge secondary">{activeTripOrganizerInitials}</span>}
+                    </span>
+                    <span className="client-switcher-name">{activeTripClientName}</span>
+                  </>
+                ) : (
+                  <span className="client-switcher-empty">{clientMenuEmptyTitle}</span>
+                )}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+
+              {isClientMenuOpen && (
+                <div className="client-menu" role="listbox" aria-label="Current client">
+                  {hasTrips ? (
+                    safeTrips.map((trip) => {
+                      const isSelected = trip?.id === activeTrip?.id;
+                      const initials = getInitials(trip?.clientName || "Client");
+
+                      return (
+                        <button
+                          key={trip?.id ?? trip?.clientName}
+                          type="button"
+                          className={`client-option ${isSelected ? "selected" : ""}`}
+                          role="option"
+                          aria-selected={isSelected}
+                          onClick={() => {
+                            onTripChange?.(trip?.id ?? null);
+                            setIsClientMenuOpen(false);
+                          }}
+                        >
+                          <span className="client-option-badge" aria-hidden="true">
+                            {initials}
+                          </span>
+                          <span className="client-option-body">
+                            <strong>{trip?.clientName}</strong>
+                            {trip?.destination && <span>{trip.destination}</span>}
+                          </span>
+                          {isSelected && (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                              <path d="m20 6-11 11-5-5" />
+                            </svg>
+                          )}
+                          </button>
+                        );
+                      })
+                  ) : (
+                    <div className="client-menu-empty" role="status" aria-live="polite">
+                      <strong>{clientMenuEmptyTitle}</strong>
+                      <p>{clientMenuEmptyBody}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <div className={`agent-status-tag ${isStreaming ? "streaming" : ""}`}>
@@ -207,20 +307,6 @@ export default function AgentCommandCenter({
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="quick-actions" aria-label="Quick agent prompts">
-        <button type="button" onClick={() => handleQuickAction("Refine the itinerary pacing.")}>
-          Refine pacing
-        </button>
-        <button type="button" onClick={() => handleQuickAction("Prioritize the highest risk approvals.")}>
-          Prioritize approvals
-        </button>
-        <button type="button" onClick={() => handleQuickAction("Reorder the route by travel time.")}>
-          Reorder route
-        </button>
-        <button type="button" onClick={() => handleQuickAction("Create a client-ready draft summary.")}>
-          Draft summary
-        </button>
-      </div>
 
       <div className="chat-input-area">
         <form className="composer-form" onSubmit={submitComposer}>
@@ -262,15 +348,26 @@ export default function AgentCommandCenter({
         .chat-header {
           display: flex;
           justify-content: space-between;
-          align-items: flex-start;
+          align-items: center;
           gap: 16px;
-          margin-bottom: 24px;
+          margin-bottom: 28px;
         }
 
         .header-title {
           display: flex;
           align-items: center;
-          gap: 16px;
+          gap: 14px;
+          flex: 1;
+          min-width: 0;
+        }
+
+        .header-tools {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+          min-width: 0;
+          width: 100%;
         }
 
         .agent-avatar-large {
@@ -303,17 +400,245 @@ export default function AgentCommandCenter({
           max-width: 52ch;
         }
 
+        .client-switcher-wrap {
+          position: relative;
+          display: inline-flex;
+          flex-direction: column;
+          gap: 6px;
+          max-width: 100%;
+          min-width: 0;
+        }
+
+        .client-switcher-label {
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: #94a3b8;
+          margin-left: 2px;
+        }
+
+        .new-itinerary-button {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          border: 1px solid #273244;
+          border-radius: 999px;
+          background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
+          color: #f8fafc;
+          padding: 10px 14px;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: -0.01em;
+          cursor: pointer;
+          white-space: nowrap;
+          box-shadow: 0 10px 20px rgba(15, 23, 42, 0.18);
+          transition:
+            transform 0.2s ease,
+            border-color 0.2s ease,
+            background 0.2s ease;
+        }
+
+        .new-itinerary-button:hover {
+          transform: translateY(-1px);
+          border-color: #3b4a63;
+          background: linear-gradient(180deg, #172036 0%, #111827 100%);
+        }
+
+        .new-itinerary-icon {
+          width: 18px;
+          height: 18px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.08);
+          font-size: 14px;
+          line-height: 1;
+        }
+
+        .client-switcher {
+          display: inline-flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 300px;
+          max-width: min(100%, 420px);
+          border: 1px solid #263244;
+          border-radius: 999px;
+          background: #0f172a;
+          color: #f8fafc;
+          padding: 10px 14px 10px 10px;
+          cursor: pointer;
+          text-align: left;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .client-switcher:hover {
+          border-color: #45556e;
+          background: #111827;
+        }
+
+        .client-switcher.open {
+          border-color: #52657f;
+          background: #111827;
+        }
+
+        .client-badge-stack {
+          display: flex;
+          align-items: center;
+          margin-right: 2px;
+        }
+
+        .client-badge {
+          width: 30px;
+          height: 30px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          font-weight: 800;
+          flex-shrink: 0;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .client-badge.primary {
+          background: linear-gradient(135deg, #255ef7, #1d4ed8);
+          color: white;
+        }
+
+        .client-badge.secondary {
+          margin-left: -8px;
+          background: linear-gradient(135deg, #2f67ff, #0f4bd8);
+          color: white;
+          border: 2px solid #171717;
+        }
+
+        .client-switcher-name {
+          font-size: 15px;
+          font-weight: 600;
+          letter-spacing: -0.01em;
+          flex: 1;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: #f1f5f9;
+        }
+
+        .client-switcher-empty {
+          flex: 1;
+          min-width: 0;
+          font-size: 13px;
+          font-weight: 600;
+          letter-spacing: -0.01em;
+          color: #cbd5e1;
+        }
+
+        .client-menu {
+          position: absolute;
+          top: calc(100% + 8px);
+          left: 0;
+          width: min(460px, 100vw - 48px);
+          background: #0f172a;
+          border: 1px solid #263244;
+          border-radius: 18px;
+          box-shadow: 0 18px 36px rgba(2, 6, 23, 0.35);
+          padding: 10px;
+          z-index: 100;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .client-option {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          border: none;
+          background: transparent;
+          color: #e2e8f0;
+          padding: 12px;
+          border-radius: 14px;
+          cursor: pointer;
+          text-align: left;
+          transition: background 0.18s ease;
+        }
+
+        .client-option:hover,
+        .client-option.selected {
+          background: #eef2f7;
+          color: #111827;
+        }
+
+        .client-option-badge {
+          width: 30px;
+          height: 30px;
+          border-radius: 999px;
+          background: #2563eb;
+          color: white;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          font-weight: 800;
+          flex-shrink: 0;
+        }
+
+        .client-option-body {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 0;
+          flex: 1;
+        }
+
+        .client-option-body strong {
+          font-size: 15px;
+          font-weight: 600;
+        }
+
+        .client-option-body span {
+          font-size: 12px;
+          color: inherit;
+          opacity: 0.72;
+        }
+
+        .client-menu-empty {
+          display: grid;
+          gap: 4px;
+          padding: 14px;
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.04);
+          color: #e2e8f0;
+          font-size: 13px;
+          line-height: 1.5;
+        }
+
+        .client-menu-empty strong {
+          color: #f8fafc;
+          font-size: 14px;
+        }
+
+        .client-menu-empty p {
+          margin: 0;
+          color: #cbd5e1;
+        }
+
         .agent-status-tag {
           display: inline-flex;
           align-items: center;
           gap: 8px;
           background: #e9eef8;
           color: #2b5ec8;
-          padding: 9px 12px;
+          padding: 8px 12px;
           border-radius: 999px;
           font-size: 12px;
           font-weight: 700;
           white-space: nowrap;
+          margin-top: 6px;
         }
 
         .agent-status-tag.streaming {
@@ -536,36 +861,6 @@ export default function AgentCommandCenter({
           font-weight: 600;
         }
 
-        .quick-actions {
-          display: flex;
-          gap: 8px;
-          overflow-x: auto;
-          padding-bottom: 8px;
-          margin-bottom: 18px;
-        }
-
-        .quick-actions button {
-          white-space: nowrap;
-          padding: 9px 14px;
-          border-radius: 999px;
-          border: 1px solid #e5e7eb;
-          background: rgba(255, 255, 255, 0.92);
-          color: #374151;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          transition:
-            transform 0.16s ease,
-            border-color 0.16s ease,
-            background 0.16s ease;
-        }
-
-        .quick-actions button:hover {
-          background: white;
-          border-color: #d1d5db;
-          transform: translateY(-1px);
-        }
-
         .chat-input-area {
           margin-top: auto;
         }
@@ -627,6 +922,93 @@ export default function AgentCommandCenter({
           color: #b91c1c;
           font-size: 12px;
           font-weight: 600;
+        }
+        @media (max-width: 900px) {
+          .agent-command-center {
+            padding: 16px;
+          }
+
+          .header-title {
+            align-items: flex-start;
+          }
+
+          .header-tools {
+            align-items: flex-start;
+          }
+
+          .header-title h2 {
+            font-size: 24px;
+          }
+
+          .header-title p {
+            display: none;
+          }
+
+          .client-switcher {
+            width: min(100%, 360px);
+          }
+
+          .client-menu {
+            width: min(360px, calc(100vw - 40px));
+          }
+
+          .agent-status-tag {
+            padding: 6px 10px;
+            font-size: 11px;
+          }
+
+          .agent-avatar-large {
+            width: 40px;
+            height: 40px;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .chat-header {
+            flex-direction: column;
+          }
+
+          .header-title,
+          .header-tools {
+            width: 100%;
+          }
+
+          .message-content {
+            max-width: 90%;
+          }
+
+          .chat-row {
+            gap: 8px;
+          }
+
+          .avatar {
+            width: 30px;
+            height: 30px;
+          }
+
+          .bubble {
+            padding: 12px 14px;
+            font-size: 13px;
+          }
+
+          .composer-form {
+            padding: 8px 12px;
+            gap: 8px;
+          }
+
+          .client-switcher {
+            width: 100%;
+            max-width: none;
+          }
+
+          .client-menu {
+            width: calc(100vw - 32px);
+          }
+
+          .send-button {
+            width: 32px;
+            height: 32px;
+          }
         }
       `}</style>
     </div>

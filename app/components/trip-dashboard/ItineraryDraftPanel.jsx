@@ -151,7 +151,6 @@ export default function ItineraryDraftPanel({
                 </svg>
                 <h2>Live Itinerary</h2>
               </div>
-              {!isMinimized && <p className="subtitle">Interactive Itinerary Preview</p>}
             </div>
             <button 
               className="minimize-btn" 
@@ -328,19 +327,20 @@ export default function ItineraryDraftPanel({
           color: white;
           display: flex;
           flex-direction: column;
-          max-height: calc(100vh - 200px);
+          max-height: calc(100vh - 280px);
           pointer-events: auto;
           box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
           overflow: hidden;
         }
 
         .card-head {
-          padding: 24px 28px 20px;
+          padding: 14px 20px;
           cursor: grab;
           user-select: none;
           display: flex;
-          align-items: flex-start;
-          gap: 16px;
+          align-items: center;
+          gap: 12px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .card-head:active {
@@ -351,7 +351,6 @@ export default function ItineraryDraftPanel({
           display: flex;
           flex-direction: column;
           gap: 3px;
-          padding-top: 8px;
         }
 
         .drag-indicator span {
@@ -380,8 +379,9 @@ export default function ItineraryDraftPanel({
         }
 
         .minimize-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: white;
+          background: rgba(215, 122, 97, 0.15);
+          color: #d77a61;
+          border-color: rgba(215, 122, 97, 0.3);
         }
 
         .title-row {
@@ -392,14 +392,17 @@ export default function ItineraryDraftPanel({
         }
 
         .nav-icon {
-          color: #3b82f6;
+          color: #d77a61;
+          filter: drop-shadow(0 0 8px rgba(215, 122, 97, 0.4));
         }
 
         .card-head h2 {
           margin: 0;
-          font-size: 20px;
-          font-weight: 700;
-          letter-spacing: -0.01em;
+          font-size: 18px;
+          font-weight: 400;
+          letter-spacing: 0.02em;
+          font-family: "DM Serif Display", serif;
+          color: #e2e8f0;
         }
 
         .subtitle {
@@ -412,7 +415,7 @@ export default function ItineraryDraftPanel({
           flex: 1;
           overflow-y: auto;
           padding: 0 28px 20px;
-          max-height: 500px;
+          max-height: 420px;
         }
 
         .timeline-list {
@@ -481,14 +484,14 @@ export default function ItineraryDraftPanel({
         .timeline-content p {
           margin: 0;
           font-size: 13px;
-          color: #64748b;
+          color: #94a3b8;
           line-height: 1.6;
         }
 
         .empty-itinerary {
           padding: 40px 0;
           text-align: center;
-          color: #64748b;
+          color: #94a3b8;
         }
 
         .card-footer {
@@ -498,7 +501,7 @@ export default function ItineraryDraftPanel({
         .send-client-btn {
           width: 100%;
           padding: 14px;
-          background: #2563eb;
+          background: linear-gradient(135deg, #d77a61, #b65d48);
           color: white;
           border: none;
           border-radius: 14px;
@@ -506,6 +509,12 @@ export default function ItineraryDraftPanel({
           font-weight: 700;
           cursor: pointer;
           transition: all 0.2s ease;
+          box-shadow: 0 10px 20px rgba(182, 93, 72, 0.2);
+        }
+
+        .send-client-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 12px 24px rgba(182, 93, 72, 0.3);
         }
 
         :global(.itinerary-live-map) {
@@ -518,6 +527,64 @@ export default function ItineraryDraftPanel({
 
         :global(.leaflet-container) {
           background: #f1f5f9 !important;
+        }
+        @media (max-width: 900px) {
+          .hover-container {
+            position: relative !important;
+            transform: none !important;
+            width: 100% !important;
+            padding: 16px;
+            z-index: 20;
+          }
+
+          .itinerary-floating-card {
+            max-height: 500px;
+          }
+
+          .panel-header {
+            top: 16px;
+            right: 16px;
+            left: 16px;
+          }
+
+          .header-actions {
+            justify-content: flex-end;
+            width: 100%;
+          }
+
+          .btn-action span {
+            display: none;
+          }
+
+          .btn-action {
+            padding: 10px;
+          }
+
+          .drag-handle {
+            display: none;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .header-actions .draft-version-tag {
+            display: none;
+          }
+
+          .panel-header {
+            top: 12px;
+          }
+
+          .timeline-container {
+            padding: 0 16px 16px;
+          }
+
+          .card-head {
+            padding: 16px 20px 12px;
+          }
+          
+          .itinerary-floating-card {
+            border-radius: 16px;
+          }
         }
       `}</style>
     </div>

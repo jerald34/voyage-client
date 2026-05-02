@@ -82,11 +82,21 @@ function HomePageInner() {
   const selectedPlace = mapPlaces.find((place) => place.id === selectedPlaceId) || null;
 
   if (currentScreen === "trip-brief") {
+    const agencyId = user?.memberships?.[0]?.agencyId ?? null;
+
     return (
       <HomePage
         user={user}
-        agencyTrips={prototypeData.agencyPortfolioTrips}
+        agencyTrips={[]}
         onContinue={() => setActiveScreen("agent-kickoff")}
+        onNewItinerary={() => {
+          if (agencyId) {
+            router.push(`/agency/${agencyId}/agent`);
+            return;
+          }
+
+          setActiveScreen("agent-kickoff");
+        }}
         onOpenTrip={() => {
           setActiveWorkspaceTab("trip");
           setActiveScreen("workspace");

@@ -355,6 +355,29 @@ export default function ClientTripPortfolio({ trips, summary, onOpenTrip }) {
             flex-wrap: wrap;
           }
         }
+
+        @media (max-width: 600px) {
+          .dashboard-card {
+            padding: 16px;
+            min-height: auto;
+          }
+
+          .portfolio-metrics {
+            grid-template-columns: 1fr;
+          }
+
+          .metric-card {
+            padding: 12px;
+          }
+
+          .metric-card strong {
+            font-size: 18px;
+          }
+
+          .trip-item {
+            padding: 12px;
+          }
+        }
       `}</style>
     </section>
   );

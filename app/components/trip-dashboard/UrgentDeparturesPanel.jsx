@@ -224,6 +224,22 @@ export default function UrgentDeparturesPanel({ trips }) {
             justify-content: flex-start;
           }
         }
+
+        @media (max-width: 600px) {
+          .dashboard-card {
+            padding: 16px;
+            min-height: auto;
+          }
+
+          .queue-item {
+            padding: 12px;
+            gap: 10px;
+          }
+
+          .day {
+            font-size: 14px;
+          }
+        }
       `}</style>
     </section>
   );

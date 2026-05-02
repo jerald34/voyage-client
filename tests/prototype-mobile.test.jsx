@@ -35,7 +35,7 @@ async function renderAuthenticatedPage() {
   mockNavigationState.authenticated = "1";
   window.localStorage.setItem("voyage-user", JSON.stringify({ id: "user-1" }));
   render(<Page />);
-  await screen.findByRole("heading", { name: "Agent Command Center" });
+  await screen.findByRole("button", { name: "New Itinerary" });
 }
 
 beforeEach(() => {

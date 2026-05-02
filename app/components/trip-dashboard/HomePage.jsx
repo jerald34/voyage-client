@@ -62,16 +62,107 @@ function getRunStatusLabel(runStatus, streamError) {
   return "Ready";
 }
 
-export default function HomePage({ user: userProp, agencyTrips = [], onContinue, onOpenTrip }) {
+function getThreadTripId(thread) {
+  return thread?.tripId ?? thread?.trip?.id ?? thread?.context?.tripId ?? thread?.metadata?.tripId ?? null;
+}
+
+function normalizeThreadMessages(thread) {
+  return Array.isArray(thread?.messages)
+    ? thread.messages
+      .filter((message) => message?.role === "USER" || message?.role === "ASSISTANT")
+      .map((message) => ({
+        id: message.id,
+        role: toUiRole(message.role),
+        content: message.content,
+      }))
+    : [];
+}
+
+function getThreadItineraryId(thread) {
+  const events = Array.isArray(thread?.events) ? thread.events : [];
+  const itineraryUpdateEvent = [...events]
+    .reverse()
+    .find((event) => event?.type === "itinerary.updated" && event?.payload?.itineraryId);
+
+  return itineraryUpdateEvent?.payload?.itineraryId ?? null;
+}
+
+async function ensureTripThreadState({
+  agencyId,
+  tripId,
+  tripStatesRef,
+  tripStatePromisesRef,
+  setTripStates,
+}) {
+  if (!agencyId || !tripId) {
+    return null;
+  }
+
+  const existingState = tripStatesRef.current[tripId];
+  if (existingState?.loaded) return existingState;
+
+  const pending = tripStatePromisesRef.current.get(tripId);
+  if (pending) return pending;
+
+  const promise = (async () => {
+    const threadsResult = await listAgentThreads(agencyId);
+    const threads = Array.isArray(threadsResult?.threads) ? threadsResult.threads : [];
+    const matchingThread = threads.find((thread) => getThreadTripId(thread) === tripId);
+
+    let thread = matchingThread ?? null;
+    if (thread?.id) {
+      const detailResult = await fetchAgentThread(agencyId, thread.id);
+      thread = detailResult?.thread ?? thread;
+    } else {
+      const createdResult = await createAgentThread(agencyId, tripId);
+      thread = createdResult?.thread ?? null;
+    }
+
+    if (!thread) {
+      return null;
+    }
+
+    const itineraryId = getThreadItineraryId(thread);
+    const itineraryResult = itineraryId ? await fetchItineraryDraft(agencyId, itineraryId) : null;
+    const itinerary = itineraryResult ? normalizeItineraryResponse(itineraryResult) : null;
+    const nextState = {
+      threadId: thread.id,
+      messages: normalizeThreadMessages(thread),
+      itinerary,
+      loaded: true,
+    };
+
+    setTripStates((previous) => ({
+      ...previous,
+      [tripId]: nextState,
+    }));
+
+    return nextState;
+  })();
+
+  tripStatePromisesRef.current.set(tripId, promise);
+
+  try {
+    return await promise;
+  } finally {
+    tripStatePromisesRef.current.delete(tripId);
+  }
+}
+
+export default function HomePage({ user: userProp, agencyTrips = [], onContinue, onOpenTrip, onNewItinerary }) {
   const [user, setUser] = useState(userProp || null);
-  const [threadId, setThreadId] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [itinerary, setItinerary] = useState(null);
+  const [selectedTripId, setSelectedTripId] = useState(agencyTrips[0]?.id ?? null);
+  const [tripStates, setTripStates] = useState({});
   const [composerInput, setComposerInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [agentError, setAgentError] = useState("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const tripStatesRef = useRef(tripStates);
+  const selectedTripIdRef = useRef(selectedTripId);
+  const tripStatePromisesRef = useRef(new Map());
   const agencyId = user?.memberships?.[0]?.agencyId ?? null;
   const hasLoadedInitialThreadRef = useRef(false);
+  const runTripIdRef = useRef(null);
 
   const {
     isStreaming,
@@ -99,6 +190,14 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   }, [user]);
 
   useEffect(() => {
+    tripStatesRef.current = tripStates;
+  }, [tripStates]);
+
+  useEffect(() => {
+    selectedTripIdRef.current = selectedTripId;
+  }, [selectedTripId]);
+
+  useEffect(() => {
     if (!agencyId || hasLoadedInitialThreadRef.current) return;
     hasLoadedInitialThreadRef.current = true;
 
@@ -112,27 +211,25 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
         const thread = detailResult?.thread;
         if (!thread) return;
 
-        setThreadId(thread.id);
-        const normalizedMessages = Array.isArray(thread.messages)
-          ? thread.messages
-            .filter((message) => message?.role === "USER" || message?.role === "ASSISTANT")
-            .map((message) => ({
-              id: message.id,
-              role: toUiRole(message.role),
-              content: message.content,
-            }))
-          : [];
-        setMessages(normalizedMessages);
+        const tripId = getThreadTripId(thread);
+        if (!tripId) return;
 
-        const itineraryUpdateEvent = Array.isArray(thread.events)
-          ? [...thread.events]
-            .reverse()
-            .find((event) => event?.type === "itinerary.updated" && event?.payload?.itineraryId)
-          : null;
-        const itineraryId = itineraryUpdateEvent?.payload?.itineraryId ?? null;
-        if (itineraryId) {
-          const itineraryResult = await fetchItineraryDraft(agencyId, itineraryId);
-          setItinerary(normalizeItineraryResponse(itineraryResult));
+        const itineraryId = getThreadItineraryId(thread);
+        const itineraryResult = itineraryId ? await fetchItineraryDraft(agencyId, itineraryId) : null;
+        const itinerary = itineraryResult ? normalizeItineraryResponse(itineraryResult) : null;
+
+        setTripStates((previous) => ({
+          ...previous,
+          [tripId]: {
+            threadId: thread.id,
+            messages: normalizeThreadMessages(thread),
+            itinerary,
+            loaded: true,
+          },
+        }));
+
+        if (!selectedTripIdRef.current) {
+          setSelectedTripId(tripId);
         }
       } catch (error) {
         console.error("Failed to load latest agent thread", error);
@@ -141,21 +238,102 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   }, [agencyId]);
 
   useEffect(() => {
-    if (runStatus !== "completed" || !assistantMessage) return;
+    if (!Array.isArray(agencyTrips) || agencyTrips.length === 0) {
+      setSelectedTripId(null);
+      return;
+    }
 
-    setMessages((previous) => {
-      const alreadyPresent = previous.some(
+    const hasCurrentSelection = agencyTrips.some((trip) => trip?.id === selectedTripId);
+    if (!hasCurrentSelection) {
+      setSelectedTripId(agencyTrips[0]?.id ?? null);
+    }
+  }, [agencyTrips, selectedTripId]);
+
+  useEffect(() => {
+    if (!agencyId || !selectedTripId) return;
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        await ensureTripThreadState({
+          agencyId,
+          tripId: selectedTripId,
+          tripStatesRef,
+          tripStatePromisesRef,
+          setTripStates,
+        });
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to load selected trip thread", error);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [agencyId, selectedTripId]);
+
+  useEffect(() => {
+    if (runStatus !== "completed" || !assistantMessage || !runTripIdRef.current) return;
+
+    const tripId = runTripIdRef.current;
+    setTripStates((previous) => {
+      const current = previous[tripId] ?? {
+        threadId: null,
+        messages: [],
+        itinerary: null,
+        loaded: false,
+      };
+      const alreadyPresent = current.messages.some(
         (message) => message.role === "assistant" && message.content.trim() === assistantMessage.trim(),
       );
       if (alreadyPresent) return previous;
-      return [...previous, { id: `assistant-${Date.now()}`, role: "assistant", content: assistantMessage }];
+
+      return {
+        ...previous,
+        [tripId]: {
+          ...current,
+          loaded: true,
+          messages: [
+            ...current.messages,
+            {
+              id: `assistant-${Date.now()}`,
+              role: "assistant",
+              content: assistantMessage,
+            },
+          ],
+        },
+      };
     });
   }, [runStatus, assistantMessage]);
 
   useEffect(() => {
-    if (!agencyId || !lastItineraryUpdate) return;
+    if (!agencyId || !lastItineraryUpdate || !runTripIdRef.current) return;
+
+    const tripId = runTripIdRef.current;
     fetchItineraryDraft(agencyId, lastItineraryUpdate)
-      .then((result) => setItinerary(normalizeItineraryResponse(result)))
+      .then((result) => {
+        const itinerary = normalizeItineraryResponse(result);
+        setTripStates((previous) => {
+          const current = previous[tripId] ?? {
+            threadId: null,
+            messages: [],
+            itinerary: null,
+            loaded: false,
+          };
+
+          return {
+            ...previous,
+            [tripId]: {
+              ...current,
+              itinerary,
+              loaded: true,
+            },
+          };
+        });
+      })
       .catch((error) => console.error("Failed to fetch itinerary draft", error));
   }, [agencyId, lastItineraryUpdate]);
 
@@ -166,13 +344,22 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   }, [streamError]);
 
   const safeTrips = Array.isArray(agencyTrips) ? agencyTrips : [];
+  const activeTrip = useMemo(() => {
+    if (safeTrips.length === 0) {
+      return null;
+    }
+
+    return safeTrips.find((trip) => trip?.id === selectedTripId) ?? safeTrips[0] ?? null;
+  }, [safeTrips, selectedTripId]);
+  const activeTripState = activeTrip?.id ? tripStates[activeTrip.id] ?? null : null;
   const summary = getAgencyPortfolioSummary(safeTrips);
   const priorityQueue = getAgentPriorityQueue(safeTrips);
   const urgentDepartures = getUrgentDepartures(safeTrips);
   const approvalBlockers = getApprovalBlockers(safeTrips);
   const displayName = user?.displayName || "Traveler";
-  const draftVersion = itinerary?.version ? `Draft v${itinerary.version}` : "Draft unavailable";
-  const tripSummary = itinerary?.trip ?? null;
+  const draftVersion = activeTripState?.itinerary?.version ? `Draft v${activeTripState.itinerary.version}` : "Draft unavailable";
+  const tripSummary = activeTripState?.itinerary?.trip ?? null;
+  const messages = activeTripState?.messages ?? [];
   const liveStatus = getRunStatusLabel(runStatus, streamError);
 
   const footerMetrics = useMemo(
@@ -195,16 +382,45 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     setAgentError("");
     setIsSending(true);
     setComposerInput("");
-    setMessages((previous) => [...previous, { id: `user-${Date.now()}`, role: "user", content }]);
 
     try {
-      let currentThreadId = threadId;
-      if (!currentThreadId) {
-        const threadResult = await createAgentThread(agencyId);
-        currentThreadId = threadResult?.thread?.id ?? null;
-        if (!currentThreadId) throw new Error("Failed to create agent thread.");
-        setThreadId(currentThreadId);
+      const activeTripId = selectedTripIdRef.current;
+      if (!activeTripId) {
+        throw new Error("Select a client before sending a message.");
       }
+
+      const ensuredState = await ensureTripThreadState({
+        agencyId,
+        tripId: activeTripId,
+        tripStatesRef,
+        tripStatePromisesRef,
+        setTripStates,
+      });
+      const currentThreadId = ensuredState?.threadId ?? tripStatesRef.current[activeTripId]?.threadId ?? null;
+      if (!currentThreadId) throw new Error("Failed to create agent thread.");
+
+      runTripIdRef.current = activeTripId;
+      setTripStates((previous) => {
+        const current = previous[activeTripId] ?? {
+          threadId: currentThreadId,
+          messages: [],
+          itinerary: null,
+          loaded: true,
+        };
+
+        return {
+          ...previous,
+          [activeTripId]: {
+            ...current,
+            threadId: currentThreadId,
+            loaded: true,
+            messages: [
+              ...current.messages,
+              { id: `user-${Date.now()}`, role: "user", content },
+            ],
+          },
+        };
+      });
 
       const sendResult = await sendMessage(agencyId, currentThreadId, content);
       const runId = sendResult?.runId || sendResult?.run?.id;
@@ -220,17 +436,30 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   return (
     <div className="voyage-dashboard-layout">
       <header className="voyage-header">
-        <div className="brand-logo">
-          <span className="brand-mark" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2l3.2 6.3 6.8 1-4.9 4.8 1.2 6.8L12 17.7 5.7 21l1.2-6.8L2 9.3l6.8-1L12 2z" />
-            </svg>
-          </span>
-          <div>
-            <div className="brand-name">VOYAGE</div>
-            <div className="brand-subtitle">Agency trip workspace</div>
+          <div className="brand-logo">
+            <button
+              className="mobile-menu-toggle"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Toggle menu"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                {isSidebarOpen ? (
+                  <path d="M18 6L6 18M6 6l12 12" />
+                ) : (
+                  <path d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+            <span className="brand-mark" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2l3.2 6.3 6.8 1-4.9 4.8 1.2 6.8L12 17.7 5.7 21l1.2-6.8L2 9.3l6.8-1L12 2z" />
+              </svg>
+            </span>
+            <div className="brand-text">
+              <div className="brand-name">VOYAGE</div>
+              <div className="brand-subtitle">Agency trip workspace</div>
+            </div>
           </div>
-        </div>
 
         <div className="header-actions">
           <div className={`run-status ${streamError ? "danger" : isStreaming ? "streaming" : "idle"}`}>
@@ -250,7 +479,10 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
       </header>
 
       <div className="voyage-body">
-        <aside className="voyage-sidebar" aria-label="Dashboard navigation">
+        {isSidebarOpen && (
+          <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
+        )}
+        <aside className={`voyage-sidebar ${isSidebarOpen ? "open" : ""}`} aria-label="Dashboard navigation">
           <nav className="sidebar-nav">
             <button type="button" className="nav-item active">
               <span className="icon-wrapper" aria-hidden="true">
@@ -339,9 +571,16 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
                 isSending={isSending}
                 agentError={agentError}
                 user={user}
+                activeTrip={activeTrip}
+                availableTrips={safeTrips}
+                onNewItinerary={onNewItinerary}
+                onTripChange={(tripId) => {
+                  setSelectedTripId(tripId);
+                  setComposerInput("");
+                }}
               />
               <ItineraryDraftPanel
-                draftDays={Array.isArray(itinerary?.days) ? itinerary.days.slice(0, 3) : []}
+                draftDays={Array.isArray(activeTripState?.itinerary?.days) ? activeTripState.itinerary.days.slice(0, 3) : []}
                 draftVersion={draftVersion}
                 tripSummary={tripSummary}
                 onContinue={onContinue}
@@ -386,7 +625,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           border-bottom: 1px solid #e5e7eb;
           padding: 0 28px;
           flex-shrink: 0;
-          z-index: 10;
+          z-index: 100;
           backdrop-filter: blur(8px);
         }
 
@@ -394,6 +633,15 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           display: flex;
           align-items: center;
           gap: 14px;
+        }
+
+        .mobile-menu-toggle {
+          display: none;
+          background: none;
+          border: none;
+          color: #374151;
+          padding: 8px;
+          cursor: pointer;
         }
 
         .brand-mark {
@@ -406,6 +654,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           align-items: center;
           justify-content: center;
           box-shadow: 0 6px 14px rgba(17, 52, 55, 0.16);
+          flex-shrink: 0;
         }
 
         .brand-name {
@@ -478,6 +727,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           font-size: 13px;
           font-weight: 700;
           letter-spacing: 0.04em;
+          flex-shrink: 0;
         }
 
         .user-info {
@@ -499,6 +749,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           display: flex;
           flex: 1;
           overflow: hidden;
+          position: relative;
         }
 
         .voyage-sidebar {
@@ -508,6 +759,8 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           flex-direction: column;
           flex-shrink: 0;
           box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.06);
+          transition: transform 0.3s ease;
+          z-index: 50;
         }
 
         .sidebar-nav {
@@ -563,7 +816,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
 
         .voyage-main-content {
           flex: 1;
-          overflow: hidden;
+          overflow-y: auto;
           padding: 24px 28px;
           display: flex;
           flex-direction: column;
@@ -591,36 +844,13 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           gap: 20px;
         }
 
-        .dashboard-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 20px;
-          padding: 6px 2px 0;
-          font-size: 12px;
-          color: #6b7280;
-        }
-
-        .status {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          font-weight: 600;
-        }
-
-        .status-dot.status-live {
-          background: #10b981;
-        }
-
-        .status-dot.status-error {
-          background: #dc2626;
-        }
-
-        .right-footer {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-          gap: 18px;
+        .sidebar-overlay {
+          display: none;
+          position: absolute;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.4);
+          backdrop-filter: blur(4px);
+          z-index: 45;
         }
 
         @media (max-width: 1440px) {
@@ -632,25 +862,90 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
         @media (max-width: 1100px) {
           .agentic-surface {
             grid-template-columns: 1fr;
+            grid-auto-rows: minmax(500px, auto);
           }
         }
 
         @media (max-width: 900px) {
           .voyage-sidebar {
-            width: 82px;
+            position: absolute;
+            height: 100%;
+            transform: translateX(-100%);
+            width: 240px;
+          }
+
+          .voyage-sidebar.open {
+            transform: translateX(0);
+          }
+
+          .sidebar-nav {
+            padding: 24px;
+          }
+
+          .nav-item {
+            flex-direction: row;
+            justify-content: flex-start;
+            padding: 12px 16px;
+            gap: 16px;
+            border-radius: 12px;
+          }
+
+          .nav-item span:last-child {
+            font-size: 14px;
+          }
+
+          .nav-item.active {
+            border-left: none;
+            background: #d77a61;
+          }
+
+          .mobile-menu-toggle {
+            display: flex;
+          }
+
+          .sidebar-overlay {
+            display: block;
+          }
+
+          .brand-subtitle {
+            display: none;
+          }
+
+          .voyage-header {
+            padding: 0 16px;
+            height: 72px;
           }
 
           .voyage-main-content {
-            padding: 18px;
+            padding: 16px;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .header-actions .run-status {
+            display: none;
           }
 
-          .bottom-queues {
-            grid-template-columns: 1fr;
+          .user-info {
+            display: none;
           }
 
-          .dashboard-footer {
-            flex-direction: column;
-            align-items: flex-start;
+          .user-profile {
+            border-left: none;
+            padding-left: 0;
+          }
+
+          .brand-name {
+            font-size: 13px;
+          }
+
+          .brand-logo {
+            gap: 8px;
+          }
+
+          .brand-mark {
+            width: 36px;
+            height: 36px;
           }
         }
       `}</style>

@@ -1,4 +1,5 @@
 import { render } from "@testing-library/react";
+import { waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import Page from "../app/page.jsx";
@@ -130,7 +131,9 @@ describe("page handoff guards", () => {
     mockState.searchParamsAuthenticated = "1";
     render(<Page />);
 
-    expect(mockState.setActiveScreen).toHaveBeenCalledWith("trip-brief");
+    await waitFor(() => {
+      expect(mockState.setActiveScreen).toHaveBeenCalledWith("trip-brief");
+    });
   });
 
   it("keeps the selected day and map fallback safe when map places are empty", () => {

@@ -25,7 +25,7 @@ async function renderAuthenticatedPage() {
   mockNavigationState.authenticated = "1";
   window.localStorage.setItem("voyage-user", JSON.stringify({ id: "user-1" }));
   render(<Page />);
-  await screen.findByRole("heading", { name: "Agent Command Center" });
+  await screen.findByRole("button", { name: "New Itinerary" });
 }
 
 beforeEach(() => {
@@ -63,8 +63,9 @@ describe("prototype entry points", () => {
       expect(screen.queryByText("Continue your journey")).not.toBeInTheDocument();
     });
 
-    expect(screen.getByRole("heading", { name: "Agent Command Center" })).toBeInTheDocument();
-    expect(screen.getByText("Agency Portfolio")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New Itinerary" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "No client trips available" })).toBeInTheDocument();
+    expect(screen.getByText("Live Itinerary")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Run Agency Review" }));
 
@@ -82,15 +83,17 @@ describe("prototype entry points", () => {
     expect(screen.getByText("Selected place")).toBeInTheDocument();
   }, 10000);
 
-  it("opens the internal workspace from the agency portfolio trip cards", async () => {
-    await renderAuthenticatedPage();
+  it("routes New Itinerary to the agency agent session when agency context is cached", async () => {
+    mockNavigationState.authenticated = "1";
+    window.localStorage.setItem(
+      "voyage-user",
+      JSON.stringify({ id: "user-1", memberships: [{ agencyId: "agency-1" }] }),
+    );
 
-    const enabledOpenTripButton = screen.getAllByRole("button", { name: "Open trip" }).find((button) => !button.disabled);
+    render(<Page />);
+    fireEvent.click(await screen.findByRole("button", { name: "New Itinerary" }));
 
-    expect(enabledOpenTripButton).toBeDefined();
-    fireEvent.click(enabledOpenTripButton);
-
-    expect(await screen.findByRole("tab", { name: "Trip", selected: true })).toBeInTheDocument();
-    expect(screen.getByRole("tablist", { name: "Workspace sections" })).toBeInTheDocument();
+    expect(mockNavigationState.routerPush).toHaveBeenCalledWith("/agency/agency-1/agent");
   }, 10000);
+
 });

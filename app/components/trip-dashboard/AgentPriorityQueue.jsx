@@ -260,6 +260,21 @@ export default function AgentPriorityQueue({ trips }) {
             flex-wrap: wrap;
           }
         }
+
+        @media (max-width: 600px) {
+          .dashboard-card {
+            padding: 16px;
+            min-height: auto;
+          }
+
+          .queue-item {
+            padding: 12px;
+          }
+
+          .item-info strong {
+            font-size: 13px;
+          }
+        }
       `}</style>
     </section>
   );
