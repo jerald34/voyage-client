@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import prototypeData from "./data/prototype/trip-dashboard.js";
 import { usePrototypeState } from "./hooks/usePrototypeState.js";
 import { useTripDashboard } from "./hooks/useTripDashboard.js";
+import { fetchApi } from "./lib/api";
 
 import LandingPage from "./components/landing/LandingPage.jsx";
 import HomePage from "./components/trip-dashboard/HomePage.jsx";
@@ -18,6 +19,7 @@ function HomePageInner() {
   const searchParams = useSearchParams();
   const authenticatedParam = searchParams.get("authenticated");
   const [shouldBypassLanding, setShouldBypassLanding] = useState(false);
+  const [user, setUser] = useState(null);
   const {
     activeScreen,
     setActiveScreen,
@@ -41,8 +43,28 @@ function HomePageInner() {
   });
 
   useEffect(() => {
-    const storedUser = typeof window !== "undefined" ? localStorage.getItem("voyage-user") : null;
-    setShouldBypassLanding(authenticatedParam === "1" && Boolean(storedUser));
+    if (authenticatedParam !== "1") return;
+
+    // Always try to fetch fresh user data (includes memberships).
+    // Fall back to cached data if the fetch fails.
+    let cancelled = false;
+    fetchApi("/auth/me")
+      .then((data) => {
+        if (cancelled) return;
+        localStorage.setItem("voyage-user", JSON.stringify(data.user));
+        setUser(data.user);
+        setShouldBypassLanding(true);
+      })
+      .catch(() => {
+        // Fetch failed — try to use cached user as fallback.
+        const storedUser = typeof window !== "undefined" ? localStorage.getItem("voyage-user") : null;
+        if (!cancelled && storedUser) {
+          try { setUser(JSON.parse(storedUser)); } catch {}
+          setShouldBypassLanding(true);
+        }
+      });
+
+    return () => { cancelled = true; };
   }, [authenticatedParam]);
 
   useEffect(() => {
@@ -68,6 +90,7 @@ function HomePageInner() {
 
         {currentScreen === "trip-brief" && (
           <HomePage
+            user={user}
             agencyTrips={prototypeData.agencyPortfolioTrips}
             onContinue={() => setActiveScreen("agent-kickoff")}
             onOpenTrip={() => {

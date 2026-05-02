@@ -16,6 +16,7 @@
   --voyage-radius-md: 18px;
   --voyage-radius-sm: 12px;
   --voyage-radius-pill: 999px;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --space-hero: clamp(80px, 12vh, 160px);
   --section-gap: clamp(100px, 12vw, 160px);
 
@@ -261,12 +262,14 @@ a {
   border: 1px solid rgba(34, 56, 67, 0.08);
   box-shadow: var(--voyage-shadow);
 }
+
 .landing-hero-panel::after {
   content: "";
   position: absolute;
   inset: 18px;
   border-radius: calc(var(--voyage-radius-lg) + 2px);
-  border: 1px dashed rgba(0, 53, 102, 0.08); /* Fallback */
+  border: 1px dashed rgba(0, 53, 102, 0.08);
+  /* Fallback */
   border: 1px dashed rgba(45, 52, 54, 0.08);
   pointer-events: none;
 }
@@ -395,7 +398,7 @@ a {
   flex-direction: column;
 }
 
-.landing-section + .landing-section {
+.landing-section+.landing-section {
   border-top: 1px solid rgba(0, 53, 102, 0.06);
 }
 
@@ -777,15 +780,17 @@ input[type="password"]:focus {
 
 .trip-dashboard-shell {
   display: grid;
-  gap: 16px;
+  gap: 24px;
   width: 100%;
-  padding-top: 20px;
+  padding-top: 0;
 }
 
 .trip-dashboard-header {
-  position: relative;
-  margin-bottom: 0;
+  position: sticky;
+  top: 12px;
+  z-index: 100;
   width: 100%;
+  margin: 0 auto 12px;
 }
 
 .trip-dashboard-grid {
@@ -1104,14 +1109,14 @@ input[type="password"]:focus {
 }
 
 .agency-dashboard-shell {
-  gap: clamp(16px, 2vw, 24px);
+  gap: 24px;
 }
 
 .agency-dashboard-header {
   min-width: 0;
 }
 
-.agency-dashboard-header > div,
+.agency-dashboard-header>div,
 .agency-header-context {
   display: flex;
   align-items: center;
@@ -1152,6 +1157,112 @@ input[type="password"]:focus {
   color: #fff;
   font-size: 1.1rem;
   font-weight: 800;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  padding: 0;
+}
+
+.agency-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(34, 56, 67, 0.12);
+}
+
+.agency-avatar:active {
+  transform: scale(0.95);
+}
+
+.agency-header-profile-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.agency-profile-dropdown {
+  position: absolute;
+  top: calc(100% + 16px);
+  right: 0;
+  width: 240px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--voyage-border);
+  border-radius: var(--voyage-radius-md);
+  box-shadow: var(--voyage-shadow);
+  animation: dropdown-fade-in 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1000;
+}
+
+@keyframes dropdown-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdown-user-info {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dropdown-user-info strong {
+  color: var(--voyage-primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.dropdown-user-info span {
+  color: var(--voyage-text-soft);
+  font-size: 0.84rem;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--voyage-border);
+  margin: 8px 0;
+}
+
+.dropdown-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  border-radius: var(--voyage-radius-sm);
+  color: var(--voyage-text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.dropdown-item:hover {
+  background: rgba(34, 56, 67, 0.05);
+  color: var(--voyage-primary);
+}
+
+.dropdown-item.logout {
+  color: var(--voyage-secondary);
+}
+
+.dropdown-item.logout:hover {
+  background: rgba(215, 122, 97, 0.08);
+  color: #9f3f2d;
 }
 
 .agency-agent-panel {
@@ -1248,7 +1359,7 @@ input[type="password"]:focus {
 .agency-dashboard-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.22fr) minmax(300px, 0.78fr);
-  gap: 16px;
+  gap: 24px;
   align-items: start;
 }
 
@@ -1307,7 +1418,7 @@ input[type="password"]:focus {
   padding: 18px;
 }
 
-.agency-priority-item > p {
+.agency-priority-item>p {
   margin: 0;
 }
 
@@ -1324,9 +1435,9 @@ input[type="password"]:focus {
   font-size: 1rem;
 }
 
-.agency-priority-item > div:first-child > span,
-.agency-compact-row > div:first-child > span,
-.agency-trip-card-header > div > span {
+.agency-priority-item>div:first-child>span,
+.agency-compact-row>div:first-child>span,
+.agency-trip-card-header>div>span {
   display: block;
   margin-top: 3px;
   color: var(--voyage-text-muted);
@@ -1400,7 +1511,7 @@ input[type="password"]:focus {
   gap: 10px;
 }
 
-.agency-readiness > div:first-child {
+.agency-readiness>div:first-child {
   display: flex;
   justify-content: space-between;
   gap: 14px;
@@ -1658,7 +1769,7 @@ input[type="password"]:focus {
     border-radius: 24px;
   }
 
-  .agency-dashboard-header > div,
+  .agency-dashboard-header>div,
   .agency-header-context {
     align-items: flex-start;
     text-align: left;
@@ -1674,7 +1785,7 @@ input[type="password"]:focus {
   }
 
   .agency-command-buttons,
-  .agency-readiness > div:first-child,
+  .agency-readiness>div:first-child,
   .agency-trip-card-header {
     display: grid;
   }
@@ -1810,22 +1921,34 @@ input[type="password"]:focus {
 .auth-floating-orb {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(216, 180, 160, 0.18) 0%,
-    rgba(215, 122, 97, 0.08) 50%,
-    transparent 70%
-  );
+  background: radial-gradient(circle,
+      rgba(216, 180, 160, 0.18) 0%,
+      rgba(215, 122, 97, 0.08) 50%,
+      transparent 70%);
   animation: auth-orb-drift 14s ease-in-out infinite alternate;
   filter: blur(2px);
 }
 
 @keyframes auth-orb-drift {
-  0% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(12px, -18px) scale(1.06); }
-  50% { transform: translate(-8px, 14px) scale(0.95); }
-  75% { transform: translate(16px, 8px) scale(1.03); }
-  100% { transform: translate(-6px, -12px) scale(1); }
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  25% {
+    transform: translate(12px, -18px) scale(1.06);
+  }
+
+  50% {
+    transform: translate(-8px, 14px) scale(0.95);
+  }
+
+  75% {
+    transform: translate(16px, 8px) scale(1.03);
+  }
+
+  100% {
+    transform: translate(-6px, -12px) scale(1);
+  }
 }
 
 .auth-brand-content {
@@ -2019,13 +2142,27 @@ input[type="password"]:focus {
 }
 
 @keyframes auth-slide-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes auth-slide-out {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-8px); }
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
 }
 
 .auth-form-heading {
@@ -2117,8 +2254,15 @@ input[type="password"]:focus {
 }
 
 @keyframes auth-field-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .auth-field label {
@@ -2165,7 +2309,7 @@ input[type="password"]:focus {
   padding-left: 46px;
 }
 
-.auth-input-wrap input:focus ~ .auth-input-icon,
+.auth-input-wrap input:focus~.auth-input-icon,
 .auth-input-wrap:focus-within .auth-input-icon {
   color: var(--voyage-secondary);
 }
@@ -2227,11 +2371,32 @@ input[type="password"]:focus {
   text-decoration: underline;
 }
 
+/* ─── Error message ─── */
+
+.auth-error {
+  padding: 12px 16px;
+  border-radius: var(--voyage-radius-sm);
+  background: rgba(220, 38, 38, 0.06);
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  color: #b91c1c;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+  animation: auth-field-in 0.25s ease both;
+}
+
 /* ─── Submit ─── */
 
 .auth-submit {
   width: 100%;
   margin-top: 8px;
+}
+
+.auth-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* ─── Switch prompt ─── */
@@ -2357,7 +2522,8 @@ input[type="password"]:focus {
     grid-template-columns: 1fr;
   }
 
-  .feature-grid, .workflow-grid {
+  .feature-grid,
+  .workflow-grid {
     grid-template-columns: 1fr !important;
   }
 
