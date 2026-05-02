@@ -9,6 +9,7 @@ export function useAgentRunStream(agencyId) {
   const [toolCalls, setToolCalls] = useState([]);
   const [sources, setSources] = useState([]);
   const [lastItineraryUpdate, setLastItineraryUpdate] = useState(null);
+  const [lastCompletedItineraryTool, setLastCompletedItineraryTool] = useState(null);
   const [error, setError] = useState(null);
 
   const eventSourceRef = useRef(null);
@@ -27,6 +28,8 @@ export function useAgentRunStream(agencyId) {
     setTasks([]);
     setToolCalls([]);
     setSources([]);
+    setLastItineraryUpdate(null);
+    setLastCompletedItineraryTool(null);
     setError(null);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
@@ -125,6 +128,13 @@ export function useAgentRunStream(agencyId) {
           ? { ...t, ...tool, status: 'Completed' }
           : t
       ));
+
+      if (tool.name === 'create_itinerary' || tool.name === 'update_itinerary') {
+        setLastCompletedItineraryTool({
+          ...tool,
+          receivedAt: Date.now()
+        });
+      }
     });
 
     // Server sends: { type: "tool.failed", payload: { name, code, message } }
@@ -220,6 +230,7 @@ export function useAgentRunStream(agencyId) {
     toolCalls,
     sources,
     lastItineraryUpdate,
+    lastCompletedItineraryTool,
     error,
     startStream
   };

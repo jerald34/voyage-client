@@ -211,6 +211,30 @@ describe("Agency portfolio HomePage", () => {
     expect(onNewItinerary).toHaveBeenCalledTimes(1);
   });
 
+  it("creates a no-client agent thread from New Itinerary and sends messages to it", async () => {
+    const { container } = render(<HomePage user={user} agencyTrips={[]} onContinue={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+
+    await waitFor(() => {
+      expect(mocks.createAgentThreadMock).toHaveBeenCalledWith("agency-1");
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Ask the agent to adjust the draft..."), {
+      target: { value: "Create a 4-day Cebu itinerary" },
+    });
+
+    fireEvent.click(container.querySelector(".send-button"));
+
+    await waitFor(() => {
+      expect(mocks.sendMessageMock).toHaveBeenCalledWith(
+        "agency-1",
+        "created-undefined",
+        "Create a 4-day Cebu itinerary",
+      );
+    });
+  });
+
   it("renders empty states for an empty portfolio", () => {
     render(<HomePage agencyTrips={[]} onContinue={vi.fn()} />);
 

@@ -20,6 +20,8 @@ import UrgentDeparturesPanel from "./UrgentDeparturesPanel.jsx";
 import AgentCommandCenter from "./AgentCommandCenter.jsx";
 import ItineraryDraftPanel from "./ItineraryDraftPanel.jsx";
 
+const NEW_ITINERARY_THREAD_KEY = "new-itinerary-thread";
+
 function toUiRole(role) {
   if (role === "USER") return "user";
   if (role === "ASSISTANT") return "assistant";
@@ -28,6 +30,15 @@ function toUiRole(role) {
 
 function normalizeItineraryResponse(responseData) {
   return responseData?.itinerary ?? responseData ?? null;
+}
+
+function hasRenderableItineraryDays(itinerary) {
+  return Array.isArray(itinerary?.days) && itinerary.days.some((day) => Array.isArray(day?.items) && day.items.length > 0);
+}
+
+function normalizeItineraryToolOutput(output) {
+  const itinerary = normalizeItineraryResponse(output);
+  return hasRenderableItineraryDays(itinerary) ? itinerary : null;
 }
 
 function getInitials(name) {
@@ -149,20 +160,75 @@ async function ensureTripThreadState({
   }
 }
 
+async function ensureNewItineraryThreadState({
+  agencyId,
+  newItineraryStateRef,
+  newItineraryPromiseRef,
+  setNewItineraryState,
+}) {
+  if (!agencyId) {
+    return null;
+  }
+
+  const existingState = newItineraryStateRef.current;
+  if (existingState?.loaded && existingState?.threadId) return existingState;
+
+  if (newItineraryPromiseRef.current) return newItineraryPromiseRef.current;
+
+  const promise = (async () => {
+    const createdResult = await createAgentThread(agencyId);
+    const thread = createdResult?.thread ?? null;
+    if (!thread) {
+      return null;
+    }
+
+    const itineraryId = getThreadItineraryId(thread);
+    const itineraryResult = itineraryId ? await fetchItineraryDraft(agencyId, itineraryId) : null;
+    const itinerary = itineraryResult ? normalizeItineraryResponse(itineraryResult) : null;
+    const nextState = {
+      threadId: thread.id,
+      messages: normalizeThreadMessages(thread),
+      itinerary,
+      loaded: true,
+    };
+
+    setNewItineraryState(nextState);
+    return nextState;
+  })();
+
+  newItineraryPromiseRef.current = promise;
+
+  try {
+    return await promise;
+  } finally {
+    newItineraryPromiseRef.current = null;
+  }
+}
+
 export default function HomePage({ user: userProp, agencyTrips = [], onContinue, onOpenTrip, onNewItinerary }) {
   const [user, setUser] = useState(userProp || null);
   const [selectedTripId, setSelectedTripId] = useState(agencyTrips[0]?.id ?? null);
+  const [isNewItineraryActive, setIsNewItineraryActive] = useState(!agencyTrips[0]?.id);
   const [tripStates, setTripStates] = useState({});
+  const [newItineraryState, setNewItineraryState] = useState({
+    threadId: null,
+    messages: [],
+    itinerary: null,
+    loaded: false,
+  });
   const [composerInput, setComposerInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [agentError, setAgentError] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const tripStatesRef = useRef(tripStates);
+  const newItineraryStateRef = useRef(newItineraryState);
+  const newItineraryPromiseRef = useRef(null);
   const selectedTripIdRef = useRef(selectedTripId);
+  const isNewItineraryActiveRef = useRef(isNewItineraryActive);
   const tripStatePromisesRef = useRef(new Map());
   const agencyId = user?.memberships?.[0]?.agencyId ?? null;
   const hasLoadedInitialThreadRef = useRef(false);
-  const runTripIdRef = useRef(null);
+  const runTargetRef = useRef(null);
 
   const {
     isStreaming,
@@ -170,6 +236,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     assistantMessage,
     toolCalls,
     lastItineraryUpdate,
+    lastCompletedItineraryTool,
     error: streamError,
     startStream,
   } = useAgentRunStream(agencyId ?? "");
@@ -194,8 +261,16 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   }, [tripStates]);
 
   useEffect(() => {
+    newItineraryStateRef.current = newItineraryState;
+  }, [newItineraryState]);
+
+  useEffect(() => {
     selectedTripIdRef.current = selectedTripId;
   }, [selectedTripId]);
+
+  useEffect(() => {
+    isNewItineraryActiveRef.current = isNewItineraryActive;
+  }, [isNewItineraryActive]);
 
   useEffect(() => {
     if (!agencyId || hasLoadedInitialThreadRef.current) return;
@@ -230,6 +305,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
 
         if (!selectedTripIdRef.current) {
           setSelectedTripId(tripId);
+          setIsNewItineraryActive(false);
         }
       } catch (error) {
         console.error("Failed to load latest agent thread", error);
@@ -246,6 +322,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     const hasCurrentSelection = agencyTrips.some((trip) => trip?.id === selectedTripId);
     if (!hasCurrentSelection) {
       setSelectedTripId(agencyTrips[0]?.id ?? null);
+      setIsNewItineraryActive(false);
     }
   }, [agencyTrips, selectedTripId]);
 
@@ -276,11 +353,34 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   }, [agencyId, selectedTripId]);
 
   useEffect(() => {
-    if (runStatus !== "completed" || !assistantMessage || !runTripIdRef.current) return;
+    if (runStatus !== "completed" || !assistantMessage || !runTargetRef.current) return;
 
-    const tripId = runTripIdRef.current;
+    const runTarget = runTargetRef.current;
+    if (runTarget === NEW_ITINERARY_THREAD_KEY) {
+      setNewItineraryState((current) => {
+        const alreadyPresent = current.messages.some(
+          (message) => message.role === "assistant" && message.content.trim() === assistantMessage.trim(),
+        );
+        if (alreadyPresent) return current;
+
+        return {
+          ...current,
+          loaded: true,
+          messages: [
+            ...current.messages,
+            {
+              id: `assistant-${Date.now()}`,
+              role: "assistant",
+              content: assistantMessage,
+            },
+          ],
+        };
+      });
+      return;
+    }
+
     setTripStates((previous) => {
-      const current = previous[tripId] ?? {
+      const current = previous[runTarget] ?? {
         threadId: null,
         messages: [],
         itinerary: null,
@@ -293,7 +393,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
 
       return {
         ...previous,
-        [tripId]: {
+        [runTarget]: {
           ...current,
           loaded: true,
           messages: [
@@ -310,14 +410,23 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   }, [runStatus, assistantMessage]);
 
   useEffect(() => {
-    if (!agencyId || !lastItineraryUpdate || !runTripIdRef.current) return;
+    if (!agencyId || !lastItineraryUpdate || !runTargetRef.current) return;
 
-    const tripId = runTripIdRef.current;
+    const runTarget = runTargetRef.current;
     fetchItineraryDraft(agencyId, lastItineraryUpdate)
       .then((result) => {
         const itinerary = normalizeItineraryResponse(result);
+        if (runTarget === NEW_ITINERARY_THREAD_KEY) {
+          setNewItineraryState((current) => ({
+            ...current,
+            itinerary,
+            loaded: true,
+          }));
+          return;
+        }
+
         setTripStates((previous) => {
-          const current = previous[tripId] ?? {
+          const current = previous[runTarget] ?? {
             threadId: null,
             messages: [],
             itinerary: null,
@@ -326,7 +435,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
 
           return {
             ...previous,
-            [tripId]: {
+            [runTarget]: {
               ...current,
               itinerary,
               loaded: true,
@@ -338,6 +447,41 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   }, [agencyId, lastItineraryUpdate]);
 
   useEffect(() => {
+    if (!lastCompletedItineraryTool || !runTargetRef.current) return;
+
+    const itinerary = normalizeItineraryToolOutput(lastCompletedItineraryTool.output);
+    if (!itinerary) return;
+
+    const runTarget = runTargetRef.current;
+    if (runTarget === NEW_ITINERARY_THREAD_KEY) {
+      setNewItineraryState((current) => ({
+        ...current,
+        itinerary,
+        loaded: true,
+      }));
+      return;
+    }
+
+    setTripStates((previous) => {
+      const current = previous[runTarget] ?? {
+        threadId: null,
+        messages: [],
+        itinerary: null,
+        loaded: false,
+      };
+
+      return {
+        ...previous,
+        [runTarget]: {
+          ...current,
+          itinerary,
+          loaded: true,
+        },
+      };
+    });
+  }, [lastCompletedItineraryTool]);
+
+  useEffect(() => {
     if (streamError) {
       setAgentError(streamError);
     }
@@ -345,13 +489,17 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
 
   const safeTrips = Array.isArray(agencyTrips) ? agencyTrips : [];
   const activeTrip = useMemo(() => {
+    if (isNewItineraryActive) {
+      return null;
+    }
+
     if (safeTrips.length === 0) {
       return null;
     }
 
     return safeTrips.find((trip) => trip?.id === selectedTripId) ?? safeTrips[0] ?? null;
-  }, [safeTrips, selectedTripId]);
-  const activeTripState = activeTrip?.id ? tripStates[activeTrip.id] ?? null : null;
+  }, [isNewItineraryActive, safeTrips, selectedTripId]);
+  const activeTripState = isNewItineraryActive ? newItineraryState : activeTrip?.id ? tripStates[activeTrip.id] ?? null : null;
   const summary = getAgencyPortfolioSummary(safeTrips);
   const priorityQueue = getAgentPriorityQueue(safeTrips);
   const urgentDepartures = getUrgentDepartures(safeTrips);
@@ -384,43 +532,62 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     setComposerInput("");
 
     try {
+      const isDraftThread = isNewItineraryActiveRef.current || !selectedTripIdRef.current;
       const activeTripId = selectedTripIdRef.current;
-      if (!activeTripId) {
-        throw new Error("Select a client before sending a message.");
-      }
-
-      const ensuredState = await ensureTripThreadState({
-        agencyId,
-        tripId: activeTripId,
-        tripStatesRef,
-        tripStatePromisesRef,
-        setTripStates,
-      });
-      const currentThreadId = ensuredState?.threadId ?? tripStatesRef.current[activeTripId]?.threadId ?? null;
+      const ensuredState = isDraftThread
+        ? await ensureNewItineraryThreadState({
+          agencyId,
+          newItineraryStateRef,
+          newItineraryPromiseRef,
+          setNewItineraryState,
+        })
+        : await ensureTripThreadState({
+          agencyId,
+          tripId: activeTripId,
+          tripStatesRef,
+          tripStatePromisesRef,
+          setTripStates,
+        });
+      const currentThreadId = ensuredState?.threadId ?? (isDraftThread ? newItineraryStateRef.current.threadId : tripStatesRef.current[activeTripId]?.threadId) ?? null;
       if (!currentThreadId) throw new Error("Failed to create agent thread.");
 
-      runTripIdRef.current = activeTripId;
-      setTripStates((previous) => {
-        const current = previous[activeTripId] ?? {
+      if (isDraftThread) {
+        runTargetRef.current = NEW_ITINERARY_THREAD_KEY;
+        setIsNewItineraryActive(true);
+        setSelectedTripId(null);
+        setNewItineraryState((current) => ({
+          ...current,
           threadId: currentThreadId,
-          messages: [],
-          itinerary: null,
           loaded: true,
-        };
-
-        return {
-          ...previous,
-          [activeTripId]: {
-            ...current,
+          messages: [
+            ...current.messages,
+            { id: `user-${Date.now()}`, role: "user", content },
+          ],
+        }));
+      } else {
+        runTargetRef.current = activeTripId;
+        setTripStates((previous) => {
+          const current = previous[activeTripId] ?? {
             threadId: currentThreadId,
+            messages: [],
+            itinerary: null,
             loaded: true,
-            messages: [
-              ...current.messages,
-              { id: `user-${Date.now()}`, role: "user", content },
-            ],
-          },
-        };
-      });
+          };
+
+          return {
+            ...previous,
+            [activeTripId]: {
+              ...current,
+              threadId: currentThreadId,
+              loaded: true,
+              messages: [
+                ...current.messages,
+                { id: `user-${Date.now()}`, role: "user", content },
+              ],
+            },
+          };
+        });
+      }
 
       const sendResult = await sendMessage(agencyId, currentThreadId, content);
       const runId = sendResult?.runId || sendResult?.run?.id;
@@ -430,6 +597,33 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
       setAgentError(error?.message || "Unable to send your request to Voyage Agent.");
     } finally {
       setIsSending(false);
+    }
+  }
+
+  async function handleNewItinerary() {
+    onNewItinerary?.();
+
+    if (!agencyId) {
+      setIsNewItineraryActive(true);
+      setSelectedTripId(null);
+      setAgentError("Missing agency context. Refresh and log in again.");
+      return;
+    }
+
+    setAgentError("");
+    setIsNewItineraryActive(true);
+    setSelectedTripId(null);
+
+    try {
+      await ensureNewItineraryThreadState({
+        agencyId,
+        newItineraryStateRef,
+        newItineraryPromiseRef,
+        setNewItineraryState,
+      });
+    } catch (error) {
+      console.error("Failed to create new itinerary thread", error);
+      setAgentError(error?.message || "Unable to create a new itinerary thread.");
     }
   }
 
@@ -573,14 +767,16 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
                 user={user}
                 activeTrip={activeTrip}
                 availableTrips={safeTrips}
-                onNewItinerary={onNewItinerary}
+                onNewItinerary={handleNewItinerary}
                 onTripChange={(tripId) => {
                   setSelectedTripId(tripId);
+                  setIsNewItineraryActive(false);
                   setComposerInput("");
                 }}
               />
               <ItineraryDraftPanel
-                draftDays={Array.isArray(activeTripState?.itinerary?.days) ? activeTripState.itinerary.days.slice(0, 3) : []}
+                itinerary={activeTripState?.itinerary ?? null}
+                draftDays={Array.isArray(activeTripState?.itinerary?.days) ? activeTripState.itinerary.days : []}
                 draftVersion={draftVersion}
                 tripSummary={tripSummary}
                 onContinue={onContinue}

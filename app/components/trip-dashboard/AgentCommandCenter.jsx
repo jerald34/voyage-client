@@ -363,11 +363,9 @@ export default function AgentCommandCenter({
 
         .header-tools {
           display: flex;
-          align-items: center;
-          gap: 12px;
-          flex-wrap: wrap;
+          align-items: flex-end;
+          gap: 16px;
           min-width: 0;
-          width: 100%;
         }
 
         .agent-avatar-large {
@@ -393,11 +391,7 @@ export default function AgentCommandCenter({
         }
 
         .header-title p {
-          font-size: 13px;
-          color: #6b7280;
-          margin: 0;
-          line-height: 1.6;
-          max-width: 52ch;
+          display: none;
         }
 
         .client-switcher-wrap {
@@ -422,27 +416,24 @@ export default function AgentCommandCenter({
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          border: 1px solid #273244;
+          border: 1px solid #1f4d53;
           border-radius: 999px;
-          background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
+          background: linear-gradient(180deg, #18484d 0%, #113437 100%);
           color: #f8fafc;
-          padding: 10px 14px;
+          padding: 10px 16px;
           font-size: 13px;
           font-weight: 700;
           letter-spacing: -0.01em;
           cursor: pointer;
           white-space: nowrap;
-          box-shadow: 0 10px 20px rgba(15, 23, 42, 0.18);
-          transition:
-            transform 0.2s ease,
-            border-color 0.2s ease,
-            background 0.2s ease;
+          box-shadow: 0 4px 12px rgba(17, 52, 55, 0.12);
+          transition: all 0.2s ease;
         }
 
         .new-itinerary-button:hover {
           transform: translateY(-1px);
-          border-color: #3b4a63;
-          background: linear-gradient(180deg, #172036 0%, #111827 100%);
+          border-color: #2a6369;
+          background: #18484d;
         }
 
         .new-itinerary-icon {
@@ -463,15 +454,15 @@ export default function AgentCommandCenter({
           gap: 12px;
           min-width: 300px;
           max-width: min(100%, 420px);
-          border: 1px solid #263244;
+          border: 1px solid #1f4d53;
           border-radius: 999px;
-          background: #0f172a;
+          background: #113437;
           color: #f8fafc;
           padding: 10px 14px 10px 10px;
           cursor: pointer;
           text-align: left;
           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
         .client-switcher:hover {
@@ -631,14 +622,16 @@ export default function AgentCommandCenter({
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          background: #e9eef8;
-          color: #2b5ec8;
-          padding: 8px 12px;
+          background: #f1f5f9;
+          border: 1px solid #e2e8f0;
+          color: #475569;
+          padding: 8px 14px;
           border-radius: 999px;
           font-size: 12px;
           font-weight: 700;
           white-space: nowrap;
-          margin-top: 6px;
+          align-self: flex-end;
+          margin-bottom: 2px;
         }
 
         .agent-status-tag.streaming {
@@ -766,16 +759,18 @@ export default function AgentCommandCenter({
         }
 
         .user-bubble {
-          background: #f2ece8;
-          border-radius: 16px;
-          color: #1f2937;
+          background: #f1f5f9;
+          border: 1px solid #e2e8f0;
+          border-radius: 20px 4px 20px 20px;
+          color: #1e293b;
         }
 
         .assistant-bubble {
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 16px;
-          color: #1f2937;
+          background: linear-gradient(180deg, #18484d 0%, #113437 100%);
+          border: 1px solid #1f4d53;
+          border-radius: 4px 20px 20px 20px;
+          color: #f8fafc;
+          box-shadow: 0 4px 12px rgba(17, 52, 55, 0.08);
         }
 
         .thinking-bubble {
@@ -869,45 +864,64 @@ export default function AgentCommandCenter({
           display: flex;
           align-items: center;
           gap: 12px;
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 24px;
-          padding: 10px 14px;
-          box-shadow: 0 14px 30px rgba(15, 23, 42, 0.04);
+          background: #113437;
+          border: 1px solid #1f4d53;
+          border-radius: 999px;
+          padding: 8px 10px 8px 18px;
+          box-shadow: 0 20px 40px rgba(17, 52, 55, 0.2);
         }
 
         .composer-form input {
           flex: 1;
           border: none;
           outline: none;
-          font-size: 14px;
-          color: #1f2937;
+          font-size: 15px;
+          color: #f8fafc;
           background: transparent;
+          height: 44px;
         }
 
         .composer-form input::placeholder {
-          color: #9ca3af;
+          color: #64748b;
         }
 
-        .attach-button,
-        .send-button {
-          background: none;
-          border: none;
+        .attach-button {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 50%;
           cursor: pointer;
-          color: #9ca3af;
+          color: #94a3b8;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 4px;
+          padding: 0;
+          width: 32px;
+          height: 32px;
+          transition: all 0.2s ease;
+        }
+
+        .attach-button:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: #f8fafc;
         }
 
         .send-button {
-          background: linear-gradient(135deg, #113437, #1f4d53);
+          background: linear-gradient(135deg, #d77a61, #b65d48);
           color: white;
+          border: none;
           border-radius: 50%;
           width: 36px;
           height: 36px;
-          box-shadow: 0 14px 24px rgba(17, 52, 55, 0.18);
+          box-shadow: 0 8px 16px rgba(182, 93, 72, 0.2);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.2s ease;
+        }
+
+        .send-button:hover {
+          transform: scale(1.05);
         }
 
         .send-button:disabled {
@@ -934,6 +948,7 @@ export default function AgentCommandCenter({
 
           .header-tools {
             align-items: flex-start;
+            flex-wrap: wrap;
           }
 
           .header-title h2 {

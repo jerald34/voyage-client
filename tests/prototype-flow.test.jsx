@@ -83,7 +83,7 @@ describe("prototype entry points", () => {
     expect(screen.getByText("Selected place")).toBeInTheDocument();
   }, 10000);
 
-  it("routes New Itinerary to the agency agent session when agency context is cached", async () => {
+  it("keeps New Itinerary inside the command center when agency context is cached", async () => {
     mockNavigationState.authenticated = "1";
     window.localStorage.setItem(
       "voyage-user",
@@ -93,7 +93,8 @@ describe("prototype entry points", () => {
     render(<Page />);
     fireEvent.click(await screen.findByRole("button", { name: "New Itinerary" }));
 
-    expect(mockNavigationState.routerPush).toHaveBeenCalledWith("/agency/agency-1/agent");
+    expect(mockNavigationState.routerPush).not.toHaveBeenCalledWith("/agency/agency-1/agent");
+    expect(screen.getByText("No conversation yet")).toBeInTheDocument();
   }, 10000);
 
 });

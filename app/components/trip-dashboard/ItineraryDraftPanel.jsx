@@ -16,14 +16,34 @@ function getTripSummaryValue(tripSummary, key, fallback) {
   return fallback;
 }
 
+function getItemTimeLabel(item) {
+  if (typeof item?.time === "string" && item.time.trim()) {
+    return item.time;
+  }
+  if (item?.startTime && item?.endTime) {
+    return `${item.startTime} - ${item.endTime}`;
+  }
+  if (item?.startTime) {
+    return item.startTime;
+  }
+  if (item?.endTime) {
+    return `Ends ${item.endTime}`;
+  }
+  return "Time pending";
+}
+
 export default function ItineraryDraftPanel({
+  itinerary = null,
   draftDays,
   draftVersion,
   onContinue = () => {},
   dispatchAgentMessage,
   tripSummary = null,
 }) {
-  const safeDays = Array.isArray(draftDays) ? draftDays : [];
+  const itineraryDays = Array.isArray(itinerary?.days) ? itinerary.days : draftDays;
+  const safeDays = Array.isArray(itineraryDays) ? itineraryDays : [];
+  const panelTitle = itinerary?.title || "Live Itinerary";
+  const panelSummary = itinerary?.summary || "";
   const mapItems = useMemo(
     () =>
       safeDays.reduce((acc, day) => {
@@ -149,8 +169,9 @@ export default function ItineraryDraftPanel({
                 <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <polygon points="3 11 22 2 13 21 11 13 3 11" />
                 </svg>
-                <h2>Live Itinerary</h2>
+                <h2>{panelTitle}</h2>
               </div>
+              {panelSummary ? <p className="subtitle">{panelSummary}</p> : null}
             </div>
             <button 
               className="minimize-btn" 
@@ -191,8 +212,13 @@ export default function ItineraryDraftPanel({
                               <circle cx="12" cy="12" r="10" />
                               <polyline points="12 6 12 12 16 14" />
                             </svg>
-                            {item.time || "09:00 AM"}
+                            {getItemTimeLabel(item)}
                           </div>
+                          {item.__dayNumber ? (
+                            <div className="day-label">
+                              Day {item.__dayNumber}{item.__dayTitle ? `: ${item.__dayTitle}` : ""}
+                            </div>
+                          ) : null}
                           <h3>{item.title || "Planned stop"}</h3>
                           <p>{item.description || "No description provided yet."}</p>
                         </div>
@@ -472,6 +498,20 @@ export default function ItineraryDraftPanel({
           font-weight: 600;
           color: #94a3b8;
           margin-bottom: 6px;
+        }
+
+        .day-label {
+          display: inline-flex;
+          align-items: center;
+          max-width: 100%;
+          margin-bottom: 8px;
+          padding: 4px 8px;
+          border-radius: 999px;
+          background: rgba(215, 122, 97, 0.12);
+          color: #f2b7a7;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.03em;
         }
 
         .timeline-content h3 {
