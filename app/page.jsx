@@ -81,24 +81,26 @@ function HomePageInner() {
   const effectiveSelectedDayId = selectedDay?.id ?? null;
   const selectedPlace = mapPlaces.find((place) => place.id === selectedPlaceId) || null;
 
+  if (currentScreen === "trip-brief") {
+    return (
+      <HomePage
+        user={user}
+        agencyTrips={prototypeData.agencyPortfolioTrips}
+        onContinue={() => setActiveScreen("agent-kickoff")}
+        onOpenTrip={() => {
+          setActiveWorkspaceTab("trip");
+          setActiveScreen("workspace");
+        }}
+      />
+    );
+  }
+
   return (
     <main className="system-shell">
       <div className="system-grain" aria-hidden="true" />
 
       <section className="wireframe-section">
         {currentScreen === "welcome" && <LandingPage onStart={() => router.push("/login")} />}
-
-        {currentScreen === "trip-brief" && (
-          <HomePage
-            user={user}
-            agencyTrips={prototypeData.agencyPortfolioTrips}
-            onContinue={() => setActiveScreen("agent-kickoff")}
-            onOpenTrip={() => {
-              setActiveWorkspaceTab("trip");
-              setActiveScreen("workspace");
-            }}
-          />
-        )}
 
         {currentScreen === "agent-kickoff" && (
           <AgentKickoffScreen onOpenWorkspace={() => setActiveScreen("workspace")} tripBrief={tripBrief} />
