@@ -43,6 +43,14 @@ export async function createAgentThread(agencyId, tripId = null) {
   });
 }
 
+export async function listAgentThreads(agencyId) {
+  return fetchApi(`/agencies/${agencyId}/agent/threads`);
+}
+
+export async function fetchAgentThread(agencyId, threadId) {
+  return fetchApi(`/agencies/${agencyId}/agent/threads/${threadId}`);
+}
+
 export async function sendMessage(agencyId, threadId, content) {
   return fetchApi(`/agencies/${agencyId}/agent/threads/${threadId}/messages`, {
     method: 'POST',
