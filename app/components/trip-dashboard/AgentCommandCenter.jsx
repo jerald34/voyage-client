@@ -1,4 +1,20 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+function getInitials(name) {
+  const parts = String(name ?? "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (parts.length === 0) {
+    return "VP";
+  }
+
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
 
 export default function AgentCommandCenter({
   messages,
@@ -10,23 +26,18 @@ export default function AgentCommandCenter({
   setComposerInput,
   isSending,
   agentError,
-  user
+  user,
+  activeMessages = 0,
 }) {
   const [expandedMessageIds, setExpandedMessageIds] = useState({});
-  const messageClampLength = 200;
+  const messageClampLength = 220;
   const messagesEndRef = useRef(null);
 
   const displayedMessages = useMemo(() => {
-    if (!messages || messages.length === 0) {
-      return [
-        {
-          id: "welcome",
-          role: "assistant",
-          content: "Absolutely, I'll craft a refined journey with scenic rail, curated experiences, and boutique stays.",
-        },
-      ];
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return [];
     }
-    return messages.slice(-10);
+    return messages.slice(-12);
   }, [messages]);
 
   const hasStreamingBubble =
@@ -38,13 +49,18 @@ export default function AgentCommandCenter({
   const activeToolCalls = useMemo(() => {
     const recent = Array.isArray(toolCalls) ? [...toolCalls].slice(-4).reverse() : [];
     const uniqueNames = [];
+
     for (const call of recent) {
       if (!call?.name || uniqueNames.includes(call.name)) continue;
       uniqueNames.push(call.name);
       if (uniqueNames.length >= 3) break;
     }
+
     return uniqueNames;
   }, [toolCalls]);
+
+  const userName = user?.displayName || "You";
+  const userInitials = getInitials(userName);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -77,87 +93,111 @@ export default function AgentCommandCenter({
     <div className="agent-command-center">
       <header className="chat-header">
         <div className="header-title">
-          <div className="agent-avatar-large">
-             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
+          <div className="agent-avatar-large" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M2 12h4l3-9 5 18 3-9h5" />
+            </svg>
           </div>
           <div>
             <h2>Agent Command Center</h2>
-            <p>Your AI planning partner for exceptional journeys</p>
+            <p>Live planning thread for itinerary updates, approvals, and route changes</p>
           </div>
         </div>
-        <div className="agent-status-tag">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          AI Planner Agent
-          <span className="status-dot"></span>
+        <div className={`agent-status-tag ${isStreaming ? "streaming" : ""}`}>
+          <span className="status-dot" />
+          {isStreaming ? "Agent active" : "Agent idle"}
         </div>
       </header>
 
       <div className="chat-log">
-        {displayedMessages.map((message) => {
-          const contentState = getMessageContent(message);
-          const isUser = message.role === "user";
-          return (
-            <div key={message.id} className={`chat-row ${isUser ? "user" : "assistant"}`}>
-              {!isUser && (
-                <div className="avatar assistant-avatar">
-                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="m16 10-4 4-4-4"/></svg>
-                </div>
-              )}
-              <div className="message-content">
-                <div className="message-meta">
-                  <span className="sender">{isUser ? (user?.displayName || "Alexandra") : "Voyage Planner"}</span>
-                  <span className="time">10:21 AM</span>
-                </div>
-                <div className={`bubble ${isUser ? "user-bubble" : "assistant-bubble"}`}>
-                  <p>{contentState.preview}</p>
-                  {contentState.isLong && (
-                    <button className="expand-toggle" onClick={() => toggleMessageExpansion(message.id)}>
-                      {contentState.isExpanded ? "Show less" : "Show more"}
-                    </button>
-                  )}
-                </div>
-              </div>
-              {isUser && (
-                <div className="avatar user-avatar">
-                  <img src="https://i.pravatar.cc/150?img=47" alt="User" />
-                </div>
-              )}
+        {displayedMessages.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
             </div>
-          );
-        })}
+            <strong>No conversation yet</strong>
+            <p>Ask the agent to create the first draft, tighten the route, or prepare a client-ready revision.</p>
+          </div>
+        ) : (
+          displayedMessages.map((message) => {
+            const contentState = getMessageContent(message);
+            const isUser = message.role === "user";
+
+            return (
+              <div key={message.id} className={`chat-row ${isUser ? "user" : "assistant"}`}>
+                {!isUser && (
+                  <div className="avatar assistant-avatar" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="m16 10-4 4-4-4" />
+                    </svg>
+                  </div>
+                )}
+                <div className="message-content">
+                  <div className="message-meta">
+                    <span className="sender">{isUser ? userName : "Voyage Agent"}</span>
+                    <span className="time">{isUser ? "You" : "Agent"}</span>
+                  </div>
+                  <div className={`bubble ${isUser ? "user-bubble" : "assistant-bubble"}`}>
+                    <p>{contentState.preview}</p>
+                    {contentState.isLong && (
+                      <button className="expand-toggle" onClick={() => toggleMessageExpansion(message.id)} type="button">
+                        {contentState.isExpanded ? "Show less" : "Show more"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {isUser && (
+                  <div className="avatar user-avatar" aria-hidden="true">
+                    {userInitials}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
 
         {(isStreaming || activeToolCalls.length > 0) && (
           <div className="chat-row assistant">
-            <div className="avatar assistant-avatar">
-               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="m16 10-4 4-4-4"/></svg>
+            <div className="avatar assistant-avatar" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="m16 10-4 4-4-4" />
+              </svg>
             </div>
             <div className="message-content">
-               <div className="bubble thinking-bubble">
-                 <div className="thinking-header">
-                    <span className="dot-pulse">...</span> Agent thinking
-                 </div>
-                 {activeToolCalls.length > 0 && (
-                   <div className="tool-stepper">
-                     {activeToolCalls.map((name, idx) => (
-                       <div key={name} className="step">
-                         <div className="step-icon">✓</div>
-                         <div className="step-text">
-                           <strong>{name}</strong>
-                         </div>
-                         {idx < activeToolCalls.length - 1 && <div className="step-connector">→</div>}
-                       </div>
-                     ))}
-                   </div>
-                 )}
-               </div>
+              <div className="bubble thinking-bubble">
+                <div className="thinking-header">
+                  <span className="thinking-dot" />
+                  Agent working
+                </div>
+                {activeToolCalls.length > 0 && (
+                  <div className="tool-stepper">
+                    {activeToolCalls.map((name, idx) => (
+                      <div key={name} className="step">
+                        <div className="step-icon">{idx + 1}</div>
+                        <div className="step-text">
+                          <strong>{name}</strong>
+                        </div>
+                        {idx < activeToolCalls.length - 1 && <div className="step-connector">{"->"}</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
 
         {hasStreamingBubble && (
           <div className="chat-row assistant">
-             <div className="avatar assistant-avatar">
-               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="m16 10-4 4-4-4"/></svg>
+            <div className="avatar assistant-avatar" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="m16 10-4 4-4-4" />
+              </svg>
             </div>
             <div className="message-content">
               <div className="bubble assistant-bubble streaming">{assistantMessage}</div>
@@ -167,67 +207,64 @@ export default function AgentCommandCenter({
         <div ref={messagesEndRef} />
       </div>
 
+      <div className="quick-actions" aria-label="Quick agent prompts">
+        <button type="button" onClick={() => handleQuickAction("Refine the itinerary pacing.")}>
+          Refine pacing
+        </button>
+        <button type="button" onClick={() => handleQuickAction("Prioritize the highest risk approvals.")}>
+          Prioritize approvals
+        </button>
+        <button type="button" onClick={() => handleQuickAction("Reorder the route by travel time.")}>
+          Reorder route
+        </button>
+        <button type="button" onClick={() => handleQuickAction("Create a client-ready draft summary.")}>
+          Draft summary
+        </button>
+      </div>
+
       <div className="chat-input-area">
         <form className="composer-form" onSubmit={submitComposer}>
-          <button type="button" className="attach-button">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+          <button type="button" className="attach-button" aria-label="Attach file">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+            </svg>
           </button>
           <input
             type="text"
             value={composerInput}
             onChange={(e) => setComposerInput(e.target.value)}
-            placeholder="Ask the agent anything..."
+            placeholder="Ask the agent to adjust the draft..."
           />
           <button type="submit" className="send-button" disabled={isSending || !composerInput.trim()}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
           </button>
         </form>
         {agentError && <p className="error-text">{agentError}</p>}
       </div>
 
-      <div className="quick-actions">
-        <button type="button" onClick={() => handleQuickAction("Add scenic train upgrade")}>Add scenic train upgrade</button>
-        <button type="button" onClick={() => handleQuickAction("Include spa experience")}>Include spa experience</button>
-        <button type="button" onClick={() => handleQuickAction("Adjust to slower pace")}>Adjust to slower pace</button>
-        <button type="button" onClick={() => handleQuickAction("Add day in Lucerne")}>Add day in Lucerne</button>
-      </div>
-
-      <div className="bottom-actions">
-        <div className="action-group">
-          <button type="button" className="btn-outline" onClick={() => handleQuickAction("Regenerate the current itinerary with stronger pacing.")}>
-             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-             Regenerate Plan
-          </button>
-          <button type="button" className="btn-outline" onClick={() => handleQuickAction("Optimize the route order by travel time.")}>
-             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-             Optimize Route
-          </button>
-        </div>
-        <button type="button" className="btn-solid dark">
-           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-           Save Draft
-        </button>
-      </div>
-
       <style jsx>{`
         .agent-command-center {
-          background: #ffffff;
-          border-radius: 16px;
-          border: 1px solid #E5E7EB;
+          background: #f8f9fb;
+          border-radius: 18px;
+          border: 1px solid #e6e9ee;
           padding: 24px;
           display: flex;
           flex-direction: column;
+          min-height: 0;
           height: 100%;
-          min-height: 800px;
-          font-family: 'Inter', sans-serif;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+          box-shadow: none;
+          backdrop-filter: none;
         }
 
         .chat-header {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          margin-bottom: 32px;
+          gap: 16px;
+          margin-bottom: 24px;
         }
 
         .header-title {
@@ -239,44 +276,57 @@ export default function AgentCommandCenter({
         .agent-avatar-large {
           width: 48px;
           height: 48px;
-          border-radius: 50%;
-          background: #113437;
+          border-radius: 16px;
+          background: #18484d;
           color: white;
           display: flex;
           align-items: center;
           justify-content: center;
+          box-shadow: 0 6px 12px rgba(17, 52, 55, 0.16);
+          flex-shrink: 0;
         }
 
         .header-title h2 {
-          font-size: 18px;
-          font-weight: 600;
-          color: #111827;
-          margin: 0 0 4px 0;
+          font-size: 32px;
+          font-weight: 700;
+          color: #102022;
+          margin: 0 0 6px 0;
+          font-family: "DM Serif Display", serif;
+          font-weight: 400;
         }
 
         .header-title p {
           font-size: 13px;
-          color: #6B7280;
+          color: #6b7280;
           margin: 0;
+          line-height: 1.6;
+          max-width: 52ch;
         }
 
         .agent-status-tag {
-          display: flex;
+          display: inline-flex;
           align-items: center;
           gap: 8px;
-          background: #FFF8E1;
-          color: #92400E;
-          padding: 6px 12px;
-          border-radius: 20px;
-          font-size: 13px;
-          font-weight: 600;
+          background: #e9eef8;
+          color: #2b5ec8;
+          padding: 9px 12px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+
+        .agent-status-tag.streaming {
+          background: #ecfdf5;
+          color: #047857;
         }
 
         .status-dot {
           width: 8px;
           height: 8px;
-          background: #10B981;
-          border-radius: 50%;
+          background: currentColor;
+          border-radius: 999px;
+          flex-shrink: 0;
         }
 
         .chat-log {
@@ -284,9 +334,44 @@ export default function AgentCommandCenter({
           overflow-y: auto;
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: 20px;
           padding-right: 8px;
-          margin-bottom: 24px;
+          margin-bottom: 20px;
+        }
+
+        .empty-state {
+          display: grid;
+          gap: 10px;
+          place-items: center;
+          min-height: 220px;
+          text-align: center;
+          padding: 24px;
+          border-radius: 20px;
+          border: 1px dashed #d1d5db;
+          background: rgba(255, 255, 255, 0.72);
+          color: #4b5563;
+        }
+
+        .empty-state strong {
+          font-size: 15px;
+          color: #111827;
+        }
+
+        .empty-state p {
+          margin: 0;
+          max-width: 44ch;
+          line-height: 1.6;
+        }
+
+        .empty-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 16px;
+          background: #f8fafc;
+          color: #b65d48;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .chat-row {
@@ -300,29 +385,30 @@ export default function AgentCommandCenter({
         }
 
         .avatar {
-          width: 32px;
-          height: 32px;
+          width: 34px;
+          height: 34px;
           border-radius: 50%;
           overflow: hidden;
           flex-shrink: 0;
-        }
-
-        .avatar img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .assistant-avatar {
-          background: #113437;
-          color: white;
           display: flex;
           align-items: center;
           justify-content: center;
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        .assistant-avatar {
+          background: linear-gradient(135deg, #113437, #1f4d53);
+          color: white;
+        }
+
+        .user-avatar {
+          background: linear-gradient(135deg, #d77a61, #b65d48);
+          color: white;
         }
 
         .message-content {
-          max-width: 75%;
+          max-width: 78%;
           display: flex;
           flex-direction: column;
           gap: 6px;
@@ -340,37 +426,37 @@ export default function AgentCommandCenter({
         }
 
         .sender {
-          font-weight: 600;
+          font-weight: 700;
           color: #374151;
         }
 
         .time {
-          color: #9CA3AF;
+          color: #9ca3af;
         }
 
         .bubble {
-          padding: 16px;
+          padding: 16px 16px 14px;
           font-size: 14px;
-          line-height: 1.5;
+          line-height: 1.65;
         }
 
         .user-bubble {
-          background: #F8F5F2;
-          border-radius: 16px 4px 16px 16px;
-          color: #1F2937;
+          background: #f2ece8;
+          border-radius: 16px;
+          color: #1f2937;
         }
 
         .assistant-bubble {
           background: white;
-          border: 1px solid #E5E7EB;
-          border-radius: 4px 16px 16px 16px;
-          color: #1F2937;
+          border: 1px solid #e5e7eb;
+          border-radius: 16px;
+          color: #1f2937;
         }
 
         .thinking-bubble {
           background: white;
-          border: 1px solid #E5E7EB;
-          border-radius: 4px 16px 16px 16px;
+          border: 1px solid #e5e7eb;
+          border-radius: 16px;
           padding: 16px;
           min-width: 300px;
         }
@@ -379,24 +465,29 @@ export default function AgentCommandCenter({
           display: flex;
           align-items: center;
           gap: 8px;
-          font-weight: 600;
-          color: #6B7280;
+          font-weight: 700;
+          color: #6b7280;
           font-size: 13px;
           margin-bottom: 12px;
         }
 
-        .dot-pulse {
-          letter-spacing: 2px;
+        .thinking-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 999px;
+          background: #d77a61;
+          box-shadow: 0 0 0 6px rgba(215, 122, 97, 0.12);
         }
 
         .tool-stepper {
           display: flex;
           align-items: center;
-          gap: 8px;
-          background: #F9FAFB;
+          gap: 10px;
+          background: #f8fafc;
           padding: 12px;
-          border-radius: 8px;
-          border: 1px solid #F3F4F6;
+          border-radius: 14px;
+          border: 1px solid #eef2f7;
+          flex-wrap: wrap;
         }
 
         .step {
@@ -406,15 +497,17 @@ export default function AgentCommandCenter({
         }
 
         .step-icon {
-          width: 16px;
-          height: 16px;
-          background: #10B981;
+          width: 18px;
+          height: 18px;
+          background: #10b981;
           color: white;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 10px;
+          font-weight: 700;
+          flex-shrink: 0;
         }
 
         .step-text {
@@ -423,74 +516,24 @@ export default function AgentCommandCenter({
         }
 
         .step-connector {
-          color: #9CA3AF;
+          color: #9ca3af;
           font-size: 12px;
         }
 
         .bubble p {
           margin: 0;
+          white-space: pre-wrap;
         }
 
         .expand-toggle {
           background: none;
           border: none;
-          color: #2563EB;
+          color: #b65d48;
           font-size: 12px;
           cursor: pointer;
           padding: 0;
           margin-top: 8px;
-        }
-
-        .chat-input-area {
-          margin-bottom: 16px;
-        }
-
-        .composer-form {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          background: white;
-          border: 1px solid #E5E7EB;
-          border-radius: 24px;
-          padding: 8px 16px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-        }
-
-        .composer-form input {
-          flex: 1;
-          border: none;
-          outline: none;
-          font-size: 14px;
-          color: #1F2937;
-          background: transparent;
-        }
-
-        .composer-form input::placeholder {
-          color: #9CA3AF;
-        }
-
-        .attach-button, .send-button {
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: #9CA3AF;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 4px;
-        }
-
-        .send-button {
-          background: #113437;
-          color: white;
-          border-radius: 50%;
-          width: 32px;
-          height: 32px;
-        }
-
-        .send-button:disabled {
-          background: #E5E7EB;
-          cursor: not-allowed;
+          font-weight: 600;
         }
 
         .quick-actions {
@@ -498,60 +541,92 @@ export default function AgentCommandCenter({
           gap: 8px;
           overflow-x: auto;
           padding-bottom: 8px;
-          margin-bottom: 24px;
+          margin-bottom: 18px;
         }
 
         .quick-actions button {
           white-space: nowrap;
-          padding: 8px 16px;
-          border-radius: 20px;
-          border: 1px solid #E5E7EB;
-          background: white;
-          color: #4B5563;
+          padding: 9px 14px;
+          border-radius: 999px;
+          border: 1px solid #e5e7eb;
+          background: rgba(255, 255, 255, 0.92);
+          color: #374151;
           font-size: 13px;
+          font-weight: 600;
           cursor: pointer;
-          transition: all 0.2s;
+          transition:
+            transform 0.16s ease,
+            border-color 0.16s ease,
+            background 0.16s ease;
         }
 
         .quick-actions button:hover {
-          background: #F9FAFB;
-          border-color: #D1D5DB;
-        }
-
-        .bottom-actions {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding-top: 16px;
-          border-top: 1px solid #F3F4F6;
-        }
-
-        .action-group {
-          display: flex;
-          gap: 12px;
-        }
-
-        .btn-outline, .btn-solid {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 10px 16px;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-        }
-
-        .btn-outline {
           background: white;
-          border: 1px solid #E5E7EB;
-          color: #374151;
+          border-color: #d1d5db;
+          transform: translateY(-1px);
         }
 
-        .btn-solid.dark {
-          background: #113437;
-          color: white;
+        .chat-input-area {
+          margin-top: auto;
+        }
+
+        .composer-form {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 24px;
+          padding: 10px 14px;
+          box-shadow: 0 14px 30px rgba(15, 23, 42, 0.04);
+        }
+
+        .composer-form input {
+          flex: 1;
           border: none;
+          outline: none;
+          font-size: 14px;
+          color: #1f2937;
+          background: transparent;
+        }
+
+        .composer-form input::placeholder {
+          color: #9ca3af;
+        }
+
+        .attach-button,
+        .send-button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #9ca3af;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 4px;
+        }
+
+        .send-button {
+          background: linear-gradient(135deg, #113437, #1f4d53);
+          color: white;
+          border-radius: 50%;
+          width: 36px;
+          height: 36px;
+          box-shadow: 0 14px 24px rgba(17, 52, 55, 0.18);
+        }
+
+        .send-button:disabled {
+          background: #e5e7eb;
+          color: #9ca3af;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
+
+        .error-text {
+          margin: 10px 6px 0;
+          color: #b91c1c;
+          font-size: 12px;
+          font-weight: 600;
         }
       `}</style>
     </div>

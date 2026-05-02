@@ -1,120 +1,160 @@
-import React from 'react';
+import React, { useMemo } from "react";
+
+function getPriorityLabel(trip) {
+  if (typeof trip?.priorityScore === "number" && trip.priorityScore >= 70) {
+    return "Critical";
+  }
+
+  if (typeof trip?.priorityScore === "number" && trip.priorityScore >= 45) {
+    return "High";
+  }
+
+  return "Priority";
+}
+
+function getDeadlineLabel(trip) {
+  if (typeof trip?.daysUntilDeparture === "number") {
+    if (trip.daysUntilDeparture < 0) return "Departed";
+    if (trip.daysUntilDeparture === 0) return "Today";
+    if (trip.daysUntilDeparture === 1) return "1 day";
+    return `${trip.daysUntilDeparture} days`;
+  }
+
+  return "Date pending";
+}
 
 export default function AgentPriorityQueue({ trips }) {
-  const queue = [
-    { id: 1, initials: 'HF', bg: '#D77A61', name: 'Harrington Family - Italy', subtext: 'Proposal due in 4h', level: 'High' },
-    { id: 2, initials: 'JH', bg: '#B65D48', name: 'Johnson Honeymoon - Bali', subtext: 'Supplier response pending', level: 'High' },
-    { id: 3, initials: 'EG', bg: '#4A5D67', name: 'Evans Group - Japan', subtext: 'Client asked for changes', level: 'Medium' },
-    { id: 4, initials: 'TF', bg: '#7D8C94', name: 'Thompson Family - Costa Rica', subtext: 'Awaiting approval', level: 'Medium' }
-  ];
+  const queue = useMemo(() => (Array.isArray(trips) ? trips : []), [trips]);
 
   return (
-    <div className="dashboard-card priority-queue">
+    <section className="dashboard-card priority-queue" aria-label="Priority queue">
       <div className="card-header">
         <div className="header-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D77A61" strokeWidth="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-          <h2>Priority Queue</h2>
-          <span className="badge">4</span>
-        </div>
-        <button className="view-all">View all</button>
-      </div>
-
-      <div className="queue-list">
-        {queue.map(item => (
-          <div key={item.id} className="queue-item">
-            <div className="avatar" style={{ backgroundColor: item.bg }}>{item.initials}</div>
-            <div className="item-info">
-              <strong>{item.name}</strong>
-              <span>{item.subtext}</span>
-            </div>
-            <div className={`priority-pill ${item.level.toLowerCase()}`}>{item.level}</div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b65d48" strokeWidth="2">
+            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+            <line x1="4" y1="22" x2="4" y2="15" />
+          </svg>
+          <div>
+            <h2>Priority Queue</h2>
+            <p>Trips ranked by urgency and readiness</p>
           </div>
-        ))}
+        </div>
       </div>
 
-      <div className="card-footer">
-        <button className="footer-link">+ New Itinerary</button>
-      </div>
+      {queue.length > 0 ? (
+        <div className="queue-list">
+          {queue.map((item, index) => (
+            <article key={item?.id ?? `${item?.clientName ?? "trip"}-${index}`} className="queue-item">
+              <div className="rank-badge">{index + 1}</div>
+              <div className="item-info">
+                <strong>{item?.clientName || "Client pending"}</strong>
+                <span>{item?.destination || "Destination pending"}</span>
+                <div className="meta-row">
+                  <span>{item?.travelWindow || "Dates pending"}</span>
+                  {item?.nextAction ? <span>{item.nextAction}</span> : null}
+                </div>
+              </div>
+              <div className="right-column">
+                <span className={`priority-pill ${getPriorityLabel(item).toLowerCase()}`}>{getPriorityLabel(item)}</span>
+                <span className="deadline-pill">{getDeadlineLabel(item)}</span>
+                <strong className="readiness">{typeof item?.readinessPercent === "number" ? `${item.readinessPercent}% ready` : "Readiness pending"}</strong>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-state">
+          <strong>No trips in the priority queue</strong>
+          <p>Trips with upcoming departures, approval blockers, or lower readiness will surface here automatically.</p>
+        </div>
+      )}
 
       <style jsx>{`
         .dashboard-card {
-          background: white;
-          border-radius: 12px;
-          border: 1px solid #E5E7EB;
-          padding: 24px;
+          background: rgba(255, 255, 255, 0.94);
+          border-radius: 20px;
+          border: 1px solid #e5e7eb;
+          padding: 20px;
           display: flex;
           flex-direction: column;
-          height: 100%;
+          min-height: 320px;
+          box-shadow: 0 18px 34px rgba(15, 23, 42, 0.04);
         }
 
         .card-header {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
+          align-items: flex-start;
+          gap: 14px;
+          margin-bottom: 18px;
         }
 
         .header-title {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           gap: 12px;
         }
 
         .header-title h2 {
           font-size: 16px;
-          font-weight: 600;
-          margin: 0;
+          font-weight: 700;
+          margin: 0 0 4px;
           color: #111827;
         }
 
-        .badge {
-          background: #F3F4F6;
-          color: #374151;
+        .header-title p {
+          margin: 0;
           font-size: 12px;
-          padding: 2px 8px;
-          border-radius: 12px;
-          font-weight: 500;
+          color: #6b7280;
+          line-height: 1.5;
         }
 
-        .view-all {
-          background: none;
-          border: none;
-          color: #6B7280;
-          font-size: 13px;
-          cursor: pointer;
+        .badge {
+          background: #f8fafc;
+          color: #374151;
+          font-size: 12px;
+          padding: 6px 10px;
+          border-radius: 999px;
+          font-weight: 700;
+          border: 1px solid #e5e7eb;
         }
 
         .queue-list {
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 12px;
           flex: 1;
         }
 
         .queue-item {
-          display: flex;
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) auto;
+          gap: 12px;
           align-items: center;
-          gap: 16px;
+          padding: 14px;
+          border-radius: 16px;
+          background: #f8fafc;
+          border: 1px solid #eef2f7;
         }
 
-        .avatar {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
+        .rank-badge {
+          width: 30px;
+          height: 30px;
+          border-radius: 10px;
           display: flex;
           align-items: center;
           justify-content: center;
+          background: linear-gradient(135deg, #113437, #1f4d53);
           color: white;
           font-size: 12px;
-          font-weight: 600;
+          font-weight: 700;
           flex-shrink: 0;
         }
 
         .item-info {
-          display: flex;
-          flex-direction: column;
-          flex: 1;
-          min-width: 0; /* allows text truncation */
+          display: grid;
+          gap: 4px;
+          min-width: 0;
         }
 
         .item-info strong {
@@ -125,47 +165,102 @@ export default function AgentPriorityQueue({ trips }) {
           text-overflow: ellipsis;
         }
 
-        .item-info span {
+        .item-info > span,
+        .meta-row span {
           font-size: 12px;
-          color: #6B7280;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          color: #6b7280;
         }
 
-        .priority-pill {
-          padding: 4px 10px;
-          border-radius: 12px;
+        .meta-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px 12px;
+        }
+
+        .meta-row span + span {
+          position: relative;
+        }
+
+        .meta-row span + span::before {
+          content: "";
+        }
+
+        .right-column {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 6px;
+        }
+
+        .priority-pill,
+        .deadline-pill {
+          padding: 6px 10px;
+          border-radius: 999px;
           font-size: 11px;
-          font-weight: 600;
-          flex-shrink: 0;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+
+        .priority-pill.critical {
+          background: #fee2e2;
+          color: #b91c1c;
         }
 
         .priority-pill.high {
-          background: #FEF3C7;
-          color: #D97706;
+          background: #fff7ed;
+          color: #c2410c;
         }
 
-        .priority-pill.medium {
-          background: #F3F4F6;
-          color: #4B5563;
+        .priority-pill.priority {
+          background: #ecfeff;
+          color: #0f766e;
         }
 
-        .card-footer {
-          margin-top: 24px;
-          text-align: center;
-          border-top: 1px solid #E5E7EB;
-          padding-top: 16px;
+        .deadline-pill {
+          background: #f1f5f9;
+          color: #334155;
         }
 
-        .footer-link {
-          background: none;
-          border: none;
-          color: #6B7280;
+        .readiness {
+          font-size: 12px;
+          color: #111827;
+        }
+
+        .empty-state {
+          padding: 22px;
+          text-align: left;
+          color: #4b5563;
+          background: #f8fafc;
+          border-radius: 16px;
+          border: 1px dashed #d1d5db;
+          display: grid;
+          gap: 8px;
+        }
+
+        .empty-state strong {
+          color: #111827;
+          font-size: 14px;
+        }
+
+        .empty-state p {
+          margin: 0;
           font-size: 13px;
-          cursor: pointer;
+          line-height: 1.6;
+        }
+
+        @media (max-width: 1280px) {
+          .queue-item {
+            grid-template-columns: auto minmax(0, 1fr);
+          }
+
+          .right-column {
+            grid-column: 1 / -1;
+            align-items: flex-start;
+            flex-direction: row;
+            flex-wrap: wrap;
+          }
         }
       `}</style>
-    </div>
+    </section>
   );
 }

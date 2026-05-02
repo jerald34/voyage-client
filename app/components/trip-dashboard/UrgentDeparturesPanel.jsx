@@ -1,102 +1,131 @@
-import React from 'react';
+import React, { useMemo } from "react";
+
+function formatDepartureLabel(trip) {
+  if (typeof trip?.daysUntilDeparture === "number") {
+    if (trip.daysUntilDeparture < 0) return "Departed";
+    if (trip.daysUntilDeparture === 0) return "Departs today";
+    if (trip.daysUntilDeparture === 1) return "Departs in 1 day";
+    return `Departs in ${trip.daysUntilDeparture} days`;
+  }
+
+  if (typeof trip?.departureDate === "string" && trip.departureDate.trim()) {
+    return trip.departureDate;
+  }
+
+  return "Departure pending";
+}
 
 export default function UrgentDeparturesPanel({ trips }) {
-  const queue = [
-    { id: 1, month: 'MAY', day: '24', name: 'Anderson Family - Greece', subtext: 'Departs in 2 days' },
-    { id: 2, month: 'MAY', day: '25', name: 'Chen Family - Portugal', subtext: 'Departs in 3 days' },
-    { id: 3, month: 'MAY', day: '26', name: 'Williams - Iceland', subtext: 'Departs in 4 days' }
-  ];
+  const queue = useMemo(() => (Array.isArray(trips) ? trips : []), [trips]);
 
   return (
-    <div className="dashboard-card urgent-departures">
+    <section className="dashboard-card urgent-departures" aria-label="Urgent departures">
       <div className="card-header">
         <div className="header-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D77A61" strokeWidth="2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.2-1.1.6L3 8l6 4-3 3-3.2-.8c-.4-.1-.8.2-1 .6L1 16l4 2 2 4c.4.2.7-.2.6-.6l-.8-3.2 3-3 4 6c.4-.2.7-.6.6-1.1L16 13l8.2-8.2"/></svg>
-          <h2>Urgent Departures</h2>
-          <span className="badge">3</span>
-        </div>
-        <button className="view-all">View all</button>
-      </div>
-
-      <div className="queue-list">
-        {queue.map(item => (
-          <div key={item.id} className="queue-item">
-            <div className="date-stack">
-              <span className="month">{item.month}</span>
-              <span className="day">{item.day}</span>
-            </div>
-            <div className="item-info">
-              <strong>{item.name}</strong>
-              <span>{item.subtext}</span>
-            </div>
-            <div className="status-pill">In Progress</div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b65d48" strokeWidth="2">
+            <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.2-1.1.6L3 8l6 4-3 3-3.2-.8c-.4-.1-.8.2-1 .6L1 16l4 2 2 4c.4.2.7-.2.6-.6l-.8-3.2 3-3 4 6c.4-.2.7-.6.6-1.1L16 13l8.2-8.2" />
+          </svg>
+          <div>
+            <h2>Urgent Departures</h2>
+            <p>Trips leaving within the next 30 days</p>
           </div>
-        ))}
+        </div>
       </div>
 
-      <div className="card-footer">
-        <button className="footer-link">Go to Departures</button>
-      </div>
+      {queue.length > 0 ? (
+        <div className="queue-list">
+          {queue.map((item, index) => (
+            <article key={item?.id ?? `${item?.clientName ?? "departure"}-${index}`} className="queue-item">
+              <div className="date-stack">
+                <span className="month">{item?.departureDate ? String(item.departureDate).slice(5, 7) : "--"}</span>
+                <span className="day">{item?.departureDate ? String(item.departureDate).slice(-2) : "--"}</span>
+              </div>
+              <div className="item-info">
+                <strong>{item?.clientName || "Client pending"}</strong>
+                <span>{item?.destination || "Destination pending"}</span>
+                <div className="meta-row">
+                  <span>{item?.travelWindow || "Dates pending"}</span>
+                </div>
+              </div>
+              <div className="status-column">
+                <span className="status-pill">{formatDepartureLabel(item)}</span>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-state">
+          <strong>No departures need attention</strong>
+          <p>Trips with departure dates in the next 30 days will appear here automatically.</p>
+        </div>
+      )}
 
       <style jsx>{`
         .dashboard-card {
-          background: white;
-          border-radius: 12px;
-          border: 1px solid #E5E7EB;
-          padding: 24px;
+          background: rgba(255, 255, 255, 0.94);
+          border-radius: 20px;
+          border: 1px solid #e5e7eb;
+          padding: 20px;
           display: flex;
           flex-direction: column;
-          height: 100%;
+          min-height: 320px;
+          box-shadow: 0 18px 34px rgba(15, 23, 42, 0.04);
         }
 
         .card-header {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
+          align-items: flex-start;
+          gap: 14px;
+          margin-bottom: 18px;
         }
 
         .header-title {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           gap: 12px;
         }
 
         .header-title h2 {
           font-size: 16px;
-          font-weight: 600;
-          margin: 0;
+          font-weight: 700;
+          margin: 0 0 4px;
           color: #111827;
         }
 
-        .badge {
-          background: #F3F4F6;
-          color: #374151;
+        .header-title p {
+          margin: 0;
           font-size: 12px;
-          padding: 2px 8px;
-          border-radius: 12px;
-          font-weight: 500;
+          color: #6b7280;
+          line-height: 1.5;
         }
 
-        .view-all {
-          background: none;
-          border: none;
-          color: #6B7280;
-          font-size: 13px;
-          cursor: pointer;
+        .badge {
+          background: #f8fafc;
+          color: #374151;
+          font-size: 12px;
+          padding: 6px 10px;
+          border-radius: 999px;
+          font-weight: 700;
+          border: 1px solid #e5e7eb;
         }
 
         .queue-list {
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 12px;
           flex: 1;
         }
 
         .queue-item {
-          display: flex;
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) auto;
+          gap: 12px;
           align-items: center;
-          gap: 16px;
+          padding: 14px;
+          border-radius: 16px;
+          background: #f8fafc;
+          border: 1px solid #eef2f7;
         }
 
         .date-stack {
@@ -104,26 +133,26 @@ export default function UrgentDeparturesPanel({ trips }) {
           flex-direction: column;
           align-items: center;
           flex-shrink: 0;
-          min-width: 32px;
+          min-width: 42px;
+          gap: 2px;
         }
 
         .month {
           font-size: 10px;
-          color: #6B7280;
-          font-weight: 600;
-          text-transform: uppercase;
+          color: #6b7280;
+          font-weight: 700;
+          letter-spacing: 0.14em;
         }
 
         .day {
           font-size: 16px;
           color: #111827;
-          font-weight: 700;
+          font-weight: 800;
         }
 
         .item-info {
-          display: flex;
-          flex-direction: column;
-          flex: 1;
+          display: grid;
+          gap: 4px;
           min-width: 0;
         }
 
@@ -135,40 +164,67 @@ export default function UrgentDeparturesPanel({ trips }) {
           text-overflow: ellipsis;
         }
 
-        .item-info span {
+        .item-info > span,
+        .meta-row span {
           font-size: 12px;
-          color: #6B7280;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          color: #6b7280;
+        }
+
+        .meta-row {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .status-column {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
         }
 
         .status-pill {
-          padding: 4px 10px;
-          border-radius: 12px;
+          padding: 6px 10px;
+          border-radius: 999px;
           font-size: 11px;
-          font-weight: 600;
-          background: #ECFDF5;
-          color: #059669;
-          flex-shrink: 0;
+          font-weight: 700;
+          background: #ecfdf5;
+          color: #047857;
           white-space: nowrap;
         }
 
-        .card-footer {
-          margin-top: 24px;
-          text-align: center;
-          border-top: 1px solid #E5E7EB;
-          padding-top: 16px;
+        .empty-state {
+          padding: 22px;
+          text-align: left;
+          color: #4b5563;
+          background: #f8fafc;
+          border-radius: 16px;
+          border: 1px dashed #d1d5db;
+          display: grid;
+          gap: 8px;
         }
 
-        .footer-link {
-          background: none;
-          border: none;
-          color: #6B7280;
+        .empty-state strong {
+          color: #111827;
+          font-size: 14px;
+        }
+
+        .empty-state p {
+          margin: 0;
           font-size: 13px;
-          cursor: pointer;
+          line-height: 1.6;
+        }
+
+        @media (max-width: 1280px) {
+          .queue-item {
+            grid-template-columns: auto minmax(0, 1fr);
+          }
+
+          .status-column {
+            grid-column: 1 / -1;
+            justify-content: flex-start;
+          }
         }
       `}</style>
-    </div>
+    </section>
   );
 }
