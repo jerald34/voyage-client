@@ -16,6 +16,7 @@
   --voyage-radius-md: 18px;
   --voyage-radius-sm: 12px;
   --voyage-radius-pill: 999px;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --space-hero: clamp(80px, 12vh, 160px);
   --section-gap: clamp(100px, 12vw, 160px);
 

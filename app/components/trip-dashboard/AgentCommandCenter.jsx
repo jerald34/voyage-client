@@ -1,6 +1,9 @@
-export default function AgentCommandCenter({ insights, onPrepareFollowUps, onRunReview }) {
+import Link from "next/link";
+
+export default function AgentCommandCenter({ agencyId, insights, onPrepareFollowUps, onRunReview }) {
   const safeInsights = Array.isArray(insights) ? insights : [];
   const canPrepareFollowUps = typeof onPrepareFollowUps === "function";
+  const agentHref = agencyId ? `/agency/${agencyId}/agent` : '#';
 
   return (
     <section className="agency-agent-panel frame-panel">
@@ -20,21 +23,11 @@ export default function AgentCommandCenter({ insights, onPrepareFollowUps, onRun
           ))}
         </div>
         <div className="agency-command-buttons">
-          <button className="button button-primary" type="button" onClick={onRunReview}>
+          <Link href={agentHref} className="button button-primary" style={{ textDecoration: 'none' }}>
+             Create Itinerary with Agent
+          </Link>
+          <button className="button button-secondary" type="button" onClick={onRunReview}>
             Run Agency Review
-          </button>
-          <button
-            className="button button-secondary"
-            disabled={!canPrepareFollowUps}
-            onClick={canPrepareFollowUps ? onPrepareFollowUps : undefined}
-            title={
-              canPrepareFollowUps
-                ? undefined
-                : "Prototype action pending: client follow-up preparation is not wired yet."
-            }
-            type="button"
-          >
-            Prepare today's client follow-ups
           </button>
         </div>
       </div>

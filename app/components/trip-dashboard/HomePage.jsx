@@ -14,12 +14,19 @@ import ApprovalQueuePanel from "./ApprovalQueuePanel.jsx";
 import ClientTripPortfolio from "./ClientTripPortfolio.jsx";
 import UrgentDeparturesPanel from "./UrgentDeparturesPanel.jsx";
 
-export default function HomePage({ agencyTrips = initialAgencyPortfolioTrips, onContinue, onOpenTrip }) {
-  const [user, setUser] = useState(null);
+export default function HomePage({ user: userProp, agencyTrips = initialAgencyPortfolioTrips, onContinue, onOpenTrip }) {
+  const [user, setUser] = useState(userProp || null);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
+  // Sync with prop updates (e.g. when /auth/me returns)
   useEffect(() => {
+    if (userProp) setUser(userProp);
+  }, [userProp]);
+
+  // Fallback: read from localStorage if no prop provided
+  useEffect(() => {
+    if (user) return;
     const stored = localStorage.getItem("voyage-user");
     if (stored) {
       try {
@@ -28,7 +35,7 @@ export default function HomePage({ agencyTrips = initialAgencyPortfolioTrips, on
         console.error("Failed to parse user", e);
       }
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -100,7 +107,7 @@ export default function HomePage({ agencyTrips = initialAgencyPortfolioTrips, on
         </div>
       </header>
 
-      <AgentCommandCenter insights={insights} onRunReview={onContinue} />
+      <AgentCommandCenter agencyId={user?.memberships?.[0]?.agencyId} insights={insights} onRunReview={onContinue} />
 
       <AgencyMetricStrip summary={summary} />
 
