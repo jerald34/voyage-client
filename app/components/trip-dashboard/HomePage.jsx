@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "../../hooks/useAuth.js";
 import { useAgentRunStream } from "../../hooks/useAgentRunStream.js";
 import {
   createAgentThread,
@@ -206,6 +207,7 @@ async function ensureNewItineraryThreadState({
 }
 
 export default function HomePage({ user: userProp, agencyTrips = [], onContinue, onOpenTrip, onNewItinerary }) {
+  const { logout } = useAuth();
   const [user, setUser] = useState(userProp || null);
   const [selectedTripId, setSelectedTripId] = useState(agencyTrips[0]?.id ?? null);
   const [isNewItineraryActive, setIsNewItineraryActive] = useState(!agencyTrips[0]?.id);
@@ -242,7 +244,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   } = useAgentRunStream(agencyId ?? "");
 
   useEffect(() => {
-    if (userProp) setUser(userProp);
+    setUser(userProp);
   }, [userProp]);
 
   useEffect(() => {
@@ -739,7 +741,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
               </span>
               <span>Reports</span>
             </button>
-            <button type="button" className="nav-item nav-item-bottom">
+            <button type="button" className="nav-item">
               <span className="icon-wrapper" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <circle cx="12" cy="12" r="3" />
@@ -747,6 +749,20 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
                 </svg>
               </span>
               <span>Settings</span>
+            </button>
+            <button
+              type="button"
+              className="nav-item nav-item-bottom"
+              onClick={logout}
+            >
+              <span className="icon-wrapper" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </span>
+              <span>Logout</span>
             </button>
           </nav>
         </aside>

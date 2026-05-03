@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 function getInitials(name) {
   const parts = String(name ?? "")
@@ -33,9 +34,7 @@ export default function AgentCommandCenter({
   onNewItinerary,
   activeMessages = 0,
 }) {
-  const [expandedMessageIds, setExpandedMessageIds] = useState({});
   const [isClientMenuOpen, setIsClientMenuOpen] = useState(false);
-  const messageClampLength = 220;
   const messagesEndRef = useRef(null);
   const clientMenuRef = useRef(null);
 
@@ -95,32 +94,21 @@ export default function AgentCommandCenter({
     }
   }, [displayedMessages, assistantMessage, activeToolCalls]);
 
-  function toggleMessageExpansion(messageId) {
-    setExpandedMessageIds((prev) => ({ ...prev, [messageId]: !prev[messageId] }));
-  }
-
-  function getMessageContent(message) {
-    const rawContent = String(message?.content ?? "").trim();
-    const isExpanded = Boolean(expandedMessageIds[message.id]);
-    const isLong = rawContent.length > messageClampLength;
-    const preview = isLong && !isExpanded ? `${rawContent.slice(0, messageClampLength).trimEnd()}...` : rawContent;
-    return { preview, isLong, isExpanded };
-  }
-
   function submitComposer(event) {
     event.preventDefault();
     void dispatchAgentMessage(composerInput);
   }
 
+
   return (
     <div className="agent-command-center">
       <header className="chat-header">
         <div className="header-title">
-          <div className="agent-avatar-large" aria-hidden="true">
+          {/* <div className="agent-avatar-large" aria-hidden="true">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M2 12h4l3-9 5 18 3-9h5" />
             </svg>
-          </div>
+          </div> */}
           <div className="header-tools">
             <button
               className="new-itinerary-button"
@@ -189,9 +177,9 @@ export default function AgentCommandCenter({
                               <path d="m20 6-11 11-5-5" />
                             </svg>
                           )}
-                          </button>
-                        );
-                      })
+                        </button>
+                      );
+                    })
                   ) : (
                     <div className="client-menu-empty" role="status" aria-live="polite">
                       <strong>{clientMenuEmptyTitle}</strong>
@@ -222,7 +210,6 @@ export default function AgentCommandCenter({
           </div>
         ) : (
           displayedMessages.map((message) => {
-            const contentState = getMessageContent(message);
             const isUser = message.role === "user";
 
             return (
@@ -241,11 +228,12 @@ export default function AgentCommandCenter({
                     <span className="time">{isUser ? "You" : "Agent"}</span>
                   </div>
                   <div className={`bubble ${isUser ? "user-bubble" : "assistant-bubble"}`}>
-                    <p>{contentState.preview}</p>
-                    {contentState.isLong && (
-                      <button className="expand-toggle" onClick={() => toggleMessageExpansion(message.id)} type="button">
-                        {contentState.isExpanded ? "Show less" : "Show more"}
-                      </button>
+                    {isUser ? (
+                      <p>{message.content}</p>
+                    ) : (
+                      <div className="markdown-content">
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -300,7 +288,11 @@ export default function AgentCommandCenter({
               </svg>
             </div>
             <div className="message-content">
-              <div className="bubble assistant-bubble streaming">{assistantMessage}</div>
+              <div className="bubble assistant-bubble streaming">
+                <div className="markdown-content">
+                  <ReactMarkdown>{assistantMessage}</ReactMarkdown>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -753,8 +745,8 @@ export default function AgentCommandCenter({
 
         .bubble {
           padding: 16px 16px 14px;
-          font-size: 14px;
-          line-height: 1.65;
+          font-size: 15px;
+          line-height: 1.75;
         }
 
         .user-bubble {
@@ -765,18 +757,21 @@ export default function AgentCommandCenter({
         }
 
         .assistant-bubble {
-          background: var(--voyage-primary);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          border-radius: 4px 20px 20px 20px;
-          color: #f8fafc;
-          box-shadow: 0 4px 12px rgba(34, 56, 67, 0.16);
+          background: #ffffff;
+          border: 1px solid var(--voyage-border);
+          border-left: 4px solid var(--voyage-secondary);
+          border-radius: 4px 18px 18px 18px;
+          color: var(--voyage-primary);
+          box-shadow: var(--voyage-shadow-soft);
+          padding: 20px 24px;
         }
 
         .thinking-bubble {
-          background: white;
+          background: #ffffff;
           border: 1px solid var(--voyage-border);
-          border-radius: 16px;
-          padding: 16px;
+          border-left: 4px solid var(--voyage-accent);
+          border-radius: 18px;
+          padding: 20px;
           min-width: 300px;
           box-shadow: var(--voyage-shadow-soft);
         }
@@ -845,15 +840,34 @@ export default function AgentCommandCenter({
           white-space: pre-wrap;
         }
 
-        .expand-toggle {
-          background: none;
-          border: none;
-          color: #b65d48;
-          font-size: 12px;
-          cursor: pointer;
-          padding: 0;
-          margin-top: 8px;
-          font-weight: 600;
+        .markdown-content p {
+          margin: 0.85em 0;
+        }
+        .markdown-content p:first-child {
+          margin-top: 0;
+        }
+        .markdown-content p:last-child {
+          margin-bottom: 0;
+        }
+        .markdown-content ul, .markdown-content ol {
+          margin: 0.85em 0;
+          padding-left: 1.75em;
+        }
+        .markdown-content li {
+          margin-bottom: 0.5em;
+        }
+        .markdown-content strong {
+          font-weight: 700;
+        }
+        .markdown-content em {
+          font-style: italic;
+        }
+        .markdown-content code {
+          background: rgba(0, 0, 0, 0.1);
+          padding: 0.2em 0.4em;
+          border-radius: 4px;
+          font-family: monospace;
+          font-size: 0.9em;
         }
 
         .chat-input-area {
@@ -1002,8 +1016,9 @@ export default function AgentCommandCenter({
           }
 
           .bubble {
-            padding: 12px 14px;
-            font-size: 13px;
+            padding: 16px 18px;
+            font-size: 14px;
+            line-height: 1.7;
           }
 
           .composer-form {
