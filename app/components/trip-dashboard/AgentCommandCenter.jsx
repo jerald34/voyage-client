@@ -99,20 +99,16 @@ export default function AgentCommandCenter({
     void dispatchAgentMessage(composerInput);
   }
 
-  function submitComposer(event) {
-    event.preventDefault();
-    void dispatchAgentMessage(composerInput);
-  }
 
   return (
     <div className="agent-command-center">
       <header className="chat-header">
         <div className="header-title">
-          <div className="agent-avatar-large" aria-hidden="true">
+          {/* <div className="agent-avatar-large" aria-hidden="true">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M2 12h4l3-9 5 18 3-9h5" />
             </svg>
-          </div>
+          </div> */}
           <div className="header-tools">
             <button
               className="new-itinerary-button"
@@ -181,9 +177,9 @@ export default function AgentCommandCenter({
                               <path d="m20 6-11 11-5-5" />
                             </svg>
                           )}
-                          </button>
-                        );
-                      })
+                        </button>
+                      );
+                    })
                   ) : (
                     <div className="client-menu-empty" role="status" aria-live="polite">
                       <strong>{clientMenuEmptyTitle}</strong>
