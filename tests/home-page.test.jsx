@@ -63,6 +63,13 @@ vi.mock("../app/hooks/useAgentRunStream.js", () => ({
   }),
 }));
 
+vi.mock("../app/hooks/useAuth.js", () => ({
+  useAuth: () => ({
+    logout: vi.fn(),
+    user: null,
+  }),
+}));
+
 vi.mock("../app/lib/api.js", () => ({
   createAgentThread: (...args) => mocks.createAgentThreadMock(...args),
   fetchAgentThread: (...args) => mocks.fetchAgentThreadMock(...args),

@@ -20,6 +20,7 @@ import ClientTripPortfolio from "./ClientTripPortfolio.jsx";
 import UrgentDeparturesPanel from "./UrgentDeparturesPanel.jsx";
 import AgentCommandCenter from "./AgentCommandCenter.jsx";
 import ItineraryDraftPanel from "./ItineraryDraftPanel.jsx";
+import ClientItineraryPage from "./ClientItineraryPage.jsx";
 
 const NEW_ITINERARY_THREAD_KEY = "new-itinerary-thread";
 
@@ -222,6 +223,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   const [isSending, setIsSending] = useState(false);
   const [agentError, setAgentError] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("command-center");
   const tripStatesRef = useRef(tripStates);
   const newItineraryStateRef = useRef(newItineraryState);
   const newItineraryPromiseRef = useRef(null);
@@ -632,30 +634,30 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   return (
     <div className="voyage-dashboard-layout">
       <header className="voyage-header">
-          <div className="brand-logo">
-            <button
-              className="mobile-menu-toggle"
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              aria-label="Toggle menu"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                {isSidebarOpen ? (
-                  <path d="M18 6L6 18M6 6l12 12" />
-                ) : (
-                  <path d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
-            </button>
-            <span className="brand-mark" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2l3.2 6.3 6.8 1-4.9 4.8 1.2 6.8L12 17.7 5.7 21l1.2-6.8L2 9.3l6.8-1L12 2z" />
-              </svg>
-            </span>
-            <div className="brand-text">
-              <div className="brand-name">VOYAGE</div>
-              <div className="brand-subtitle">Agency trip workspace</div>
-            </div>
+        <div className="brand-logo">
+          <button
+            className="mobile-menu-toggle"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            aria-label="Toggle menu"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {isSidebarOpen ? (
+                <path d="M18 6L6 18M6 6l12 12" />
+              ) : (
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
+          <span className="brand-mark" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2l3.2 6.3 6.8 1-4.9 4.8 1.2 6.8L12 17.7 5.7 21l1.2-6.8L2 9.3l6.8-1L12 2z" />
+            </svg>
+          </span>
+          <div className="brand-text">
+            <div className="brand-name">VOYAGE</div>
+            <div className="brand-subtitle">Agency trip workspace</div>
           </div>
+        </div>
 
         <div className="header-actions">
           <div className={`run-status ${streamError ? "danger" : isStreaming ? "streaming" : "idle"}`}>
@@ -680,7 +682,11 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
         )}
         <aside className={`voyage-sidebar ${isSidebarOpen ? "open" : ""}`} aria-label="Dashboard navigation">
           <nav className="sidebar-nav">
-            <button type="button" className="nav-item active">
+            <button
+              type="button"
+              className={`nav-item ${activeTab === "command-center" ? "active" : ""}`}
+              onClick={() => setActiveTab("command-center")}
+            >
               <span className="icon-wrapper" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -688,7 +694,11 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
               </span>
               <span>Command Center</span>
             </button>
-            <button type="button" className="nav-item">
+            <button
+              type="button"
+              className={`nav-item ${activeTab === "itineraries" ? "active" : ""}`}
+              onClick={() => setActiveTab("itineraries")}
+            >
               <span className="icon-wrapper" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -711,7 +721,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
               </span>
               <span>Clients</span>
             </button>
-            <button type="button" className="nav-item">
+            {/* <button type="button" className="nav-item">
               <span className="icon-wrapper" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
@@ -719,8 +729,8 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
                   <line x1="12" y1="22.08" x2="12" y2="12" />
                 </svg>
               </span>
-              <span>Suppliers</span>
-            </button>
+              <span>Suppliersss</span>
+            </button> */}
             <button type="button" className="nav-item">
               <span className="icon-wrapper" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -732,7 +742,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
               </span>
               <span>Bookings</span>
             </button>
-            <button type="button" className="nav-item">
+            {/* <button type="button" className="nav-item">
               <span className="icon-wrapper" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
@@ -740,7 +750,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
                 </svg>
               </span>
               <span>Reports</span>
-            </button>
+            </button> */}
             <button type="button" className="nav-item">
               <span className="icon-wrapper" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -768,38 +778,42 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
         </aside>
 
         <main className="voyage-main-content">
-          <section className="hero-stack">
-            <div className="agentic-surface">
-              <AgentCommandCenter
-                messages={messages}
-                isStreaming={isStreaming}
-                assistantMessage={assistantMessage}
-                toolCalls={toolCalls}
-                dispatchAgentMessage={dispatchAgentMessage}
-                composerInput={composerInput}
-                setComposerInput={setComposerInput}
-                isSending={isSending}
-                agentError={agentError}
-                user={user}
-                activeTrip={activeTrip}
-                availableTrips={safeTrips}
-                onNewItinerary={handleNewItinerary}
-                onTripChange={(tripId) => {
-                  setSelectedTripId(tripId);
-                  setIsNewItineraryActive(false);
-                  setComposerInput("");
-                }}
-              />
-              <ItineraryDraftPanel
-                itinerary={activeTripState?.itinerary ?? null}
-                draftDays={Array.isArray(activeTripState?.itinerary?.days) ? activeTripState.itinerary.days : []}
-                draftVersion={draftVersion}
-                tripSummary={tripSummary}
-                onContinue={onContinue}
-                dispatchAgentMessage={dispatchAgentMessage}
-              />
-            </div>
-          </section>
+          {activeTab === "command-center" ? (
+            <section className="hero-stack">
+              <div className="agentic-surface">
+                <AgentCommandCenter
+                  messages={messages}
+                  isStreaming={isStreaming}
+                  assistantMessage={assistantMessage}
+                  toolCalls={toolCalls}
+                  dispatchAgentMessage={dispatchAgentMessage}
+                  composerInput={composerInput}
+                  setComposerInput={setComposerInput}
+                  isSending={isSending}
+                  agentError={agentError}
+                  user={user}
+                  activeTrip={activeTrip}
+                  availableTrips={safeTrips}
+                  onNewItinerary={handleNewItinerary}
+                  onTripChange={(tripId) => {
+                    setSelectedTripId(tripId);
+                    setIsNewItineraryActive(false);
+                    setComposerInput("");
+                  }}
+                />
+                <ItineraryDraftPanel
+                  itinerary={activeTripState?.itinerary ?? null}
+                  draftDays={Array.isArray(activeTripState?.itinerary?.days) ? activeTripState.itinerary.days : []}
+                  draftVersion={draftVersion}
+                  tripSummary={tripSummary}
+                  onContinue={onContinue}
+                  dispatchAgentMessage={dispatchAgentMessage}
+                />
+              </div>
+            </section>
+          ) : activeTab === "itineraries" ? (
+            <ClientItineraryPage agencyTrips={agencyTrips} agencyId={agencyId} />
+          ) : null}
 
 
           {/* <footer className="dashboard-footer">
