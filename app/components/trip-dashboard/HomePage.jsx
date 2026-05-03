@@ -807,9 +807,9 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           height: 100vh;
           width: 100vw;
           overflow: hidden;
-          background: #eceff3;
-          color: #111827;
-          font-family: "Inter", sans-serif;
+          background: var(--voyage-background);
+          color: var(--voyage-text);
+          font-family: "Plus Jakarta Sans", sans-serif;
         }
 
         .voyage-header {
@@ -817,12 +817,12 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           align-items: center;
           justify-content: space-between;
           height: 84px;
-          background: #f9fafb;
-          border-bottom: 1px solid #e5e7eb;
+          background: rgba(255, 255, 255, 0.8);
+          border-bottom: 1px solid var(--voyage-border);
           padding: 0 28px;
           flex-shrink: 0;
           z-index: 100;
-          backdrop-filter: blur(8px);
+          backdrop-filter: blur(12px);
         }
 
         .brand-logo {
@@ -835,7 +835,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           display: none;
           background: none;
           border: none;
-          color: #374151;
+          color: var(--voyage-primary);
           padding: 8px;
           cursor: pointer;
         }
@@ -844,12 +844,12 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           width: 44px;
           height: 44px;
           border-radius: 14px;
-          background: #154449;
+          background: var(--voyage-primary);
           color: white;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 6px 14px rgba(17, 52, 55, 0.16);
+          box-shadow: 0 6px 14px rgba(34, 56, 67, 0.16);
           flex-shrink: 0;
         }
 
@@ -857,11 +857,12 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           font-size: 15px;
           font-weight: 700;
           letter-spacing: 0.24em;
+          color: var(--voyage-primary);
         }
 
         .brand-subtitle {
           font-size: 12px;
-          color: #6b7280;
+          color: var(--voyage-text-muted);
           margin-top: 2px;
         }
 
@@ -879,9 +880,9 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           border-radius: 999px;
           font-size: 12px;
           font-weight: 600;
-          background: #f8fafc;
-          color: #374151;
-          border: 1px solid #e5e7eb;
+          background: var(--voyage-surface);
+          color: var(--voyage-text);
+          border: 1px solid var(--voyage-border);
         }
 
         .run-status.streaming {
@@ -908,7 +909,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           align-items: center;
           gap: 12px;
           padding-left: 12px;
-          border-left: 1px solid #e5e7eb;
+          border-left: 1px solid var(--voyage-border);
         }
 
         .user-avatar {
@@ -918,7 +919,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, #b65d48, #d77a61);
+          background: var(--voyage-secondary);
           color: white;
           font-size: 13px;
           font-weight: 700;
@@ -933,12 +934,12 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
 
         .user-info strong {
           font-size: 14px;
-          color: #111827;
+          color: var(--voyage-primary);
         }
 
         .user-info span {
           font-size: 12px;
-          color: #6b7280;
+          color: var(--voyage-text-muted);
         }
 
         .voyage-body {
@@ -950,7 +951,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
 
         .voyage-sidebar {
           width: 90px;
-          background: linear-gradient(180deg, #0f3a3f 0%, #0c3135 100%);
+          background: linear-gradient(180deg, var(--voyage-primary) 0%, #1a2e38 100%);
           display: flex;
           flex-direction: column;
           flex-shrink: 0;
@@ -973,7 +974,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           align-items: center;
           justify-content: center;
           padding: 18px 4px;
-          color: rgba(219, 234, 236, 0.78);
+          color: rgba(219, 234, 236, 0.65);
           text-decoration: none;
           gap: 10px;
           text-align: center;
@@ -981,6 +982,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           border: none;
           cursor: pointer;
           font: inherit;
+          transition: all 0.2s ease;
         }
 
         .nav-item .icon-wrapper {
@@ -997,8 +999,8 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
 
         .nav-item.active {
           color: white;
-          background: rgba(255, 255, 255, 0.08);
-          border-left: 3px solid #d77a61;
+          background: rgba(255, 255, 255, 0.1);
+          border-left: 3px solid var(--voyage-secondary);
         }
 
         .nav-item:hover:not(.active) {
@@ -1092,7 +1094,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
 
           .nav-item.active {
             border-left: none;
-            background: #d77a61;
+            background: var(--voyage-secondary);
           }
 
           .mobile-menu-toggle {

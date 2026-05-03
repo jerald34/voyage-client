@@ -333,16 +333,16 @@ export default function AgentCommandCenter({
 
       <style jsx>{`
         .agent-command-center {
-          background: #f8f9fb;
+          background: var(--voyage-surface);
           border-radius: 18px;
-          border: 1px solid #e6e9ee;
+          border: 1px solid var(--voyage-border);
           padding: 24px;
           display: flex;
           flex-direction: column;
           min-height: 0;
           height: 100%;
-          box-shadow: none;
-          backdrop-filter: none;
+          box-shadow: var(--voyage-shadow-soft);
+          backdrop-filter: blur(8px);
         }
 
         .chat-header {
@@ -372,19 +372,19 @@ export default function AgentCommandCenter({
           width: 48px;
           height: 48px;
           border-radius: 16px;
-          background: #18484d;
+          background: var(--voyage-primary);
           color: white;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 6px 12px rgba(17, 52, 55, 0.16);
+          box-shadow: 0 6px 12px rgba(34, 56, 67, 0.16);
           flex-shrink: 0;
         }
 
         .header-title h2 {
           font-size: 32px;
           font-weight: 700;
-          color: #102022;
+          color: var(--voyage-primary);
           margin: 0 0 6px 0;
           font-family: "DM Serif Display", serif;
           font-weight: 400;
@@ -408,7 +408,7 @@ export default function AgentCommandCenter({
           font-weight: 800;
           letter-spacing: 0.14em;
           text-transform: uppercase;
-          color: #94a3b8;
+          color: var(--voyage-text-soft);
           margin-left: 2px;
         }
 
@@ -416,9 +416,9 @@ export default function AgentCommandCenter({
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          border: 1px solid #1f4d53;
+          border: 1px solid var(--voyage-primary);
           border-radius: 999px;
-          background: linear-gradient(180deg, #18484d 0%, #113437 100%);
+          background: var(--voyage-primary);
           color: #f8fafc;
           padding: 10px 16px;
           font-size: 13px;
@@ -426,14 +426,14 @@ export default function AgentCommandCenter({
           letter-spacing: -0.01em;
           cursor: pointer;
           white-space: nowrap;
-          box-shadow: 0 4px 12px rgba(17, 52, 55, 0.12);
+          box-shadow: 0 4px 12px rgba(34, 56, 67, 0.12);
           transition: all 0.2s ease;
         }
 
         .new-itinerary-button:hover {
           transform: translateY(-1px);
-          border-color: #2a6369;
-          background: #18484d;
+          opacity: 0.9;
+          box-shadow: 0 6px 14px rgba(34, 56, 67, 0.16);
         }
 
         .new-itinerary-icon {
@@ -443,7 +443,7 @@ export default function AgentCommandCenter({
           align-items: center;
           justify-content: center;
           border-radius: 999px;
-          background: rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.1);
           font-size: 14px;
           line-height: 1;
         }
@@ -454,9 +454,9 @@ export default function AgentCommandCenter({
           gap: 12px;
           min-width: 300px;
           max-width: min(100%, 420px);
-          border: 1px solid #1f4d53;
+          border: 1px solid var(--voyage-primary);
           border-radius: 999px;
-          background: #113437;
+          background: var(--voyage-primary);
           color: #f8fafc;
           padding: 10px 14px 10px 10px;
           cursor: pointer;
@@ -466,13 +466,11 @@ export default function AgentCommandCenter({
         }
 
         .client-switcher:hover {
-          border-color: #45556e;
-          background: #111827;
+          opacity: 0.95;
         }
 
         .client-switcher.open {
-          border-color: #52657f;
-          background: #111827;
+          background: var(--voyage-primary);
         }
 
         .client-badge-stack {
@@ -495,15 +493,15 @@ export default function AgentCommandCenter({
         }
 
         .client-badge.primary {
-          background: linear-gradient(135deg, #255ef7, #1d4ed8);
+          background: var(--voyage-secondary);
           color: white;
         }
 
         .client-badge.secondary {
           margin-left: -8px;
-          background: linear-gradient(135deg, #2f67ff, #0f4bd8);
+          background: var(--voyage-accent);
           color: white;
-          border: 2px solid #171717;
+          border: 2px solid var(--voyage-primary);
         }
 
         .client-switcher-name {
@@ -532,10 +530,10 @@ export default function AgentCommandCenter({
           top: calc(100% + 8px);
           left: 0;
           width: min(460px, 100vw - 48px);
-          background: #0f172a;
-          border: 1px solid #263244;
+          background: var(--voyage-primary);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 18px;
-          box-shadow: 0 18px 36px rgba(2, 6, 23, 0.35);
+          box-shadow: 0 18px 36px rgba(34, 56, 67, 0.3);
           padding: 10px;
           z-index: 100;
           display: flex;
@@ -555,20 +553,20 @@ export default function AgentCommandCenter({
           border-radius: 14px;
           cursor: pointer;
           text-align: left;
-          transition: background 0.18s ease;
+          transition: all 0.18s ease;
         }
 
         .client-option:hover,
         .client-option.selected {
-          background: #eef2f7;
-          color: #111827;
+          background: rgba(255, 255, 255, 0.1);
+          color: white;
         }
 
         .client-option-badge {
           width: 30px;
           height: 30px;
           border-radius: 999px;
-          background: #2563eb;
+          background: var(--voyage-secondary);
           color: white;
           display: inline-flex;
           align-items: center;
@@ -622,9 +620,9 @@ export default function AgentCommandCenter({
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          background: #f1f5f9;
-          border: 1px solid #e2e8f0;
-          color: #475569;
+          background: var(--voyage-background);
+          border: 1px solid var(--voyage-border);
+          color: var(--voyage-text-muted);
           padding: 8px 14px;
           border-radius: 999px;
           font-size: 12px;
@@ -637,6 +635,7 @@ export default function AgentCommandCenter({
         .agent-status-tag.streaming {
           background: #ecfdf5;
           color: #047857;
+          border-color: #bbf7d0;
         }
 
         .status-dot {
@@ -665,14 +664,14 @@ export default function AgentCommandCenter({
           text-align: center;
           padding: 24px;
           border-radius: 20px;
-          border: 1px dashed #d1d5db;
-          background: rgba(255, 255, 255, 0.72);
-          color: #4b5563;
+          border: 1px dashed var(--voyage-border-strong);
+          background: rgba(255, 255, 255, 0.5);
+          color: var(--voyage-text-muted);
         }
 
         .empty-state strong {
           font-size: 15px;
-          color: #111827;
+          color: var(--voyage-primary);
         }
 
         .empty-state p {
@@ -685,8 +684,8 @@ export default function AgentCommandCenter({
           width: 48px;
           height: 48px;
           border-radius: 16px;
-          background: #f8fafc;
-          color: #b65d48;
+          background: var(--voyage-background);
+          color: var(--voyage-secondary);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -716,12 +715,12 @@ export default function AgentCommandCenter({
         }
 
         .assistant-avatar {
-          background: linear-gradient(135deg, #113437, #1f4d53);
+          background: var(--voyage-primary);
           color: white;
         }
 
         .user-avatar {
-          background: linear-gradient(135deg, #d77a61, #b65d48);
+          background: var(--voyage-secondary);
           color: white;
         }
 
@@ -745,11 +744,11 @@ export default function AgentCommandCenter({
 
         .sender {
           font-weight: 700;
-          color: #374151;
+          color: var(--voyage-text);
         }
 
         .time {
-          color: #9ca3af;
+          color: var(--voyage-text-soft);
         }
 
         .bubble {
@@ -759,26 +758,27 @@ export default function AgentCommandCenter({
         }
 
         .user-bubble {
-          background: #f1f5f9;
-          border: 1px solid #e2e8f0;
+          background: var(--voyage-background);
+          border: 1px solid var(--voyage-border);
           border-radius: 20px 4px 20px 20px;
-          color: #1e293b;
+          color: var(--voyage-text);
         }
 
         .assistant-bubble {
-          background: linear-gradient(180deg, #18484d 0%, #113437 100%);
-          border: 1px solid #1f4d53;
+          background: var(--voyage-primary);
+          border: 1px solid rgba(255, 255, 255, 0.05);
           border-radius: 4px 20px 20px 20px;
           color: #f8fafc;
-          box-shadow: 0 4px 12px rgba(17, 52, 55, 0.08);
+          box-shadow: 0 4px 12px rgba(34, 56, 67, 0.16);
         }
 
         .thinking-bubble {
           background: white;
-          border: 1px solid #e5e7eb;
+          border: 1px solid var(--voyage-border);
           border-radius: 16px;
           padding: 16px;
           min-width: 300px;
+          box-shadow: var(--voyage-shadow-soft);
         }
 
         .thinking-header {
@@ -786,7 +786,7 @@ export default function AgentCommandCenter({
           align-items: center;
           gap: 8px;
           font-weight: 700;
-          color: #6b7280;
+          color: var(--voyage-text-muted);
           font-size: 13px;
           margin-bottom: 12px;
         }
@@ -795,7 +795,7 @@ export default function AgentCommandCenter({
           width: 8px;
           height: 8px;
           border-radius: 999px;
-          background: #d77a61;
+          background: var(--voyage-secondary);
           box-shadow: 0 0 0 6px rgba(215, 122, 97, 0.12);
         }
 

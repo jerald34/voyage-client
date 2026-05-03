@@ -245,13 +245,13 @@ export default function ItineraryDraftPanel({
       <style jsx>{`
         .itinerary-draft-panel {
           position: relative;
-          background: #0a0e14;
+          background: var(--voyage-primary);
           border-radius: 22px;
-          border: 1px solid #e6e9ee;
+          border: 1px solid var(--voyage-border);
           height: 100%;
           min-height: 0;
           overflow: hidden;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+          box-shadow: var(--voyage-shadow);
         }
 
         .map-background {
@@ -278,20 +278,20 @@ export default function ItineraryDraftPanel({
           align-items: center;
           gap: 8px;
           padding: 8px 16px;
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(8px);
-          border: 1px solid #e5e7eb;
+          background: rgba(255, 255, 255, 0.9);
+          backdrop-filter: blur(12px);
+          border: 1px solid var(--voyage-border);
           border-radius: 999px;
           font-size: 13px;
           font-weight: 700;
-          color: #111827;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+          color: var(--voyage-primary);
+          box-shadow: var(--voyage-shadow-soft);
         }
 
         .dot {
           width: 8px;
           height: 8px;
-          background: #f59e0b;
+          background: var(--voyage-secondary);
           border-radius: 999px;
         }
 
@@ -309,25 +309,26 @@ export default function ItineraryDraftPanel({
         }
 
         .btn-action.primary {
-          background: #b65d48;
+          background: var(--voyage-secondary);
           color: white;
-          box-shadow: 0 8px 16px rgba(182, 93, 72, 0.25);
+          box-shadow: 0 8px 16px rgba(215, 122, 97, 0.25);
         }
 
         .btn-action.primary:hover {
-          background: #a14e3b;
+          opacity: 0.9;
           transform: translateY(-1px);
         }
 
         .btn-action.secondary {
-          background: rgba(255, 255, 255, 0.95);
-          color: #374151;
-          border: 1px solid #e5e7eb;
+          background: rgba(255, 255, 255, 0.9);
+          color: var(--voyage-primary);
+          border: 1px solid var(--voyage-border);
+          backdrop-filter: blur(12px);
         }
 
         .btn-action.secondary:hover {
           background: white;
-          border-color: #d1d5db;
+          border-color: var(--voyage-border-strong);
         }
 
         .hover-container {
@@ -346,8 +347,8 @@ export default function ItineraryDraftPanel({
 
         .itinerary-floating-card {
           width: 100%;
-          background: rgba(18, 20, 24, 0.96);
-          backdrop-filter: blur(12px);
+          background: rgba(34, 56, 67, 0.96);
+          backdrop-filter: blur(16px);
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 24px;
           color: white;
@@ -355,7 +356,7 @@ export default function ItineraryDraftPanel({
           flex-direction: column;
           max-height: calc(100vh - 280px);
           pointer-events: auto;
-          box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+          box-shadow: 0 24px 48px rgba(34, 56, 67, 0.4);
           overflow: hidden;
         }
 
@@ -399,14 +400,14 @@ export default function ItineraryDraftPanel({
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #94a3b8;
+          color: rgba(255, 255, 255, 0.6);
           cursor: pointer;
           transition: all 0.2s;
         }
 
         .minimize-btn:hover {
           background: rgba(215, 122, 97, 0.15);
-          color: #d77a61;
+          color: var(--voyage-secondary);
           border-color: rgba(215, 122, 97, 0.3);
         }
 
@@ -418,7 +419,7 @@ export default function ItineraryDraftPanel({
         }
 
         .nav-icon {
-          color: #d77a61;
+          color: var(--voyage-secondary);
           filter: drop-shadow(0 0 8px rgba(215, 122, 97, 0.4));
         }
 
@@ -428,12 +429,12 @@ export default function ItineraryDraftPanel({
           font-weight: 400;
           letter-spacing: 0.02em;
           font-family: "DM Serif Display", serif;
-          color: #e2e8f0;
+          color: white;
         }
 
         .subtitle {
           margin: 0;
-          color: #94a3b8;
+          color: rgba(255, 255, 255, 0.6);
           font-size: 13px;
         }
 
@@ -467,21 +468,21 @@ export default function ItineraryDraftPanel({
           width: 10px;
           height: 10px;
           border-radius: 50%;
-          background: #475569;
+          background: rgba(255, 255, 255, 0.2);
           transition: all 0.2s ease;
           flex-shrink: 0;
         }
 
         .timeline-dot.active {
-          background: #3b82f6;
-          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+          background: var(--voyage-secondary);
+          box-shadow: 0 0 0 4px rgba(215, 122, 97, 0.3);
           transform: scale(1.2);
         }
 
         .timeline-line {
           width: 2px;
           flex: 1;
-          background: rgba(71, 85, 105, 0.4);
+          background: rgba(255, 255, 255, 0.1);
           margin: 4px 0;
         }
 
@@ -496,7 +497,7 @@ export default function ItineraryDraftPanel({
           gap: 6px;
           font-size: 12px;
           font-weight: 600;
-          color: #94a3b8;
+          color: rgba(255, 255, 255, 0.5);
           margin-bottom: 6px;
         }
 
@@ -507,8 +508,8 @@ export default function ItineraryDraftPanel({
           margin-bottom: 8px;
           padding: 4px 8px;
           border-radius: 999px;
-          background: rgba(215, 122, 97, 0.12);
-          color: #f2b7a7;
+          background: rgba(215, 122, 97, 0.15);
+          color: var(--voyage-secondary);
           font-size: 11px;
           font-weight: 700;
           letter-spacing: 0.03em;
@@ -518,20 +519,20 @@ export default function ItineraryDraftPanel({
           margin: 0 0 6px;
           font-size: 16px;
           font-weight: 600;
-          color: #f8fafc;
+          color: white;
         }
 
         .timeline-content p {
           margin: 0;
           font-size: 13px;
-          color: #94a3b8;
+          color: rgba(255, 255, 255, 0.6);
           line-height: 1.6;
         }
 
         .empty-itinerary {
           padding: 40px 0;
           text-align: center;
-          color: #94a3b8;
+          color: rgba(255, 255, 255, 0.5);
         }
 
         .card-footer {
@@ -541,7 +542,7 @@ export default function ItineraryDraftPanel({
         .send-client-btn {
           width: 100%;
           padding: 14px;
-          background: linear-gradient(135deg, #d77a61, #b65d48);
+          background: var(--voyage-secondary);
           color: white;
           border: none;
           border-radius: 14px;
@@ -549,12 +550,12 @@ export default function ItineraryDraftPanel({
           font-weight: 700;
           cursor: pointer;
           transition: all 0.2s ease;
-          box-shadow: 0 10px 20px rgba(182, 93, 72, 0.2);
+          box-shadow: 0 10px 20px rgba(215, 122, 97, 0.2);
         }
 
         .send-client-btn:hover {
           transform: translateY(-1px);
-          box-shadow: 0 12px 24px rgba(182, 93, 72, 0.3);
+          box-shadow: 0 12px 24px rgba(215, 122, 97, 0.3);
         }
 
         :global(.itinerary-live-map) {
@@ -566,7 +567,7 @@ export default function ItineraryDraftPanel({
         }
 
         :global(.leaflet-container) {
-          background: #f1f5f9 !important;
+          background: var(--voyage-background) !important;
         }
         @media (max-width: 900px) {
           .hover-container {
