@@ -1020,8 +1020,9 @@ export default function AgentCommandCenter({
           }
 
           .bubble {
-            padding: 12px 14px;
-            font-size: 13px;
+            padding: 16px 18px;
+            font-size: 14px;
+            line-height: 1.7;
           }
 
           .composer-form {
