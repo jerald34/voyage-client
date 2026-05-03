@@ -51,16 +51,26 @@ function HomePageInner() {
     fetchApi("/auth/me")
       .then((data) => {
         if (cancelled) return;
+        
+        // Save user regardless of membership status so they are at least authenticated
         localStorage.setItem("voyage-user", JSON.stringify(data.user));
         setUser(data.user);
         setShouldBypassLanding(true);
+
+        const hasMembership = Array.isArray(data.user?.memberships) && data.user.memberships.length > 0;
+        if (!hasMembership) {
+          console.warn("User has no agency memberships. Some dashboard features may be limited.", data.user);
+        }
       })
       .catch(() => {
         // Fetch failed — try to use cached user as fallback.
         const storedUser = typeof window !== "undefined" ? localStorage.getItem("voyage-user") : null;
         if (!cancelled && storedUser) {
-          try { setUser(JSON.parse(storedUser)); } catch {}
-          setShouldBypassLanding(true);
+          try { 
+            const parsed = JSON.parse(storedUser);
+            setUser(parsed);
+            setShouldBypassLanding(true);
+          } catch {}
         }
       });
 
