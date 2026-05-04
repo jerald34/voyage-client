@@ -1045,10 +1045,10 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
         .voyage-main-content {
           flex: 1;
           overflow-y: auto;
-          padding: 24px 28px;
+          padding: 8px;
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 8px;
         }
 
         .hero-stack {
@@ -1060,8 +1060,8 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
 
         .agentic-surface {
           display: grid;
-          grid-template-columns: minmax(420px, 0.86fr) minmax(0, 1.14fr);
-          gap: 20px;
+          grid-template-columns: minmax(460px, 0.75fr) minmax(0, 1.25fr);
+          gap: 8px;
           flex: 1;
           min-height: 0;
         }
@@ -1069,7 +1069,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
         .bottom-queues {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 20px;
+          gap: 8px;
         }
 
         .sidebar-overlay {

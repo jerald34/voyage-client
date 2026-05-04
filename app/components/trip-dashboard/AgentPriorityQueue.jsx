@@ -74,10 +74,10 @@ export default function AgentPriorityQueue({ trips }) {
           background: rgba(255, 255, 255, 0.94);
           border-radius: 20px;
           border: 1px solid #e5e7eb;
-          padding: 20px;
+          padding: 16px;
           display: flex;
           flex-direction: column;
-          min-height: 320px;
+          min-height: 280px;
           box-shadow: 0 18px 34px rgba(15, 23, 42, 0.04);
         }
 
@@ -122,7 +122,7 @@ export default function AgentPriorityQueue({ trips }) {
         .queue-list {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 8px;
           flex: 1;
         }
 

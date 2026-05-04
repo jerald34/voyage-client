@@ -64,7 +64,7 @@ export default function ItineraryDraftPanel({
 
   const [activeStopIndex, setActiveStopIndex] = useState(mapItems.length > 0 ? 0 : -1);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [position, setPosition] = useState({ x: 24, y: 76 });
+  const [position, setPosition] = useState({ x: 8, y: 56 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
   const containerRef = useRef(null);
@@ -262,8 +262,8 @@ export default function ItineraryDraftPanel({
 
         .panel-header {
           position: absolute;
-          top: 24px;
-          right: 24px;
+          top: 8px;
+          right: 8px;
           z-index: 15;
         }
 

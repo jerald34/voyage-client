@@ -37,6 +37,7 @@ export default function AgentCommandCenter({
   const [isClientMenuOpen, setIsClientMenuOpen] = useState(false);
   const messagesEndRef = useRef(null);
   const clientMenuRef = useRef(null);
+  const textareaRef = useRef(null);
 
   const safeTrips = useMemo(() => (Array.isArray(availableTrips) ? availableTrips.filter(Boolean) : []), [availableTrips]);
   const hasTrips = safeTrips.length > 0;
@@ -94,6 +95,23 @@ export default function AgentCommandCenter({
     }
   }, [displayedMessages, assistantMessage, activeToolCalls]);
 
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "24px"; // Reset to min height
+      const scrollHeight = textareaRef.current.scrollHeight;
+      textareaRef.current.style.height = `${Math.min(scrollHeight, 200)}px`;
+    }
+  }, [composerInput]);
+
+  function handleKeyDown(event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      if (composerInput.trim() && !isSending) {
+        submitComposer(event);
+      }
+    }
+  }
+
   function submitComposer(event) {
     event.preventDefault();
     void dispatchAgentMessage(composerInput);
@@ -103,12 +121,7 @@ export default function AgentCommandCenter({
   return (
     <div className="agent-command-center">
       <header className="chat-header">
-        <div className="header-title">
-          {/* <div className="agent-avatar-large" aria-hidden="true">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M2 12h4l3-9 5 18 3-9h5" />
-            </svg>
-          </div> */}
+        <div className="header-main">
           <div className="header-tools">
             <button
               className="new-itinerary-button"
@@ -190,10 +203,10 @@ export default function AgentCommandCenter({
               )}
             </div>
           </div>
-        </div>
-        <div className={`agent-status-tag ${isStreaming ? "streaming" : ""}`}>
-          <span className="status-dot" />
-          {isStreaming ? "Agent active" : "Agent idle"}
+          <div className={`agent-status-tag ${isStreaming ? "streaming" : ""}`}>
+            <span className="status-dot" />
+            {isStreaming ? "Agent active" : "Agent idle"}
+          </div>
         </div>
       </header>
 
@@ -303,18 +316,20 @@ export default function AgentCommandCenter({
       <div className="chat-input-area">
         <form className="composer-form" onSubmit={submitComposer}>
           <button type="button" className="attach-button" aria-label="Attach file">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="composer-icon">
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
             </svg>
           </button>
-          <input
-            type="text"
+          <textarea
+            ref={textareaRef}
+            rows={1}
             value={composerInput}
             onChange={(e) => setComposerInput(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="Ask the agent to adjust the draft..."
           />
           <button type="submit" className="send-button" disabled={isSending || !composerInput.trim()}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="composer-icon">
               <line x1="22" y1="2" x2="11" y2="13" />
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>
@@ -328,7 +343,7 @@ export default function AgentCommandCenter({
           background: var(--voyage-surface);
           border-radius: 18px;
           border: 1px solid var(--voyage-border);
-          padding: 24px;
+          padding: 16px;
           display: flex;
           flex-direction: column;
           min-height: 0;
@@ -338,26 +353,23 @@ export default function AgentCommandCenter({
         }
 
         .chat-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 16px;
-          margin-bottom: 28px;
+          margin-bottom: 12px;
         }
 
-        .header-title {
+        .header-main {
           display: flex;
-          align-items: center;
-          gap: 14px;
-          flex: 1;
-          min-width: 0;
+          justify-content: space-between;
+          align-items: flex-end;
+          gap: 16px;
+          flex-wrap: wrap;
         }
 
         .header-tools {
           display: flex;
           align-items: flex-end;
-          gap: 16px;
+          gap: 12px;
           min-width: 0;
+          flex-wrap: wrap;
         }
 
         .agent-avatar-large {
@@ -412,7 +424,7 @@ export default function AgentCommandCenter({
           border-radius: 999px;
           background: var(--voyage-primary);
           color: #f8fafc;
-          padding: 10px 16px;
+          padding: 10px 18px;
           font-size: 13px;
           font-weight: 700;
           letter-spacing: -0.01em;
@@ -420,6 +432,7 @@ export default function AgentCommandCenter({
           white-space: nowrap;
           box-shadow: 0 4px 12px rgba(34, 56, 67, 0.12);
           transition: all 0.2s ease;
+          height: 44px;
         }
 
         .new-itinerary-button:hover {
@@ -444,13 +457,14 @@ export default function AgentCommandCenter({
           display: inline-flex;
           align-items: center;
           gap: 12px;
-          min-width: 300px;
-          max-width: min(100%, 420px);
+          min-width: 240px;
+          max-width: 100%;
+          height: 44px;
           border: 1px solid var(--voyage-primary);
           border-radius: 999px;
           background: var(--voyage-primary);
           color: #f8fafc;
-          padding: 10px 14px 10px 10px;
+          padding: 0 14px 0 10px;
           cursor: pointer;
           text-align: left;
           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -520,7 +534,7 @@ export default function AgentCommandCenter({
         .client-menu {
           position: absolute;
           top: calc(100% + 8px);
-          left: 0;
+          right: 0;
           width: min(460px, 100vw - 48px);
           background: var(--voyage-primary);
           border: 1px solid rgba(255, 255, 255, 0.1);
@@ -620,8 +634,7 @@ export default function AgentCommandCenter({
           font-size: 12px;
           font-weight: 700;
           white-space: nowrap;
-          align-self: flex-end;
-          margin-bottom: 2px;
+          height: 34px;
         }
 
         .agent-status-tag.streaming {
@@ -641,6 +654,7 @@ export default function AgentCommandCenter({
         .chat-log {
           flex: 1;
           overflow-y: auto;
+          overflow-x: hidden;
           display: flex;
           flex-direction: column;
           gap: 20px;
@@ -721,6 +735,9 @@ export default function AgentCommandCenter({
           display: flex;
           flex-direction: column;
           gap: 6px;
+          overflow-wrap: break-word;
+          word-wrap: break-word;
+          word-break: break-word;
         }
 
         .chat-row.user .message-content {
@@ -764,6 +781,9 @@ export default function AgentCommandCenter({
           color: var(--voyage-primary);
           box-shadow: var(--voyage-shadow-soft);
           padding: 20px 24px;
+          overflow-wrap: break-word;
+          word-wrap: break-word;
+          word-break: break-word;
         }
 
         .thinking-bubble {
@@ -780,265 +800,163 @@ export default function AgentCommandCenter({
           display: flex;
           align-items: center;
           gap: 8px;
-          font-weight: 700;
-          color: var(--voyage-text-muted);
           font-size: 13px;
+          font-weight: 700;
+          color: var(--voyage-primary);
           margin-bottom: 12px;
         }
 
         .thinking-dot {
           width: 8px;
           height: 8px;
-          border-radius: 999px;
-          background: var(--voyage-secondary);
-          box-shadow: 0 0 0 6px rgba(215, 122, 97, 0.12);
+          background: var(--voyage-accent);
+          border-radius: 50%;
+          animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.4); opacity: 0.5; }
+          100% { transform: scale(1); opacity: 1; }
         }
 
         .tool-stepper {
           display: flex;
-          align-items: center;
-          gap: 10px;
-          background: #f8fafc;
-          padding: 12px;
-          border-radius: 14px;
-          border: 1px solid #eef2f7;
-          flex-wrap: wrap;
+          flex-direction: column;
+          gap: 12px;
         }
 
         .step {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 12px;
+          position: relative;
         }
 
         .step-icon {
-          width: 18px;
-          height: 18px;
-          background: #10b981;
-          color: white;
+          width: 24px;
+          height: 24px;
           border-radius: 50%;
+          background: var(--voyage-background);
+          border: 1.5px solid var(--voyage-border-strong);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 10px;
-          font-weight: 700;
+          font-size: 11px;
+          font-weight: 800;
+          color: var(--voyage-text-soft);
           flex-shrink: 0;
+          z-index: 2;
         }
 
         .step-text {
-          font-size: 12px;
-          color: #374151;
+          font-size: 13px;
+          color: var(--voyage-text);
         }
 
         .step-connector {
-          color: #9ca3af;
-          font-size: 12px;
+          display: none;
         }
 
-        .bubble p {
-          margin: 0;
-          white-space: pre-wrap;
+        .markdown-content {
+          line-height: 1.7;
+          font-size: 15px;
         }
 
-        .markdown-content p {
-          margin: 0.85em 0;
+        .markdown-content :global(p) {
+          margin: 0 0 16px 0;
         }
-        .markdown-content p:first-child {
-          margin-top: 0;
-        }
-        .markdown-content p:last-child {
+
+        .markdown-content :global(p:last-child) {
           margin-bottom: 0;
         }
-        .markdown-content ul, .markdown-content ol {
-          margin: 0.85em 0;
-          padding-left: 1.75em;
+
+        .markdown-content :global(ul), .markdown-content :global(ol) {
+          margin: 0 0 16px 0;
+          padding-left: 20px;
         }
-        .markdown-content li {
-          margin-bottom: 0.5em;
-        }
-        .markdown-content strong {
-          font-weight: 700;
-        }
-        .markdown-content em {
-          font-style: italic;
-        }
-        .markdown-content code {
-          background: rgba(0, 0, 0, 0.1);
-          padding: 0.2em 0.4em;
-          border-radius: 4px;
-          font-family: monospace;
-          font-size: 0.9em;
+
+        .markdown-content :global(li) {
+          margin-bottom: 8px;
         }
 
         .chat-input-area {
-          margin-top: auto;
+          padding-top: 12px;
+          border-top: 1px solid var(--voyage-border);
         }
 
         .composer-form {
           display: flex;
-          align-items: center;
+          align-items: flex-end;
           gap: 12px;
-          background: #113437;
-          border: 1px solid #1f4d53;
-          border-radius: 999px;
-          padding: 8px 10px 8px 18px;
-          box-shadow: 0 20px 40px rgba(17, 52, 55, 0.2);
+          background: var(--voyage-background);
+          border: 1px solid var(--voyage-border-strong);
+          border-radius: 16px;
+          padding: 8px 12px;
+          transition: border-color 0.2s;
         }
 
-        .composer-form input {
+        .composer-form:focus-within {
+          border-color: var(--voyage-secondary);
+        }
+
+        .composer-form textarea {
           flex: 1;
-          border: none;
-          outline: none;
-          font-size: 15px;
-          color: #f8fafc;
           background: transparent;
-          height: 44px;
+          border: none;
+          resize: none;
+          padding: 8px 0;
+          font-family: inherit;
+          font-size: 14px;
+          line-height: 1.5;
+          color: var(--voyage-primary);
+          outline: none;
+          min-height: 24px;
         }
 
-        .composer-form input::placeholder {
-          color: #64748b;
-        }
-
-        .attach-button {
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 50%;
+        .attach-button, .send-button {
+          background: transparent;
+          border: none;
+          padding: 8px;
+          color: var(--voyage-text-soft);
           cursor: pointer;
-          color: #94a3b8;
+          border-radius: 8px;
+          transition: all 0.2s;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 0;
-          width: 32px;
-          height: 32px;
-          transition: all 0.2s ease;
         }
 
         .attach-button:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: #f8fafc;
+          background: rgba(0, 0, 0, 0.05);
+          color: var(--voyage-primary);
         }
 
         .send-button {
-          background: linear-gradient(135deg, #d77a61, #b65d48);
+          background: var(--voyage-secondary);
           color: white;
-          border: none;
-          border-radius: 50%;
-          width: 36px;
-          height: 36px;
-          box-shadow: 0 8px 16px rgba(182, 93, 72, 0.2);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: transform 0.2s ease;
         }
 
-        .send-button:hover {
-          transform: scale(1.05);
+        .send-button:hover:not(:disabled) {
+          opacity: 0.9;
+          transform: translateY(-1px);
         }
 
         .send-button:disabled {
-          background: #e5e7eb;
-          color: #9ca3af;
+          background: var(--voyage-border);
           cursor: not-allowed;
-          box-shadow: none;
+        }
+
+        .composer-icon {
+          width: 20px;
+          height: 20px;
         }
 
         .error-text {
-          margin: 10px 6px 0;
-          color: #b91c1c;
+          margin: 8px 0 0;
           font-size: 12px;
+          color: #b91c1c;
           font-weight: 600;
-        }
-        @media (max-width: 900px) {
-          .agent-command-center {
-            padding: 16px;
-          }
-
-          .header-title {
-            align-items: flex-start;
-          }
-
-          .header-tools {
-            align-items: flex-start;
-            flex-wrap: wrap;
-          }
-
-          .header-title h2 {
-            font-size: 24px;
-          }
-
-          .header-title p {
-            display: none;
-          }
-
-          .client-switcher {
-            width: min(100%, 360px);
-          }
-
-          .client-menu {
-            width: min(360px, calc(100vw - 40px));
-          }
-
-          .agent-status-tag {
-            padding: 6px 10px;
-            font-size: 11px;
-          }
-
-          .agent-avatar-large {
-            width: 40px;
-            height: 40px;
-          }
-        }
-
-        @media (max-width: 600px) {
-          .chat-header {
-            flex-direction: column;
-          }
-
-          .header-title,
-          .header-tools {
-            width: 100%;
-          }
-
-          .message-content {
-            max-width: 90%;
-          }
-
-          .chat-row {
-            gap: 8px;
-          }
-
-          .avatar {
-            width: 30px;
-            height: 30px;
-          }
-
-          .bubble {
-            padding: 16px 18px;
-            font-size: 14px;
-            line-height: 1.7;
-          }
-
-          .composer-form {
-            padding: 8px 12px;
-            gap: 8px;
-          }
-
-          .client-switcher {
-            width: 100%;
-            max-width: none;
-          }
-
-          .client-menu {
-            width: calc(100vw - 32px);
-          }
-
-          .send-button {
-            width: 32px;
-            height: 32px;
-          }
         }
       `}</style>
     </div>

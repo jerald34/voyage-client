@@ -148,10 +148,10 @@ export default function ClientTripPortfolio({ trips, summary, onOpenTrip }) {
           background: rgba(255, 255, 255, 0.94);
           border-radius: 20px;
           border: 1px solid #e5e7eb;
-          padding: 20px;
+          padding: 16px;
           display: flex;
           flex-direction: column;
-          min-height: 320px;
+          min-height: 280px;
           box-shadow: 0 18px 34px rgba(15, 23, 42, 0.04);
         }
 
@@ -195,14 +195,14 @@ export default function ClientTripPortfolio({ trips, summary, onOpenTrip }) {
 
         .portfolio-content {
           display: grid;
-          gap: 14px;
+          gap: 8px;
           flex: 1;
         }
 
         .portfolio-metrics {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 10px;
+          gap: 8px;
         }
 
         .metric-card {

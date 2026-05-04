@@ -107,7 +107,7 @@ function FocusActiveStop({ points, activeIndex }) {
     if (!Number.isInteger(activeIndex) || activeIndex < 0 || activeIndex >= points.length) return;
     const activePoint = points[activeIndex];
     if (!activePoint) return;
-    const zoom = Math.max(map.getZoom(), 13);
+    const zoom = map.getZoom() >= 13 ? map.getZoom() : 13;
     map.flyTo([activePoint.lat, activePoint.lng], zoom, { duration: 0.35 });
   }, [activeIndex, map, points]);
 
@@ -119,7 +119,7 @@ export default function ItineraryLiveMap({ items = [], activeIndex = -1, onHover
   const center = points[0] || DEFAULT_CENTER;
 
   return (
-    <MapContainer center={center} zoom={13} className="itinerary-live-map" scrollWheelZoom={false}>
+    <MapContainer center={center} zoom={13} className="itinerary-live-map" scrollWheelZoom={true}>
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"

@@ -184,8 +184,8 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId }) {
         .client-itinerary-surface {
           display: grid;
           grid-template-columns: 320px 1fr;
-          gap: 20px;
-          height: calc(100vh - 140px);
+          gap: 8px;
+          height: calc(100vh - 120px);
           min-height: 0;
         }
 
@@ -201,7 +201,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId }) {
         }
 
         .pane-header {
-          padding: 24px;
+          padding: 16px;
           border-bottom: 1px solid var(--voyage-border);
           background: rgba(255, 255, 255, 0.4);
         }
@@ -328,7 +328,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId }) {
         }
 
         .workspace-header {
-          padding: 24px;
+          padding: 16px;
           background: rgba(255, 255, 255, 0.4);
           border-bottom: 1px solid var(--voyage-border);
           display: flex;
@@ -359,8 +359,8 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId }) {
 
         .trip-strip {
           display: flex;
-          gap: 16px;
-          padding: 20px 24px;
+          gap: 12px;
+          padding: 12px 16px;
           background: rgba(255, 255, 255, 0.2);
           border-bottom: 1px solid var(--voyage-border);
           overflow-x: auto;
@@ -407,7 +407,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId }) {
         .itinerary-preview-area {
           flex: 1;
           overflow-y: auto;
-          padding: 32px;
+          padding: 16px;
           background: rgba(255, 255, 255, 0.1);
         }
 
