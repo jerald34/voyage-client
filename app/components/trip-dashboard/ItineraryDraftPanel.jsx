@@ -32,6 +32,33 @@ function getItemTimeLabel(item) {
   return "Time pending";
 }
 
+function formatDistance(meters) {
+  if (!Number.isFinite(meters) || meters <= 0) {
+    return null;
+  }
+
+  if (meters >= 1000) {
+    return `${(meters / 1000).toFixed(meters >= 10000 ? 0 : 1)} km`;
+  }
+
+  return `${Math.round(meters)} m`;
+}
+
+function formatDuration(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return null;
+  }
+
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+}
+
 export default function ItineraryDraftPanel({
   itinerary = null,
   draftDays,
@@ -39,11 +66,16 @@ export default function ItineraryDraftPanel({
   onContinue = () => {},
   dispatchAgentMessage,
   tripSummary = null,
+  mapMarkers = [],
+  routeEstimates = [],
 }) {
   const itineraryDays = Array.isArray(itinerary?.days) ? itinerary.days : draftDays;
   const safeDays = Array.isArray(itineraryDays) ? itineraryDays : [];
   const panelTitle = itinerary?.title || "Live Itinerary";
   const panelSummary = itinerary?.summary || "";
+  const latestRouteEstimate = Array.isArray(routeEstimates) && routeEstimates.length > 0 ? routeEstimates[routeEstimates.length - 1] : null;
+  const routeDistance = formatDistance(latestRouteEstimate?.distanceMeters);
+  const routeDuration = formatDuration(latestRouteEstimate?.durationSeconds);
   const mapItems = useMemo(
     () =>
       safeDays.reduce((acc, day) => {
@@ -122,7 +154,13 @@ export default function ItineraryDraftPanel({
   return (
     <div className="itinerary-draft-panel" ref={containerRef}>
       <div className="map-background">
-        <ItineraryLiveMap items={mapItems} activeIndex={activeStopIndex} onHoverItem={setActiveStopIndex} />
+        <ItineraryLiveMap
+          items={mapItems}
+          liveMarkers={mapMarkers}
+          routeEstimates={routeEstimates}
+          activeIndex={activeStopIndex}
+          onHoverItem={setActiveStopIndex}
+        />
       </div>
 
       <header className="panel-header">
@@ -149,6 +187,16 @@ export default function ItineraryDraftPanel({
             Regenerate
           </button>
         </div>
+        {(mapMarkers.length > 0 || latestRouteEstimate) && (
+          <div className="live-telemetry" aria-live="polite">
+            {mapMarkers.length > 0 && <span className="telemetry-chip">{mapMarkers.length} live markers</span>}
+            {latestRouteEstimate && (
+              <span className="telemetry-chip">
+                Route{routeDistance ? ` ${routeDistance}` : ""}{routeDuration ? ` | ${routeDuration}` : ""}
+              </span>
+            )}
+          </div>
+        )}
       </header>
 
       <div 
@@ -219,8 +267,8 @@ export default function ItineraryDraftPanel({
                               Day {item.__dayNumber}{item.__dayTitle ? `: ${item.__dayTitle}` : ""}
                             </div>
                           ) : null}
-                          <h3>{item.title || "Planned stop"}</h3>
-                          <p>{item.description || "No description provided yet."}</p>
+                          <h3>{item.title || "Untitled itinerary item"}</h3>
+                          {item.description ? <p>{item.description}</p> : null}
                         </div>
                       </div>
                     ))}
@@ -265,12 +313,39 @@ export default function ItineraryDraftPanel({
           top: 8px;
           right: 8px;
           z-index: 15;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 8px;
         }
 
         .header-actions {
           display: flex;
           align-items: center;
           gap: 12px;
+        }
+
+        .live-telemetry {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 8px;
+          flex-wrap: wrap;
+          max-width: min(100%, 440px);
+        }
+
+        .telemetry-chip {
+          display: inline-flex;
+          align-items: center;
+          padding: 6px 10px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.92);
+          border: 1px solid var(--voyage-border);
+          color: var(--voyage-primary);
+          font-size: 11px;
+          font-weight: 700;
+          box-shadow: var(--voyage-shadow-soft);
+          white-space: nowrap;
         }
 
         .draft-version-tag {

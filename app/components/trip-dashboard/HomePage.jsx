@@ -239,6 +239,9 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     runStatus,
     assistantMessage,
     toolCalls,
+    mapMarkers,
+    routeEstimates,
+    activeToolLabel,
     lastItineraryUpdate,
     lastCompletedItineraryTool,
     error: streamError,
@@ -786,6 +789,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
                   isStreaming={isStreaming}
                   assistantMessage={assistantMessage}
                   toolCalls={toolCalls}
+                  activeToolLabel={activeToolLabel}
                   dispatchAgentMessage={dispatchAgentMessage}
                   composerInput={composerInput}
                   setComposerInput={setComposerInput}
@@ -806,6 +810,8 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
                   draftDays={Array.isArray(activeTripState?.itinerary?.days) ? activeTripState.itinerary.days : []}
                   draftVersion={draftVersion}
                   tripSummary={tripSummary}
+                  mapMarkers={mapMarkers}
+                  routeEstimates={routeEstimates}
                   onContinue={onContinue}
                   dispatchAgentMessage={dispatchAgentMessage}
                 />

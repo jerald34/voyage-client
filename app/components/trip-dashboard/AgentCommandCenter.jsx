@@ -33,6 +33,7 @@ export default function AgentCommandCenter({
   onTripChange,
   onNewItinerary,
   activeMessages = 0,
+  activeToolLabel = null,
 }) {
   const [isClientMenuOpen, setIsClientMenuOpen] = useState(false);
   const messagesEndRef = useRef(null);
@@ -269,14 +270,20 @@ export default function AgentCommandCenter({
               </svg>
             </div>
             <div className="message-content">
-              <div className="bubble thinking-bubble">
-                <div className="thinking-header">
-                  <span className="thinking-dot" />
-                  Agent working
-                </div>
-                {activeToolCalls.length > 0 && (
-                  <div className="tool-stepper">
-                    {activeToolCalls.map((name, idx) => (
+                <div className="bubble thinking-bubble">
+                  <div className="thinking-header">
+                    <span className="thinking-dot" />
+                    Agent working
+                  </div>
+                  {activeToolLabel && (
+                    <div className="system-banner" role="status" aria-live="polite">
+                      <span className="system-banner-label">SYS</span>
+                      <span className="system-banner-text">{activeToolLabel}</span>
+                    </div>
+                  )}
+                  {activeToolCalls.length > 0 && (
+                    <div className="tool-stepper">
+                      {activeToolCalls.map((name, idx) => (
                       <div key={name} className="step">
                         <div className="step-icon">{idx + 1}</div>
                         <div className="step-text">
@@ -804,6 +811,39 @@ export default function AgentCommandCenter({
           font-weight: 700;
           color: var(--voyage-primary);
           margin-bottom: 12px;
+        }
+
+        .system-banner {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 14px;
+          padding: 10px 12px;
+          border-radius: 12px;
+          background: #0f172a;
+          color: #e2e8f0;
+          font-size: 12px;
+          line-height: 1.4;
+        }
+
+        .system-banner-label {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 44px;
+          padding: 3px 8px;
+          border-radius: 999px;
+          background: rgba(215, 122, 97, 0.18);
+          color: #f8fafc;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+        }
+
+        .system-banner-text {
+          min-width: 0;
+          word-break: break-word;
+          flex: 1;
         }
 
         .thinking-dot {

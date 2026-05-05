@@ -1,6 +1,79 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 
+function toNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function humanizeToolName(name) {
+  return String(name || '')
+    .replace(/[_\.]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildActiveToolLabel(tool) {
+  const name = String(tool?.name || '').trim();
+  const input = tool?.input ?? {};
+
+  if (name === 'map_pinpoint' || name === 'map.pinpoint') {
+    const placeName = String(input?.placeName || input?.name || '').trim();
+    if (placeName) return `Geocoding ${placeName}...`;
+    return 'Geocoding location...';
+  }
+
+  if (name === 'route_logistics' || name === 'route.estimate' || name === 'route') {
+    const origin = String(input?.originPlaceName || input?.origin?.name || '').trim();
+    const destination = String(input?.destinationPlaceName || input?.destination?.name || '').trim();
+    if (origin && destination) return `Computing route logistics: ${origin} -> ${destination}...`;
+    return 'Computing route logistics...';
+  }
+
+  const displayName = humanizeToolName(name);
+  if (displayName) {
+    return `${displayName}...`;
+  }
+
+  return 'Running tool...';
+}
+
+function normalizeMapMarker(payload, index) {
+  const lat = toNumber(payload?.lat ?? payload?.latitude);
+  const lng = toNumber(payload?.lng ?? payload?.longitude);
+
+  if (lat == null || lng == null) {
+    return null;
+  }
+
+  const name = String(payload?.name || payload?.title || payload?.formattedAddress || payload?.address || `Resolved location ${index + 1}`).trim();
+  const formattedAddress = String(payload?.formattedAddress || payload?.address || '').trim();
+
+  return {
+    id: String(payload?.id || payload?.placeSnapshotId || `${name}-${lat}-${lng}-${index}`),
+    name,
+    formattedAddress,
+    lat,
+    lng,
+    provider: payload?.provider ?? null,
+  };
+}
+
+function normalizeRouteEstimate(payload, index) {
+  if (!payload) {
+    return null;
+  }
+
+  return {
+    id: String(payload?.id || `route-${index}-${Date.now()}`),
+    origin: payload?.origin ?? null,
+    destination: payload?.destination ?? null,
+    distanceMeters: toNumber(payload?.distanceMeters),
+    durationSeconds: toNumber(payload?.durationSeconds),
+    polyline: payload?.polyline ?? null,
+  };
+}
+
 export function useAgentRunStream(agencyId) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [runStatus, setRunStatus] = useState('idle'); // idle, running, completed, failed
@@ -8,6 +81,9 @@ export function useAgentRunStream(agencyId) {
   const [tasks, setTasks] = useState([]);
   const [toolCalls, setToolCalls] = useState([]);
   const [sources, setSources] = useState([]);
+  const [mapMarkers, setMapMarkers] = useState([]);
+  const [routeEstimates, setRouteEstimates] = useState([]);
+  const [activeToolLabel, setActiveToolLabel] = useState(null);
   const [lastItineraryUpdate, setLastItineraryUpdate] = useState(null);
   const [lastCompletedItineraryTool, setLastCompletedItineraryTool] = useState(null);
   const [error, setError] = useState(null);
@@ -28,6 +104,9 @@ export function useAgentRunStream(agencyId) {
     setTasks([]);
     setToolCalls([]);
     setSources([]);
+    setMapMarkers([]);
+    setRouteEstimates([]);
+    setActiveToolLabel(null);
     setLastItineraryUpdate(null);
     setLastCompletedItineraryTool(null);
     setError(null);
@@ -113,6 +192,7 @@ export function useAgentRunStream(agencyId) {
       if (!tool) return;
 
       setToolCalls(prev => [...prev, { ...tool, status: 'Running' }]);
+      setActiveToolLabel(buildActiveToolLabel(tool));
     });
 
     // Server sends: { type: "tool.completed", payload: { name, output } }
@@ -128,6 +208,7 @@ export function useAgentRunStream(agencyId) {
           ? { ...t, ...tool, status: 'Completed' }
           : t
       ));
+      setActiveToolLabel(null);
 
       if (tool.name === 'create_itinerary' || tool.name === 'update_itinerary') {
         setLastCompletedItineraryTool({
@@ -150,6 +231,31 @@ export function useAgentRunStream(agencyId) {
           ? { ...t, ...tool, status: 'Failed' }
           : t
       ));
+      setActiveToolLabel(null);
+    });
+
+    // Server sends: { type: "map.pinpointed", payload: { placeSnapshotId, name, formattedAddress, lat, lng, provider } }
+    es.addEventListener('map.pinpointed', (e) => {
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      setMapMarkers(prev => {
+        const marker = normalizeMapMarker(data?.payload, prev.length);
+        if (!marker) return prev;
+        return [...prev, marker];
+      });
+    });
+
+    // Server sends: { type: "route.estimated", payload: { origin, destination, distanceMeters, durationSeconds, polyline } }
+    es.addEventListener('route.estimated', (e) => {
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      setRouteEstimates(prev => {
+        const routeEstimate = normalizeRouteEstimate(data?.payload, prev.length);
+        if (!routeEstimate) return prev;
+        return [...prev, routeEstimate];
+      });
     });
 
     // Server sends: { type: "source.added", payload: { sourceType, title, url, snippet } }
@@ -183,6 +289,7 @@ export function useAgentRunStream(agencyId) {
 
       setIsStreaming(false);
       setRunStatus('completed');
+      setActiveToolLabel(null);
       finishStream();
     });
 
@@ -193,6 +300,7 @@ export function useAgentRunStream(agencyId) {
       const data = parseEventData(e);
       setIsStreaming(false);
       setRunStatus('failed');
+      setActiveToolLabel(null);
       setError(data?.payload?.message || 'Agent run failed');
       finishStream();
     });
@@ -229,6 +337,9 @@ export function useAgentRunStream(agencyId) {
     tasks,
     toolCalls,
     sources,
+    mapMarkers,
+    routeEstimates,
+    activeToolLabel,
     lastItineraryUpdate,
     lastCompletedItineraryTool,
     error,
