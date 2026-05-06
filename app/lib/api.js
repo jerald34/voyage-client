@@ -58,6 +58,13 @@ export async function sendMessage(agencyId, threadId, content) {
   });
 }
 
+export async function approveAgentThreadItinerary(agencyId, threadId, payload) {
+  return fetchApi(`/agencies/${agencyId}/agent/threads/${threadId}/approve-itinerary`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function fetchItineraryDraft(agencyId, itineraryId) {
   return fetchApi(`/agencies/${agencyId}/itineraries/${itineraryId}`);
 }
