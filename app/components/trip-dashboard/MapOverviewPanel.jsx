@@ -2,66 +2,22 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-const DEFAULT_CENTER = { lat: 14.8386, lng: 120.2842 };
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-const GOOGLE_MAPS_MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "DEMO_MAP_ID";
-
-const locationCoordinateRules = [
-  {
-    terms: ["subic bay boardwalk", "boardwalk", "sunset walk", "morning loop"],
-    point: { lat: 14.8246, lng: 120.2813 },
-    label: "Subic Bay Boardwalk",
-  },
-  {
-    terms: ["olongapo city hall"],
-    point: { lat: 14.842131, lng: 120.287702 },
-    label: "Olongapo City Hall",
-  },
-  {
-    terms: ["rizal triangle"],
-    point: { lat: 14.8426, lng: 120.2884 },
-    label: "Rizal Triangle",
-  },
-  {
-    terms: ["harbor point", "hotel check-in", "city center"],
-    point: { lat: 14.8298, lng: 120.2817 },
-    label: "Harbor Point / City Center",
-  },
-  {
-    terms: ["kalaklan", "local lunch and market stop"],
-    point: { lat: 14.8189, lng: 120.2759 },
-    label: "Kalaklan",
-  },
-  {
-    terms: ["airport transfer", "subic bay international airport"],
-    point: { lat: 14.7944, lng: 120.2719 },
-    label: "Subic Bay International Airport",
-  },
-  {
-    terms: ["sunset viewpoint", "hillside", "subic bay"],
-    point: { lat: 14.832506, lng: 120.269397 },
-    label: "Subic Bay Viewpoint",
-  },
-];
-
-function normalize(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase();
-}
+const GOOGLE_MAPS_MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID;
 
 function getMappedPoint(highlight) {
-  const searchText = `${normalize(highlight?.value)} ${normalize(highlight?.label)}`;
-  const matched = locationCoordinateRules.find((rule) =>
-    rule.terms.some((term) => searchText.includes(normalize(term))),
-  );
+  const lat = Number(highlight?.lat ?? highlight?.latitude ?? highlight?.placeSnapshot?.latitude);
+  const lng = Number(highlight?.lng ?? highlight?.longitude ?? highlight?.placeSnapshot?.longitude);
 
-  return matched
-    ? {
-        ...matched.point,
-        title: highlight?.value || matched.label,
-      }
-    : null;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  return {
+    lat,
+    lng,
+    title: highlight?.value || highlight?.label || "Resolved location",
+  };
 }
 
 function getRoutePoints(highlights) {
@@ -138,7 +94,7 @@ export default function MapOverviewPanel({ tripBrief, mapHighlights }) {
   const hasApiKey = Boolean(GOOGLE_MAPS_API_KEY);
 
   useEffect(() => {
-    if (!hasApiKey || !mapNodeRef.current) {
+    if (!hasApiKey || !mapNodeRef.current || routePoints.length === 0) {
       return;
     }
 
@@ -157,14 +113,14 @@ export default function MapOverviewPanel({ tripBrief, mapHighlights }) {
           return;
         }
 
-        const center = routePoints[0] || DEFAULT_CENTER;
+        const center = routePoints[0];
         const map = new Map(mapNodeRef.current, {
           center,
           zoom: 13,
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
-          mapId: GOOGLE_MAPS_MAP_ID,
+          ...(GOOGLE_MAPS_MAP_ID ? { mapId: GOOGLE_MAPS_MAP_ID } : {}),
         });
 
         const infoWindow = new InfoWindow();
@@ -250,7 +206,7 @@ export default function MapOverviewPanel({ tripBrief, mapHighlights }) {
         <p className="lede">A fast visual pass across the neighborhoods shaping {destination}.</p>
       </div>
 
-      {hasApiKey ? (
+      {hasApiKey && routePoints.length > 0 ? (
         <div className="trip-map-canvas has-live-map">
           <div ref={mapNodeRef} className="trip-map-live" aria-label="Google map route overview" />
 
@@ -269,20 +225,10 @@ export default function MapOverviewPanel({ tripBrief, mapHighlights }) {
         </div>
       ) : (
         <div className="trip-map-canvas">
-          <div className="trip-map-route" aria-hidden="true" />
-          {highlights.length > 0 ? (
-            highlights.map((highlight, index) => (
-              <div key={`${highlight.label}-${highlight.value}`} className={`trip-map-pin trip-map-pin-${index + 1}`}>
-                <span>{highlight.label}</span>
-                <strong>{highlight.value}</strong>
-              </div>
-            ))
-          ) : (
-            <div className="trip-map-pin trip-map-pin-1">
-              <span>Planning view</span>
-              <strong>Add itinerary locations to preview the route</strong>
-            </div>
-          )}
+          <div className="trip-map-empty">
+            <span>Route coordinates pending</span>
+            <strong>Map preview appears after resolved locations are available.</strong>
+          </div>
         </div>
       )}
     </section>

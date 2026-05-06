@@ -43,6 +43,18 @@ export function useAuth() {
     }
   };
 
+  const logout = async () => {
+    setLoading(true);
+    try {
+      await fetchApi("/auth/logout", { method: "POST" }).catch(() => {});
+    } finally {
+      localStorage.removeItem("voyage-user");
+      setLoading(false);
+      // Hard redirect to clear all states and land on the home page correctly
+      window.location.href = "/";
+    }
+  };
+
   const startOAuth = (provider) => {
     window.location.href = `${API_URL}/auth/${provider}/start`;
   };
@@ -50,6 +62,7 @@ export function useAuth() {
   return {
     register,
     login,
+    logout,
     startOAuth,
     error,
     loading,

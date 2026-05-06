@@ -1,9 +1,82 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import HomePage from "../app/components/trip-dashboard/HomePage.jsx";
 import { useTripDashboard } from "../app/hooks/useTripDashboard.js";
+
+const mocks = vi.hoisted(() => ({
+  startStreamMock: vi.fn(),
+  sendMessageMock: vi.fn(async () => ({ runId: "run-1" })),
+  createAgentThreadMock: vi.fn(async (_agencyId, tripId) => ({
+    thread: {
+      id: `created-${tripId}`,
+      tripId,
+      messages: [],
+      events: [],
+    },
+  })),
+  listAgentThreadsMock: vi.fn(async () => ({
+    threads: [
+      { id: "thread-1", tripId: "trip-1" },
+      { id: "thread-2", tripId: "trip-2" },
+    ],
+  })),
+  fetchAgentThreadMock: vi.fn(async (_agencyId, threadId) => ({
+    thread:
+      threadId === "thread-2"
+        ? {
+            id: "thread-2",
+            tripId: "trip-2",
+            messages: [{ id: "m-2", role: "ASSISTANT", content: "Second thread ready" }],
+            events: [{ type: "itinerary.updated", payload: { itineraryId: "itinerary-2" } }],
+          }
+        : {
+            id: "thread-1",
+            tripId: "trip-1",
+            messages: [{ id: "m-1", role: "ASSISTANT", content: "First thread ready" }],
+            events: [{ type: "itinerary.updated", payload: { itineraryId: "itinerary-1" } }],
+          },
+  })),
+  fetchItineraryDraftMock: vi.fn(async (_agencyId, itineraryId) => ({
+    itinerary: {
+      id: itineraryId,
+      version: itineraryId === "itinerary-2" ? 2 : 1,
+      trip: {
+        id: itineraryId === "itinerary-2" ? "trip-2" : "trip-1",
+        clientName: itineraryId === "itinerary-2" ? "Reyes Group" : "Santos Family",
+      },
+      days: [],
+    },
+  })),
+}));
+
+vi.mock("../app/hooks/useAgentRunStream.js", () => ({
+  useAgentRunStream: () => ({
+    isStreaming: false,
+    runStatus: "idle",
+    assistantMessage: "",
+    toolCalls: [],
+    lastItineraryUpdate: null,
+    error: null,
+    startStream: mocks.startStreamMock,
+  }),
+}));
+
+vi.mock("../app/hooks/useAuth.js", () => ({
+  useAuth: () => ({
+    logout: vi.fn(),
+    user: null,
+  }),
+}));
+
+vi.mock("../app/lib/api.js", () => ({
+  createAgentThread: (...args) => mocks.createAgentThreadMock(...args),
+  fetchAgentThread: (...args) => mocks.fetchAgentThreadMock(...args),
+  fetchItineraryDraft: (...args) => mocks.fetchItineraryDraftMock(...args),
+  listAgentThreads: (...args) => mocks.listAgentThreadsMock(...args),
+  sendMessage: (...args) => mocks.sendMessageMock(...args),
+}));
 
 const testMapPlaces = [
   { id: "place-1", name: "Airport transfer", district: "Transit", note: "Arrival route" },
@@ -108,26 +181,21 @@ describe("Agency portfolio HomePage", () => {
       status: "active",
     },
   ];
+  const user = {
+    displayName: "Mara",
+    memberships: [{ agencyId: "agency-1" }],
+  };
 
   it("renders the Agent-centered agency portfolio dashboard", () => {
     render(<HomePage agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
-    expect(screen.getByText("Agency Portfolio")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Agent Command Center" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Agent Command Center" }).closest(".agency-agent-panel")).not.toBeNull();
-    expect(screen.getByLabelText("Agency portfolio metrics")).toHaveClass("agency-metric-strip");
     expect(screen.getByRole("button", { name: "Run Agency Review" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Prepare today's client follow-ups" })).toBeInTheDocument();
-    expect(screen.getByText("2 approvals blocking production")).toBeInTheDocument();
-    expect(screen.getByText("Active trips")).toBeInTheDocument();
-    expect(screen.getByText("Departures in 30 days")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Priority Queue" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Urgent Departures" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Approval Blockers" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Client Trip Portfolio" })).toBeInTheDocument();
-    expect(screen.getAllByText("Santos Family").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Olongapo City").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Ready 68%").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "New Itinerary" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Current client: Santos Family" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Regenerate" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send to Client" })).toBeInTheDocument();
+    expect(screen.getByText("No conversation yet")).toBeInTheDocument();
+    expect(screen.getByText("Live Itinerary")).toBeInTheDocument();
   });
 
   it("wires Agent command actions through the homepage", () => {
@@ -140,21 +208,70 @@ describe("Agency portfolio HomePage", () => {
     expect(onContinue).toHaveBeenCalledTimes(1);
   });
 
-  it("wires portfolio open trip actions through the homepage", () => {
-    const onOpenTrip = vi.fn();
+  it("wires the New Itinerary button through the homepage", () => {
+    const onNewItinerary = vi.fn();
 
-    render(<HomePage agencyTrips={agencyTrips} onContinue={vi.fn()} onOpenTrip={onOpenTrip} />);
+    render(<HomePage agencyTrips={agencyTrips} onContinue={vi.fn()} onNewItinerary={onNewItinerary} />);
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Open trip" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
 
-    expect(onOpenTrip).toHaveBeenCalledWith(agencyTrips[0]);
+    expect(onNewItinerary).toHaveBeenCalledTimes(1);
+  });
+
+  it("creates a no-client agent thread from New Itinerary and sends messages to it", async () => {
+    const { container } = render(<HomePage user={user} agencyTrips={[]} onContinue={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+
+    await waitFor(() => {
+      expect(mocks.createAgentThreadMock).toHaveBeenCalledWith("agency-1");
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Ask the agent to adjust the draft..."), {
+      target: { value: "Create a 4-day Cebu itinerary" },
+    });
+
+    fireEvent.click(container.querySelector(".send-button"));
+
+    await waitFor(() => {
+      expect(mocks.sendMessageMock).toHaveBeenCalledWith(
+        "agency-1",
+        "created-undefined",
+        "Create a 4-day Cebu itinerary",
+      );
+    });
   });
 
   it("renders empty states for an empty portfolio", () => {
     render(<HomePage agencyTrips={[]} onContinue={vi.fn()} />);
 
-    expect(screen.getAllByText("No active client trips yet.").length).toBeGreaterThan(0);
-    expect(screen.getByText("No departures need attention this week.")).toBeInTheDocument();
-    expect(screen.getByText("No client approvals are blocking production.")).toBeInTheDocument();
+    expect(screen.getByText("No conversation yet")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "No client trips available" }));
+    expect(screen.getByRole("button", { name: "No client trips available" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("No client trips available");
+    expect(screen.getByRole("status")).toHaveTextContent("Use New Itinerary to create the first trip.");
+  });
+
+  it("switches the active trip and thread when a client is selected", async () => {
+    const { container } = render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    expect(await screen.findByText("First thread ready")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Santos Family/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Santos Family/i }));
+    fireEvent.click(screen.getByRole("option", { name: /Reyes Group/i }));
+
+    expect(await screen.findByText("Second thread ready")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Reyes Group/i })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText("Ask the agent to adjust the draft..."), {
+      target: { value: "Send the update" },
+    });
+
+    fireEvent.click(container.querySelector(".send-button"));
+
+    await waitFor(() => {
+      expect(mocks.sendMessageMock).toHaveBeenCalledWith("agency-1", "thread-2", "Send the update");
+    });
   });
 });

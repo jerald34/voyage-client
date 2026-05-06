@@ -2,12 +2,6 @@
 import Link from 'next/link';
 
 export default function AgentThreadRail() {
-  const mockThreads = [
-    { id: '1', title: 'Tokyo Foodie Extravaganza', status: 'Draft', date: '2h ago' },
-    { id: '2', title: 'Kyoto Cultural Immersion', status: 'Needs Review', date: '5h ago' },
-    { id: '3', title: 'Hokkaido Winter Escape', status: 'Completed', date: 'Yesterday' },
-  ];
-
   return (
     <div className="thread-rail-container">
       <header className="rail-header">
@@ -16,7 +10,7 @@ export default function AgentThreadRail() {
           <h2 className="agency-name">Voyage Premium</h2>
         </div>
         <Link href="/agency" className="back-link">
-          ← Dashboard
+          {"<-"} Dashboard
         </Link>
       </header>
 
@@ -29,19 +23,10 @@ export default function AgentThreadRail() {
 
       <nav className="thread-list-nav">
         <h3 className="section-title">Recent Threads</h3>
-        <ul className="thread-list">
-          {mockThreads.map(thread => (
-            <li key={thread.id} className="thread-item">
-              <div className="thread-info">
-                <span className="thread-title">{thread.title}</span>
-                <span className="thread-meta">{thread.date}</span>
-              </div>
-              <span className={`status-chip ${thread.status.toLowerCase().replace(' ', '-')}`}>
-                {thread.status}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <div className="thread-empty-state">
+          <strong>No recent threads loaded</strong>
+          <span>Start or select an itinerary thread to populate this rail.</span>
+        </div>
       </nav>
 
       <style jsx>{`
@@ -108,66 +93,25 @@ export default function AgentThreadRail() {
           margin-bottom: 16px;
         }
 
-        .thread-list {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-          display: flex;
-          flex-direction: column;
+        .thread-empty-state {
+          display: grid;
           gap: 8px;
-        }
-
-        .thread-item {
           padding: 12px;
           border-radius: var(--voyage-radius-sm);
           border: 1px solid var(--voyage-border);
           background: white;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          cursor: pointer;
-          transition: all 0.2s;
         }
 
-        .thread-item:hover {
-          border-color: var(--voyage-secondary);
-          background: rgba(215, 122, 97, 0.02);
-        }
-
-        .thread-title {
+        .thread-empty-state strong {
           font-size: 13px;
           font-weight: 700;
-          display: block;
           color: var(--voyage-text);
         }
 
-        .thread-meta {
+        .thread-empty-state span {
           font-size: 11px;
           color: var(--voyage-text-soft);
-        }
-
-        .status-chip {
-          font-size: 10px;
-          font-weight: 800;
-          padding: 2px 6px;
-          border-radius: 4px;
-          align-self: flex-start;
-          text-transform: uppercase;
-        }
-
-        .status-chip.draft {
-          background: #eef2f3;
-          color: #7d8c94;
-        }
-
-        .status-chip.needs-review {
-          background: #fff4e5;
-          color: #b7791f;
-        }
-
-        .status-chip.completed {
-          background: #e6fffa;
-          color: #2c7a7b;
+          line-height: 1.5;
         }
       `}</style>
     </div>

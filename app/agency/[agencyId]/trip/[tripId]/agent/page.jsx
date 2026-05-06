@@ -26,6 +26,9 @@ export default function AgencyTripAgentPage({ params }) {
     tasks,
     toolCalls,
     sources,
+    mapMarkers,
+    routeEstimates,
+    activeToolLabel,
     lastItineraryUpdate,
     error,
     startStream
@@ -94,6 +97,9 @@ export default function AgencyTripAgentPage({ params }) {
           toolCalls={toolCalls}
           sources={sources}
           itinerary={itinerary}
+          activeToolLabel={activeToolLabel}
+          mapMarkers={mapMarkers}
+          routeEstimates={routeEstimates}
         />
       }
       inspectorFooter={

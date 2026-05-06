@@ -943,6 +943,32 @@ input[type="password"]:focus {
   font-size: 0.78rem;
 }
 
+.trip-map-empty {
+  position: absolute;
+  inset: 24px;
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  text-align: center;
+  color: var(--voyage-primary);
+  z-index: 1;
+}
+
+.trip-map-empty span {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--voyage-secondary);
+  font-weight: 800;
+}
+
+.trip-map-empty strong {
+  max-width: 260px;
+  font-size: 0.92rem;
+  color: var(--voyage-primary);
+  line-height: 1.45;
+}
+
 .trip-map-canvas::before,
 .trip-map-canvas::after {
   content: "";

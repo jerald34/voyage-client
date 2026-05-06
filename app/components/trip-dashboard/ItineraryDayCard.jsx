@@ -1,67 +1,102 @@
-import LocationChecklistRow from "./LocationChecklistRow.jsx";
+import React from "react";
 
-export default function ItineraryDayCard({ day, isPrimaryDay = false, onMarkDayDone, onToggleLocation }) {
-  const locations = Array.isArray(day?.locations) ? day.locations : [];
-  const progress = day?.progress ?? {
-    completedCount: 0,
-    totalCount: locations.length,
-    percent: 0,
-    isComplete: false,
-    isEmpty: locations.length === 0,
-  };
+export default function ItineraryDayCard({ day }) {
+  const items = Array.isArray(day?.items) ? day.items : [];
 
   return (
-    <article
-      aria-label={`Timeline day ${day?.label || "Day"}`}
-      className={`trip-day-card${progress.isComplete ? " is-complete" : ""}`}
-    >
-      <div className="trip-day-card-header">
-        <div style={{ display: "grid", gap: "8px" }}>
-          <span className="frame-label">{day?.label || "Day"}</span>
-          <h3 style={{ fontSize: "1.35rem", margin: 0 }}>{day?.title || "Planning in progress"}</h3>
-          {day?.note && (
-            <p style={{ margin: 0, color: "var(--voyage-text-muted)", fontSize: "0.92rem" }}>{day.note}</p>
-          )}
-        </div>
+    <article className="day-card">
+      <header>
+        <strong>Day {day?.dayNumber ?? "-"}</strong>
+        <span>{day?.title || "Untitled day"}</span>
+      </header>
 
-        <button
-          className="button button-secondary"
-          type="button"
-          aria-label={isPrimaryDay ? undefined : `Mark ${day?.label || "day"} done`}
-          disabled={progress.isEmpty}
-          style={{ padding: "10px 14px", fontSize: "0.85rem" }}
-          onClick={() => onMarkDayDone(day.id)}
-        >
-          Mark day done
-        </button>
-      </div>
-
-      <div style={{ display: "grid", gap: "10px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
-          <strong>{progress.percent}% ready</strong>
-          <span style={{ color: "var(--voyage-text-muted)", fontSize: "0.88rem" }}>
-            {progress.completedCount} of {progress.totalCount} complete
-          </span>
-        </div>
-        <div aria-hidden="true" className="trip-progress-bar">
-          <div style={{ width: `${progress.percent}%` }} />
-        </div>
-      </div>
-
-      {progress.isEmpty ? (
-        <p style={{ margin: 0, color: "var(--voyage-text-muted)" }}>No locations have been added yet for this day.</p>
+      {items.length === 0 ? (
+        <p className="empty">No activities generated for this day yet.</p>
       ) : (
-        <div className="trip-location-list">
-          {locations.map((location) => (
-            <LocationChecklistRow
-              key={location.id}
-              dayId={day.id}
-              location={location}
-              onToggleLocation={onToggleLocation}
-            />
+        <ul>
+          {items.slice(0, 5).map((item, index) => (
+            <li key={`${day?.dayNumber ?? "day"}-${index}`}>
+              <div className="row">
+                <span className="type">{item.type || "ACTIVITY"}</span>
+                <strong>{item.title || "Untitled activity"}</strong>
+              </div>
+              {item.description ? <p>{item.description}</p> : null}
+            </li>
           ))}
-        </div>
+        </ul>
       )}
+
+      <style jsx>{`
+        .day-card {
+          border: 1px solid #e6e9ee;
+          border-radius: 10px;
+          padding: 12px;
+          background: #fff;
+          display: grid;
+          gap: 10px;
+        }
+        header {
+          display: flex;
+          justify-content: space-between;
+          gap: 8px;
+          align-items: center;
+        }
+        header strong {
+          color: #0f172a;
+          font-size: 13px;
+        }
+        header span {
+          color: #334155;
+          font-size: 12px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .empty {
+          margin: 0;
+          color: #6b7280;
+          font-size: 13px;
+        }
+        ul {
+          margin: 0;
+          padding: 0;
+          list-style: none;
+          display: grid;
+          gap: 8px;
+        }
+        li {
+          border: 1px solid #edf1f5;
+          border-radius: 8px;
+          padding: 8px;
+          background: #fafbfc;
+          display: grid;
+          gap: 6px;
+        }
+        .row {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+        }
+        .type {
+          font-size: 10px;
+          font-weight: 700;
+          padding: 3px 6px;
+          border-radius: 999px;
+          border: 1px solid #dbe3ea;
+          color: #475569;
+          background: #f8fafc;
+        }
+        li strong {
+          font-size: 13px;
+          color: #0f172a;
+        }
+        li p {
+          margin: 0;
+          font-size: 12px;
+          color: #475569;
+          line-height: 1.35;
+        }
+      `}</style>
     </article>
   );
 }

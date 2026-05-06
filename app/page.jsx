@@ -51,16 +51,26 @@ function HomePageInner() {
     fetchApi("/auth/me")
       .then((data) => {
         if (cancelled) return;
+        
+        // Save user regardless of membership status so they are at least authenticated
         localStorage.setItem("voyage-user", JSON.stringify(data.user));
         setUser(data.user);
         setShouldBypassLanding(true);
+
+        const hasMembership = Array.isArray(data.user?.memberships) && data.user.memberships.length > 0;
+        if (!hasMembership) {
+          console.warn("User has no agency memberships. Some dashboard features may be limited.", data.user);
+        }
       })
       .catch(() => {
         // Fetch failed — try to use cached user as fallback.
         const storedUser = typeof window !== "undefined" ? localStorage.getItem("voyage-user") : null;
         if (!cancelled && storedUser) {
-          try { setUser(JSON.parse(storedUser)); } catch {}
-          setShouldBypassLanding(true);
+          try { 
+            const parsed = JSON.parse(storedUser);
+            setUser(parsed);
+            setShouldBypassLanding(true);
+          } catch {}
         }
       });
 
@@ -81,24 +91,26 @@ function HomePageInner() {
   const effectiveSelectedDayId = selectedDay?.id ?? null;
   const selectedPlace = mapPlaces.find((place) => place.id === selectedPlaceId) || null;
 
+  if (currentScreen === "trip-brief") {
+    return (
+      <HomePage
+        user={user}
+        agencyTrips={[]}
+        onContinue={() => setActiveScreen("agent-kickoff")}
+        onOpenTrip={() => {
+          setActiveWorkspaceTab("trip");
+          setActiveScreen("workspace");
+        }}
+      />
+    );
+  }
+
   return (
     <main className="system-shell">
       <div className="system-grain" aria-hidden="true" />
 
       <section className="wireframe-section">
         {currentScreen === "welcome" && <LandingPage onStart={() => router.push("/login")} />}
-
-        {currentScreen === "trip-brief" && (
-          <HomePage
-            user={user}
-            agencyTrips={prototypeData.agencyPortfolioTrips}
-            onContinue={() => setActiveScreen("agent-kickoff")}
-            onOpenTrip={() => {
-              setActiveWorkspaceTab("trip");
-              setActiveScreen("workspace");
-            }}
-          />
-        )}
 
         {currentScreen === "agent-kickoff" && (
           <AgentKickoffScreen onOpenWorkspace={() => setActiveScreen("workspace")} tripBrief={tripBrief} />

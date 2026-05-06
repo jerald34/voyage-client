@@ -5,23 +5,60 @@ import AgentToolCallList from './AgentToolCallList';
 import AgentSourcesDrawer from '../sources/AgentSourcesDrawer';
 import ItineraryCanvas from '../itinerary/ItineraryCanvas';
 
+function formatDistance(meters) {
+  if (!Number.isFinite(meters) || meters <= 0) return null;
+  if (meters >= 1000) return `${(meters / 1000).toFixed(meters >= 10000 ? 0 : 1)} km`;
+  return `${Math.round(meters)} m`;
+}
+
+function formatDuration(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return null;
+
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+}
+
 export default function AgentLiveWorkRail({ 
   runStatus = 'idle',
   tasks = [], 
   toolCalls = [], 
   sources = [], 
-  itinerary = null 
+  itinerary = null,
+  activeToolLabel = null,
+  mapMarkers = [],
+  routeEstimates = [],
 }) {
   const [activeTab, setActiveTab] = useState('work');
+  const latestRouteEstimate = Array.isArray(routeEstimates) && routeEstimates.length > 0 ? routeEstimates[routeEstimates.length - 1] : null;
+  const routeDistance = formatDistance(latestRouteEstimate?.distanceMeters);
+  const routeDuration = formatDuration(latestRouteEstimate?.durationSeconds);
 
   return (
     <div className="live-work-rail">
       <header className="rail-status-header">
-        <div className="status-indicator">
-          <span className={`pulse-dot ${runStatus}`}></span>
-          <span className="status-text">
-            {runStatus === 'running' ? 'Agent Active' : runStatus === 'idle' ? 'Idle' : 'Run ' + runStatus}
-          </span>
+        <div className="status-stack">
+          <div className="status-indicator">
+            <span className={`pulse-dot ${runStatus}`}></span>
+            <span className="status-text">
+              {runStatus === 'running' ? 'Agent Active' : runStatus === 'idle' ? 'Idle' : 'Run ' + runStatus}
+            </span>
+          </div>
+          {(activeToolLabel || mapMarkers.length > 0 || latestRouteEstimate) && (
+            <div className="tool-banner" aria-live="polite">
+              {activeToolLabel && <span className="tool-banner-label">SYS: {activeToolLabel}</span>}
+              {(mapMarkers.length > 0 || latestRouteEstimate) && (
+                <span className="tool-banner-meta">
+                  {mapMarkers.length > 0 && `${mapMarkers.length} markers`}
+                  {mapMarkers.length > 0 && latestRouteEstimate && ' | '}
+                  {latestRouteEstimate && `Route${routeDistance ? ` ${routeDistance}` : ''}${routeDuration ? ` | ${routeDuration}` : ''}`}
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <div className="run-id-tag">OPERATIONS CENTER</div>
       </header>
@@ -68,6 +105,14 @@ export default function AgentLiveWorkRail({
           display: flex;
           justify-content: space-between;
           align-items: center;
+          gap: 16px;
+        }
+
+        .status-stack {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          min-width: 0;
         }
 
         .status-indicator {
@@ -97,6 +142,36 @@ export default function AgentLiveWorkRail({
           font-weight: 800;
           text-transform: uppercase;
           color: var(--voyage-primary);
+        }
+
+        .tool-banner {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          align-items: center;
+          font-size: 11px;
+          line-height: 1.4;
+        }
+
+        .tool-banner-label,
+        .tool-banner-meta {
+          display: inline-flex;
+          align-items: center;
+          padding: 5px 8px;
+          border-radius: 999px;
+          background: #0f172a;
+          color: #e2e8f0;
+          font-weight: 700;
+        }
+
+        .tool-banner-label {
+          white-space: nowrap;
+        }
+
+        .tool-banner-meta {
+          background: #eef2f7;
+          color: var(--voyage-primary);
+          border: 1px solid var(--voyage-border);
         }
 
         .run-id-tag {
