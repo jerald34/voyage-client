@@ -1,8 +1,18 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { MapContainer, TileLayer, CircleMarker, Popup, Polyline, useMap } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import {
+  APIProvider,
+  Map,
+  useMap,
+  AdvancedMarker,
+  Pin,
+  InfoWindow,
+  useMapsLibrary,
+} from "@vis.gl/react-google-maps";
+
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "a1950eb4eae71842fa9590f9";
 
 const EMPTY_MAP_CENTER = { lat: 0, lng: 0 };
 
@@ -70,16 +80,14 @@ function decodeEncodedPolyline(polyline) {
     const deltaLng = (result & 1) ? ~(result >> 1) : (result >> 1);
     lng += deltaLng;
 
-    coordinates.push([lat / 1e5, lng / 1e5]);
+    coordinates.push({ lat: lat / 1e5, lng: lng / 1e5 });
   }
 
   return coordinates;
 }
 
 function normalizeRoutePolyline(polyline) {
-  if (!polyline) {
-    return [];
-  }
+  if (!polyline) return [];
 
   if (typeof polyline === "string") {
     return decodeEncodedPolyline(polyline);
@@ -98,9 +106,7 @@ function normalizeRoutePolyline(polyline) {
     }
   }
 
-  if (!Array.isArray(polyline)) {
-    return [];
-  }
+  if (!Array.isArray(polyline)) return [];
 
   return polyline
     .map((point) => {
@@ -108,11 +114,8 @@ function normalizeRoutePolyline(polyline) {
         const first = Number(point[0]);
         const second = Number(point[1]);
         if (Number.isFinite(first) && Number.isFinite(second)) {
-          if (Math.abs(first) > 90 && Math.abs(second) <= 90) {
-            return [second, first];
-          }
-
-          return [first, second];
+          // Google Maps uses {lat, lng}
+          return { lat: first, lng: second };
         }
         return null;
       }
@@ -121,7 +124,7 @@ function normalizeRoutePolyline(polyline) {
         const lat = Number(point.lat ?? point.latitude);
         const lng = Number(point.lng ?? point.longitude);
         if (Number.isFinite(lat) && Number.isFinite(lng)) {
-          return [lat, lng];
+          return { lat, lng };
         }
       }
 
@@ -130,43 +133,60 @@ function normalizeRoutePolyline(polyline) {
     .filter(Boolean);
 }
 
+/**
+ * Custom Polyline component for react-google-maps
+ */
+function Polyline({ points, color = "#3b82f6", weight = 3, opacity = 0.5, dashArray }) {
+  const map = useMap();
+  const maps = useMapsLibrary("maps");
+  const polylineRef = useRef(null);
+
+  useEffect(() => {
+    if (!map || !maps || !points.length) return;
+
+    if (polylineRef.current) {
+      polylineRef.current.setMap(null);
+    }
+
+    const polyline = new maps.Polyline({
+      path: points,
+      geodesic: true,
+      strokeColor: color,
+      strokeOpacity: opacity,
+      strokeWeight: weight,
+      icons: dashArray ? [{
+        icon: { path: "M 0,-1 0,1", strokeOpacity: 1, scale: 2 },
+        offset: "0",
+        repeat: "10px"
+      }] : []
+    });
+
+    polyline.setMap(map);
+    polylineRef.current = polyline;
+
+    return () => {
+      polyline.setMap(null);
+    };
+  }, [map, maps, points, color, weight, opacity, dashArray]);
+
+  return null;
+}
+
 function FitBounds({ points }) {
   const map = useMap();
 
   useEffect(() => {
-    let isCancelled = false;
+    if (!map || !points.length) return;
 
-    const applyViewport = () => {
-      if (isCancelled) return;
-      if (!map || !map.getContainer?.()) return;
-
-      if (points.length === 1) {
-        map.setView([points[0].lat, points[0].lng], 13, { animate: false });
-        return;
-      }
-
-      map.fitBounds(
-        points.map((point) => [point.lat, point.lng]),
-        {
-          padding: [36, 36],
-          maxZoom: 14,
-          animate: false,
-        }
-      );
-    };
-
-    if (map.whenReady) {
-      map.whenReady(() => {
-        // Wait one frame so panes/layers are fully available in dev strict re-renders.
-        requestAnimationFrame(applyViewport);
-      });
-    } else {
-      requestAnimationFrame(applyViewport);
-    }
-
-    return () => {
-      isCancelled = true;
-    };
+    const bounds = new google.maps.LatLngBounds();
+    points.forEach((point) => bounds.extend(point));
+    
+    map.fitBounds(bounds, {
+      top: 36,
+      right: 36,
+      bottom: 36,
+      left: 36,
+    });
   }, [map, points]);
 
   return null;
@@ -176,12 +196,15 @@ function FocusActiveStop({ points, activeIndex }) {
   const map = useMap();
 
   useEffect(() => {
-    if (!map || !map.getContainer?.()) return;
-    if (!Number.isInteger(activeIndex) || activeIndex < 0 || activeIndex >= points.length) return;
+    if (!map || !Number.isInteger(activeIndex) || activeIndex < 0 || activeIndex >= points.length) return;
     const activePoint = points[activeIndex];
     if (!activePoint) return;
-    const zoom = map.getZoom() >= 13 ? map.getZoom() : 13;
-    map.flyTo([activePoint.lat, activePoint.lng], zoom, { duration: 0.35 });
+    
+    map.panTo(activePoint);
+    const currentZoom = map.getZoom();
+    if (currentZoom < 14) {
+      map.setZoom(14);
+    }
   }, [activeIndex, map, points]);
 
   return null;
@@ -192,14 +215,18 @@ function FocusLiveMarker({ liveMarkers }) {
   const latestMarker = liveMarkers[liveMarkers.length - 1] || null;
 
   useEffect(() => {
-    if (!map || !map.getContainer?.() || !latestMarker) return;
-    map.flyTo([latestMarker.lat, latestMarker.lng], 14, { animate: true, duration: 1.5 });
+    if (!map || !latestMarker) return;
+    map.panTo({ lat: latestMarker.lat, lng: latestMarker.lng });
+    map.setZoom(15);
   }, [latestMarker, map]);
 
   return null;
 }
 
 export default function ItineraryLiveMap({ items = [], liveMarkers = [], routeEstimates = [], activeIndex = -1, onHoverItem }) {
+  const [selectedPoint, setSelectedPoint] = useState(null);
+  const [hoveredPoint, setHoveredPoint] = useState(null);
+
   const points = useMemo(() => items.map((item, index) => mapItemToPoint(item, index)).filter(Boolean), [items]);
   const liveMarkerPoints = useMemo(
     () => (Array.isArray(liveMarkers) ? liveMarkers.map((marker, index) => normalizeLiveMarker(marker, index)).filter(Boolean) : []),
@@ -213,93 +240,129 @@ export default function ItineraryLiveMap({ items = [], liveMarkers = [], routeEs
     const latestRoute = routeEstimates[routeEstimates.length - 1];
     return normalizeRoutePolyline(latestRoute?.polyline);
   }, [routeEstimates]);
+
   const viewportPoints = useMemo(() => [...points, ...liveMarkerPoints], [points, liveMarkerPoints]);
-  const center = viewportPoints[0];
+  const center = viewportPoints[0] || EMPTY_MAP_CENTER;
+
+  const handleMarkerClick = useCallback((point) => {
+    setSelectedPoint(point);
+  }, []);
 
   return (
     <div className="itinerary-live-map-shell">
-      <MapContainer center={center || EMPTY_MAP_CENTER} zoom={center ? 13 : 2} className="itinerary-live-map" scrollWheelZoom={true}>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-        />
-        {center ? <FitBounds points={viewportPoints} /> : null}
-        <FocusActiveStop points={points} activeIndex={activeIndex} />
-        <FocusLiveMarker liveMarkers={liveMarkerPoints} />
+      <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
+        <Map
+          defaultCenter={center}
+          defaultZoom={center.lat !== 0 ? 13 : 2}
+          mapId={MAP_ID}
+          className="itinerary-live-map"
+          disableDefaultUI={false}
+          gestureHandling="greedy"
+        >
+          {viewportPoints.length > 0 && <FitBounds points={viewportPoints} />}
+          <FocusActiveStop points={points} activeIndex={activeIndex} />
+          <FocusLiveMarker liveMarkers={liveMarkerPoints} />
 
-        {points.length > 1 && (
-          <Polyline
-            positions={points.map((point) => [point.lat, point.lng])}
-            pathOptions={{ color: "#3b82f6", weight: 3, opacity: 0.4, dashArray: "5, 10" }}
-          />
-        )}
+          {/* Planned path */}
+          {points.length > 1 && (
+            <Polyline
+              points={points}
+              color="#3b82f6"
+              weight={3}
+              opacity={0.4}
+              dashArray={true}
+            />
+          )}
 
-        {latestRoutePolyline.length > 1 && (
-          <Polyline
-            positions={latestRoutePolyline}
-            pathOptions={{ color: "#d77a61", weight: 4, opacity: 0.75 }}
-          />
-        )}
+          {/* Actual route estimates */}
+          {latestRoutePolyline.length > 1 && (
+            <Polyline
+              points={latestRoutePolyline}
+              color="#d77a61"
+              weight={5}
+              opacity={0.9}
+            />
+          )}
 
-        {points.map((point, index) => {
-          const isActive = activeIndex === index;
-          return (
-            <CircleMarker
-              key={`${point.lat}-${point.lng}-${index}`}
-              center={[point.lat, point.lng]}
-              radius={isActive ? 12 : 8}
-              pathOptions={{
-                color: isActive ? "#2563eb" : "#1e293b",
-                fillColor: isActive ? "#3b82f6" : "#ffffff",
-                fillOpacity: 1,
-                weight: isActive ? 4 : 2,
-              }}
-              eventHandlers={{
-                mouseover: () => onHoverItem?.(index),
-                click: () => onHoverItem?.(index),
-              }}
+          {/* Itinerary Markers */}
+          {points.map((point, index) => {
+            const isActive = activeIndex === index;
+            return (
+              <AdvancedMarker
+                key={`point-${index}-${point.lat}-${point.lng}`}
+                position={{ lat: point.lat, lng: point.lng }}
+                onMouseEnter={() => onHoverItem?.(index)}
+                onClick={() => {
+                  handleMarkerClick(point);
+                  onHoverItem?.(index);
+                }}
+              >
+                <Pin
+                  background={isActive ? "#2563eb" : "#ffffff"}
+                  borderColor={isActive ? "#1e3a8a" : "#1e293b"}
+                  glyphColor={isActive ? "#ffffff" : "#1e293b"}
+                  scale={isActive ? 1.2 : 1.0}
+                >
+                  <span style={{ fontSize: "10px", fontWeight: "bold" }}>{index + 1}</span>
+                </Pin>
+              </AdvancedMarker>
+            );
+          })}
+
+          {/* Live Resolution Markers */}
+          {liveMarkerPoints.map((marker) => (
+            <AdvancedMarker
+              key={marker.id}
+              position={{ lat: marker.lat, lng: marker.lng }}
+              onClick={() => handleMarkerClick(marker)}
             >
-              <Popup>
-                <div style={{ padding: "4px" }}>
-                  <strong style={{ fontSize: "14px", display: "block", marginBottom: "4px" }}>{point.title}</strong>
-                  {point.description ? <div style={{ fontSize: "12px", color: "#64748b" }}>{point.description}</div> : null}
-                </div>
-              </Popup>
-            </CircleMarker>
-          );
-        })}
+              <Pin
+                background="#d77a61"
+                borderColor="#b05b45"
+                glyphColor="#ffffff"
+                scale={1.1}
+              />
+            </AdvancedMarker>
+          ))}
 
-        {liveMarkerPoints.map((marker) => (
-          <CircleMarker
-            key={marker.id}
-            center={[marker.lat, marker.lng]}
-            radius={10}
-            pathOptions={{
-              color: "#d77a61",
-              fillColor: "#fef3ef",
-              fillOpacity: 1,
-              weight: 3,
-            }}
-          >
-            <Popup>
-              <div style={{ padding: "4px" }}>
-                <strong style={{ fontSize: "14px", display: "block", marginBottom: "4px" }}>{marker.name}</strong>
-                {marker.formattedAddress ? <div style={{ fontSize: "12px", color: "#64748b" }}>{marker.formattedAddress}</div> : null}
+          {/* Info Window */}
+          {selectedPoint && (
+            <InfoWindow
+              position={{ lat: selectedPoint.lat, lng: selectedPoint.lng }}
+              onCloseClick={() => setSelectedPoint(null)}
+            >
+              <div style={{ padding: "4px", color: "#1e293b" }}>
+                <strong style={{ fontSize: "14px", display: "block", marginBottom: "4px" }}>
+                  {selectedPoint.title || selectedPoint.name}
+                </strong>
+                {(selectedPoint.description || selectedPoint.formattedAddress) && (
+                  <div style={{ fontSize: "12px", color: "#64748b" }}>
+                    {selectedPoint.description || selectedPoint.formattedAddress}
+                  </div>
+                )}
               </div>
-            </Popup>
-          </CircleMarker>
-        ))}
-      </MapContainer>
-      {!center ? (
+            </InfoWindow>
+          )}
+        </Map>
+      </APIProvider>
+
+      {!viewportPoints.length ? (
         <div className="empty-map-content">
           <strong>Map coordinates pending</strong>
           <span>Locations will appear after the backend resolves itinerary places.</span>
         </div>
       ) : null}
+
       <style jsx>{`
         .itinerary-live-map-shell {
           position: absolute;
           inset: 0;
+          background: #f8fafc;
+        }
+
+        .itinerary-live-map {
+          width: 100%;
+          height: 100%;
         }
 
         .empty-map-content {
@@ -311,23 +374,25 @@ export default function ItineraryLiveMap({ items = [], liveMarkers = [], routeEs
           gap: 6px;
           width: min(320px, calc(100% - 48px));
           text-align: center;
-          padding: 18px;
-          border: 1px solid var(--voyage-border);
-          border-radius: 14px;
-          background: rgba(255, 255, 255, 0.9);
-          color: var(--voyage-primary);
+          padding: 24px;
+          border: 1px solid rgba(226, 232, 240, 0.8);
+          border-radius: 20px;
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(8px);
+          color: #0f172a;
           z-index: 500;
-          box-shadow: var(--voyage-shadow-soft);
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
           pointer-events: none;
         }
 
         .empty-map-content strong {
-          font-size: 14px;
+          font-size: 16px;
+          font-weight: 600;
         }
 
         .empty-map-content span {
-          color: var(--voyage-text-muted);
-          font-size: 12px;
+          color: #64748b;
+          font-size: 13px;
           line-height: 1.5;
         }
       `}</style>
