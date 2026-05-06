@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 
 import {
@@ -5,7 +7,7 @@ import {
   initialItineraryDays,
   initialTripBrief,
   prototypeWorkspaceTabs,
-} from "./prototype-data";
+} from "../data/prototype/trip-dashboard.js";
 
 export function usePrototypeState() {
   const [activeScreen, setActiveScreen] = useState("landing");

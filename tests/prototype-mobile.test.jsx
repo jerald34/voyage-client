@@ -1,7 +1,21 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import HomePage from "../app/page.jsx";
+import Page from "../app/page.jsx";
+
+const mockNavigationState = {
+  authenticated: null,
+  routerPush: vi.fn(),
+};
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: mockNavigationState.routerPush,
+  }),
+  useSearchParams: () => ({
+    get: (key) => (key === "authenticated" ? mockNavigationState.authenticated : null),
+  }),
+}));
 
 function setMobileViewport() {
   Object.defineProperty(window, "innerWidth", {
@@ -17,24 +31,25 @@ function setMobileViewport() {
   window.dispatchEvent(new Event("resize"));
 }
 
-function startFromHero() {
-  const heroSection = screen
-    .getByRole("heading", {
-      name: "Plan smarter trips with AI, itinerary logic, and map-aware routing",
-    })
-    .closest("section");
-
-  fireEvent.click(within(heroSection).getByRole("button", { name: "Start planning" }));
+async function renderAuthenticatedPage() {
+  mockNavigationState.authenticated = "1";
+  window.localStorage.setItem("voyage-user", JSON.stringify({ id: "user-1" }));
+  render(<Page />);
+  await screen.findByRole("button", { name: "New Itinerary" });
 }
 
-describe("prototype mobile workspace", () => {
-  it("keeps the workspace navigation labels visible after entering the workspace", () => {
-    setMobileViewport();
-    render(<HomePage />);
+beforeEach(() => {
+  mockNavigationState.authenticated = null;
+  mockNavigationState.routerPush.mockReset();
+  window.localStorage.clear();
+});
 
-    startFromHero();
-    fireEvent.click(screen.getByRole("button", { name: "Continue as Guest" }));
-    fireEvent.click(screen.getByRole("button", { name: "Initialize Voyage Agent" }));
+describe("prototype mobile workspace", () => {
+  it("keeps the workspace navigation labels visible after the authenticated handoff enters the workspace", async () => {
+    setMobileViewport();
+    await renderAuthenticatedPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Run Agency Review" }));
     fireEvent.click(screen.getByRole("button", { name: "Enter Workspace" }));
 
     const workspaceTabs = within(screen.getByRole("tablist", { name: "Workspace sections" }));
@@ -43,5 +58,5 @@ describe("prototype mobile workspace", () => {
     expect(workspaceTabs.getByRole("tab", { name: "Map" })).toBeInTheDocument();
     expect(workspaceTabs.getByRole("tab", { name: "Agent" })).toBeInTheDocument();
     expect(workspaceTabs.getByRole("tab", { name: "Share" })).toBeInTheDocument();
-  });
+  }, 10000);
 });

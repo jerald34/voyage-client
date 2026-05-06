@@ -83,7 +83,7 @@ const heroCarouselItems = [
     title: "Turn direction into a clear planning brief",
     description: "Capture destination, dates, pace, and planning priorities before the itinerary starts to take shape.",
     colorClass: "preview-card-brief",
-    image: "https://images.unsplash.com/photo-1499529112087-3cb3b73cec95?q=80&w=1000&auto=format&fit=crop"
+    image: "https://images.unsplash.com/photo-1499529112087-3cb3b73cec95?q=80&w=1000&auto=format&fit=crop",
   },
   {
     id: "itinerary",
@@ -91,7 +91,7 @@ const heroCarouselItems = [
     title: "Shape daily flow with structured stops",
     description: "Build day-by-day plans that stay readable, editable, and ready for collaboration.",
     colorClass: "preview-card-itinerary",
-    image: "https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?q=80&w=1000&auto=format&fit=crop"
+    image: "https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?q=80&w=1000&auto=format&fit=crop",
   },
   {
     id: "map",
@@ -99,7 +99,7 @@ const heroCarouselItems = [
     title: "Keep route logic visible while planning",
     description: "Review the trip geographically so timing, clustering, and movement stay grounded in the real route.",
     colorClass: "preview-card-map",
-    image: "https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1000&auto=format&fit=crop"
+    image: "https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1000&auto=format&fit=crop",
   },
   {
     id: "agent",
@@ -107,7 +107,7 @@ const heroCarouselItems = [
     title: "Revise plans faster when priorities change",
     description: "Use AI support to rebalance days, update stops, and respond quickly to new requests.",
     colorClass: "preview-card-agent",
-    image: "https://images.unsplash.com/photo-1542204165-65bf26472b9b?q=80&w=1000&auto=format&fit=crop"
+    image: "https://images.unsplash.com/photo-1542204165-65bf26472b9b?q=80&w=1000&auto=format&fit=crop",
   },
 ];
 
@@ -165,11 +165,11 @@ export default function LandingPage({ onStart }) {
         <div className="landing-hero-panel" aria-label="Voyage product preview">
           <div className="carousel-view">
             {heroCarouselItems.map((item, index) => (
-              <div 
-                key={item.id} 
-                style={{ 
+              <div
+                key={item.id}
+                style={{
                   display: index === activeSlide ? "block" : "none",
-                  animation: index === activeSlide ? "fade-in 0.4s ease-out" : "none"
+                  animation: index === activeSlide ? "fade-in 0.4s ease-out" : "none",
                 }}
               >
                 <article className={`preview-card ${item.colorClass}`} style={{ padding: 0 }}>
@@ -185,7 +185,7 @@ export default function LandingPage({ onStart }) {
               </div>
             ))}
           </div>
-          
+
           <div className="carousel-indicators">
             {heroCarouselItems.map((item, index) => (
               <button

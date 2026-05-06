@@ -1,0 +1,348 @@
+"use client";
+import { useState, useEffect, useRef } from 'react';
+
+function toNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function humanizeToolName(name) {
+  return String(name || '')
+    .replace(/[_\.]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildActiveToolLabel(tool) {
+  const name = String(tool?.name || '').trim();
+  const input = tool?.input ?? {};
+
+  if (name === 'map_pinpoint' || name === 'map.pinpoint') {
+    const placeName = String(input?.placeName || input?.name || '').trim();
+    if (placeName) return `Geocoding ${placeName}...`;
+    return 'Geocoding location...';
+  }
+
+  if (name === 'route_logistics' || name === 'route.estimate' || name === 'route') {
+    const origin = String(input?.originPlaceName || input?.origin?.name || '').trim();
+    const destination = String(input?.destinationPlaceName || input?.destination?.name || '').trim();
+    if (origin && destination) return `Computing route logistics: ${origin} -> ${destination}...`;
+    return 'Computing route logistics...';
+  }
+
+  const displayName = humanizeToolName(name);
+  if (displayName) {
+    return `${displayName}...`;
+  }
+
+  return 'Running tool...';
+}
+
+function normalizeMapMarker(payload, index) {
+  const lat = toNumber(payload?.lat ?? payload?.latitude);
+  const lng = toNumber(payload?.lng ?? payload?.longitude);
+
+  if (lat == null || lng == null) {
+    return null;
+  }
+
+  const name = String(payload?.name || payload?.title || payload?.formattedAddress || payload?.address || `Resolved location ${index + 1}`).trim();
+  const formattedAddress = String(payload?.formattedAddress || payload?.address || '').trim();
+
+  return {
+    id: String(payload?.id || payload?.placeSnapshotId || `${name}-${lat}-${lng}-${index}`),
+    name,
+    formattedAddress,
+    lat,
+    lng,
+    provider: payload?.provider ?? null,
+  };
+}
+
+function normalizeRouteEstimate(payload, index) {
+  if (!payload) {
+    return null;
+  }
+
+  return {
+    id: String(payload?.id || `route-${index}-${Date.now()}`),
+    origin: payload?.origin ?? null,
+    destination: payload?.destination ?? null,
+    distanceMeters: toNumber(payload?.distanceMeters),
+    durationSeconds: toNumber(payload?.durationSeconds),
+    polyline: payload?.polyline ?? null,
+  };
+}
+
+export function useAgentRunStream(agencyId) {
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [runStatus, setRunStatus] = useState('idle'); // idle, running, completed, failed
+  const [assistantMessage, setAssistantMessage] = useState('');
+  const [tasks, setTasks] = useState([]);
+  const [toolCalls, setToolCalls] = useState([]);
+  const [sources, setSources] = useState([]);
+  const [mapMarkers, setMapMarkers] = useState([]);
+  const [routeEstimates, setRouteEstimates] = useState([]);
+  const [activeToolLabel, setActiveToolLabel] = useState(null);
+  const [lastItineraryUpdate, setLastItineraryUpdate] = useState(null);
+  const [lastCompletedItineraryTool, setLastCompletedItineraryTool] = useState(null);
+  const [error, setError] = useState(null);
+
+  const eventSourceRef = useRef(null);
+  const streamInstanceRef = useRef(0);
+
+  const startStream = (runId) => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+
+    const streamInstanceId = ++streamInstanceRef.current;
+
+    setIsStreaming(true);
+    setRunStatus('running');
+    setAssistantMessage('');
+    setTasks([]);
+    setToolCalls([]);
+    setSources([]);
+    setMapMarkers([]);
+    setRouteEstimates([]);
+    setActiveToolLabel(null);
+    setLastItineraryUpdate(null);
+    setLastCompletedItineraryTool(null);
+    setError(null);
+
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+    const url = `${API_URL}/agencies/${agencyId}/agent/runs/${runId}/stream`;
+
+    // EventSource withCredentials ensures cookies are sent for auth
+    const es = new EventSource(url, { withCredentials: true });
+    eventSourceRef.current = es;
+
+    const isCurrentStream = () => {
+      return streamInstanceRef.current === streamInstanceId && eventSourceRef.current === es;
+    };
+
+    const parseEventData = (event) => {
+      try {
+        return JSON.parse(event.data);
+      } catch (err) {
+        console.error('Error parsing SSE event:', err);
+        return null;
+      }
+    };
+
+    const finishStream = () => {
+      if (eventSourceRef.current === es) {
+        eventSourceRef.current = null;
+      }
+      streamInstanceRef.current += 1;
+      es.close();
+    };
+
+    // Server sends: { type: "message.delta", payload: { delta: "..." } }
+    es.addEventListener('message.delta', (e) => {
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      if (!data) return;
+
+      const delta = data.payload?.delta;
+      if (delta == null) return;
+
+      setAssistantMessage(prev => prev + String(delta));
+    });
+
+    // Server sends: { type: "message.completed", payload: { messageId, content } }
+    es.addEventListener('message.completed', (e) => {
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      if (!data) return;
+
+      if (typeof data.payload?.content === 'string') {
+        setAssistantMessage(data.payload.content);
+      }
+    });
+
+    // Server sends: { type: "task.updated", payload: { label, status, sortOrder } }
+    es.addEventListener('task.updated', (e) => {
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      const task = data?.payload;
+      if (!task) return;
+
+      setTasks(prev => {
+        const existingIndex = prev.findIndex(t => t.label === task.label);
+        if (existingIndex > -1) {
+          const newTasks = [...prev];
+          newTasks[existingIndex] = { ...newTasks[existingIndex], ...task };
+          return newTasks;
+        }
+        return [...prev, task];
+      });
+    });
+
+    // Server sends: { type: "tool.started", payload: { name, input } }
+    es.addEventListener('tool.started', (e) => {
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      const tool = data?.payload;
+      if (!tool) return;
+
+      setToolCalls(prev => [...prev, { ...tool, status: 'Running' }]);
+      setActiveToolLabel(buildActiveToolLabel(tool));
+    });
+
+    // Server sends: { type: "tool.completed", payload: { name, output } }
+    es.addEventListener('tool.completed', (e) => {
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      const tool = data?.payload;
+      if (!tool) return;
+
+      setToolCalls(prev => prev.map(t =>
+        t.name === tool.name && t.status === 'Running'
+          ? { ...t, ...tool, status: 'Completed' }
+          : t
+      ));
+      setActiveToolLabel(null);
+
+      if (tool.name === 'create_itinerary' || tool.name === 'update_itinerary') {
+        setLastCompletedItineraryTool({
+          ...tool,
+          receivedAt: Date.now()
+        });
+      }
+    });
+
+    // Server sends: { type: "tool.failed", payload: { name, code, message } }
+    es.addEventListener('tool.failed', (e) => {
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      const tool = data?.payload;
+      if (!tool) return;
+
+      setToolCalls(prev => prev.map(t =>
+        t.name === tool.name && t.status === 'Running'
+          ? { ...t, ...tool, status: 'Failed' }
+          : t
+      ));
+      setActiveToolLabel(null);
+    });
+
+    // Server sends: { type: "map.pinpointed", payload: { placeSnapshotId, name, formattedAddress, lat, lng, provider } }
+    es.addEventListener('map.pinpointed', (e) => {
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      setMapMarkers(prev => {
+        const marker = normalizeMapMarker(data?.payload, prev.length);
+        if (!marker) return prev;
+        return [...prev, marker];
+      });
+    });
+
+    // Server sends: { type: "route.estimated", payload: { origin, destination, distanceMeters, durationSeconds, polyline } }
+    es.addEventListener('route.estimated', (e) => {
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      setRouteEstimates(prev => {
+        const routeEstimate = normalizeRouteEstimate(data?.payload, prev.length);
+        if (!routeEstimate) return prev;
+        return [...prev, routeEstimate];
+      });
+    });
+
+    // Server sends: { type: "source.added", payload: { sourceType, title, url, snippet } }
+    es.addEventListener('source.added', (e) => {
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      if (data.payload) {
+        setSources(prev => [...prev, data.payload]);
+      }
+    });
+
+    // Server sends: { type: "itinerary.updated", payload: { itineraryId, ... } }
+    es.addEventListener('itinerary.updated', (e) => {
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      setLastItineraryUpdate(data?.payload?.itineraryId || null);
+    });
+
+    // Server sends: { type: "run.started", payload: { runId } }
+    es.addEventListener('run.started', () => {
+      if (!isCurrentStream()) return;
+
+      setRunStatus('running');
+    });
+
+    // Server sends: { type: "run.completed", payload: { runId } }
+    es.addEventListener('run.completed', () => {
+      if (!isCurrentStream()) return;
+
+      setIsStreaming(false);
+      setRunStatus('completed');
+      setActiveToolLabel(null);
+      finishStream();
+    });
+
+    // Server sends: { type: "run.failed", payload: { code, message } }
+    es.addEventListener('run.failed', (e) => {
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      setIsStreaming(false);
+      setRunStatus('failed');
+      setActiveToolLabel(null);
+      setError(data?.payload?.message || 'Agent run failed');
+      finishStream();
+    });
+
+    es.onerror = (err) => {
+      // EventSource will automatically attempt to reconnect on many errors.
+      // Keep the stream state alive during transient reconnects and only
+      // surface a failure if the browser has actually closed the connection.
+      if (!isCurrentStream()) return;
+
+      console.debug('SSE Connection issue:', err);
+
+      if (es.readyState === EventSource.CLOSED) {
+        setIsStreaming(false);
+        setRunStatus('failed');
+        setError('Connection lost while streaming the agent response');
+        finishStream();
+      }
+    };
+  };
+
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, []);
+
+  return {
+    isStreaming,
+    runStatus,
+    assistantMessage,
+    tasks,
+    toolCalls,
+    sources,
+    mapMarkers,
+    routeEstimates,
+    activeToolLabel,
+    lastItineraryUpdate,
+    lastCompletedItineraryTool,
+    error,
+    startStream
+  };
+}

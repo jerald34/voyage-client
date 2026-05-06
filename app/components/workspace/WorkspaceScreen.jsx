@@ -1,5 +1,3 @@
-import prototypeData from "../prototype-data";
-
 const workspaceTabs = [
   { id: "trip", label: "Trip" },
   { id: "map", label: "Map" },
@@ -11,6 +9,7 @@ export default function WorkspaceScreen({
   activeWorkspaceTab,
   agentMessages,
   days,
+  mapPlaces,
   onReviewTrip,
   onSelectDay,
   onSelectPlace,
@@ -20,6 +19,8 @@ export default function WorkspaceScreen({
   selectedPlace,
   tripBrief,
 }) {
+  const safeMapPlaces = Array.isArray(mapPlaces) ? mapPlaces : [];
+
   return (
     <section className="screen-frame screen-editor">
       <aside
@@ -97,10 +98,10 @@ export default function WorkspaceScreen({
                   </div>
 
                   <div style={{ display: "grid", gap: "8px" }}>
-                    {day.stops.map((stop) => (
-                      <div key={stop} className="activity-chip">
+                    {(day.locations ?? []).map((location) => (
+                      <div key={location.id} className="activity-chip">
                         <span className="chip-drag"></span>
-                        <span style={{ fontSize: "0.95rem" }}>{stop}</span>
+                        <span style={{ fontSize: "0.95rem" }}>{location.name}</span>
                       </div>
                     ))}
                   </div>
@@ -129,7 +130,7 @@ export default function WorkspaceScreen({
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "16px" }}>
-              {prototypeData.mapPlaces.map((place) => (
+              {safeMapPlaces.map((place) => (
                 <button
                   key={place.id}
                   className={`day-card ${selectedPlace?.id === place.id ? "selected" : ""}`}
@@ -157,7 +158,9 @@ export default function WorkspaceScreen({
                 <div
                   key={msg.id}
                   className="share-row"
-                  style={{ borderLeft: msg.role === "assistant" ? "2px solid var(--accent)" : "2px solid var(--text-dim)" }}
+                  style={{
+                    borderLeft: msg.role === "assistant" ? "2px solid var(--accent)" : "2px solid var(--text-dim)",
+                  }}
                 >
                   <strong>{msg.role === "assistant" ? "Voyage Agent" : "You"}</strong>
                   <p>{msg.text}</p>
@@ -217,8 +220,8 @@ export default function WorkspaceScreen({
             <p>Active Day: {selectedDay.label}</p>
             <strong style={{ fontSize: "1rem", marginBottom: "8px", display: "block" }}>{selectedDay.title}</strong>
             <ul>
-              {selectedDay.stops.map((stop) => (
-                <li key={stop}>{stop}</li>
+              {(selectedDay.locations ?? []).map((location) => (
+                <li key={location.id}>{location.name}</li>
               ))}
             </ul>
           </div>

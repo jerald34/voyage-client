@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useAuth } from "../hooks/useAuth";
 
 const socialProviders = [
   {
@@ -45,7 +45,7 @@ function FloatingOrb({ delay, size, left, top }) {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
+  const auth = useAuth();
   const [mode, setMode] = useState("login"); // "login" | "register"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -68,19 +68,13 @@ export default function LoginPage() {
     }, 280);
   };
 
-  const loginAndRedirect = (name, providerEmail) => {
-    const user = {
-      name: name || fullName || "Voyager",
-      email: providerEmail || email || "voyager@example.com",
-      loggedInAt: new Date().toISOString(),
-    };
-    localStorage.setItem("voyage-user", JSON.stringify(user));
-    router.push("/?authenticated=1");
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    loginAndRedirect();
+    if (mode === "register") {
+      auth.register({ email, password, displayName: fullName });
+    } else {
+      auth.login({ email, password });
+    }
   };
 
   return (
@@ -185,7 +179,7 @@ export default function LoginPage() {
                     className="auth-social-btn"
                     type="button"
                     id={`auth-social-${provider.id}`}
-                    onClick={() => loginAndRedirect("Voyager", `voyager+${provider.id}@example.com`)}
+                    onClick={() => auth.startOAuth(provider.id)}
                   >
                     {provider.icon}
                     <span>{provider.label}</span>
@@ -311,8 +305,21 @@ export default function LoginPage() {
                   </label>
                 )}
 
-                <button type="submit" className="button button-primary auth-submit" id="auth-submit-btn">
-                  {mode === "login" ? "Sign in to Voyage" : "Create my account"}
+                {auth.error && (
+                  <div className="auth-error" role="alert">
+                    {auth.error.message}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="button button-primary auth-submit"
+                  id="auth-submit-btn"
+                  disabled={auth.loading}
+                >
+                  {auth.loading
+                    ? (mode === "login" ? "Signing in…" : "Creating account…")
+                    : (mode === "login" ? "Sign in to Voyage" : "Create my account")}
                 </button>
               </form>
             </div>

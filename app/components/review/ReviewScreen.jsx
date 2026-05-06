@@ -13,7 +13,9 @@ export default function ReviewScreen({ days, onBackToWorkspace, onShare, tripBri
                 <strong>
                   {day.label}: {day.title}
                 </strong>
-                <span style={{ fontSize: "0.8rem", color: "var(--text-dim)" }}>{day.stops.length} stops</span>
+                <span style={{ fontSize: "0.8rem", color: "var(--text-dim)" }}>
+                  {(day.locations ?? []).length} stops
+                </span>
               </div>
             </div>
           ))}
