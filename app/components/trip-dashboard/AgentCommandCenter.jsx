@@ -28,10 +28,12 @@ export default function AgentCommandCenter({
   isSending,
   agentError,
   user,
-  activeTrip,
-  availableTrips = [],
-  onTripChange,
+  activeOption,
+  planningOptions = [],
+  onPlanningOptionChange,
   onNewItinerary,
+  canApproveDraft = false,
+  onApproveDraft,
   activeMessages = 0,
   activeToolLabel = null,
 }) {
@@ -40,12 +42,12 @@ export default function AgentCommandCenter({
   const clientMenuRef = useRef(null);
   const textareaRef = useRef(null);
 
-  const safeTrips = useMemo(() => (Array.isArray(availableTrips) ? availableTrips.filter(Boolean) : []), [availableTrips]);
-  const hasTrips = safeTrips.length > 0;
-  const selectedTrip = activeTrip ?? safeTrips[0] ?? null;
-  const activeTripClientName = String(selectedTrip?.clientName ?? "").trim();
+  const safeOptions = useMemo(() => (Array.isArray(planningOptions) ? planningOptions.filter(Boolean) : []), [planningOptions]);
+  const hasOptions = safeOptions.length > 0;
+  const selectedOption = activeOption ?? safeOptions[0] ?? null;
+  const activeTripClientName = String(selectedOption?.clientName ?? selectedOption?.label ?? "").trim();
   const activeTripInitials = activeTripClientName ? getInitials(activeTripClientName) : "";
-  const activeTripOrganizerInitials = selectedTrip?.assignedOrganizer ? getInitials(selectedTrip.assignedOrganizer) : "";
+  const activeTripOrganizerInitials = selectedOption?.assignedOrganizer ? getInitials(selectedOption.assignedOrganizer) : "";
   const clientMenuEmptyTitle = "No client trips available";
   const clientMenuEmptyBody = "Use New Itinerary to create the first trip.";
 
@@ -142,7 +144,7 @@ export default function AgentCommandCenter({
                 type="button"
                 aria-haspopup="listbox"
                 aria-expanded={isClientMenuOpen}
-                aria-label={hasTrips ? `Current client: ${activeTripClientName}` : clientMenuEmptyTitle}
+                aria-label={hasOptions ? `Current client: ${activeTripClientName}` : clientMenuEmptyTitle}
               >
                 {activeTripClientName ? (
                   <>
@@ -162,20 +164,21 @@ export default function AgentCommandCenter({
 
               {isClientMenuOpen && (
                 <div className="client-menu" role="listbox" aria-label="Current client">
-                  {hasTrips ? (
-                    safeTrips.map((trip) => {
-                      const isSelected = trip?.id === activeTrip?.id;
-                      const initials = getInitials(trip?.clientName || "Client");
+                  {hasOptions ? (
+                    safeOptions.map((option) => {
+                      const isSelected = option?.type === activeOption?.type && option?.id === activeOption?.id;
+                      const optionName = option?.clientName || option?.label || "Planning item";
+                      const initials = getInitials(optionName);
 
                       return (
                         <button
-                          key={trip?.id ?? trip?.clientName}
+                          key={`${option?.type ?? "option"}:${option?.id ?? optionName}`}
                           type="button"
-                          className={`client-option ${isSelected ? "selected" : ""}`}
+                          className={`client-option ${option?.type === "draft" ? "draft" : "trip"} ${isSelected ? "selected" : ""}`}
                           role="option"
                           aria-selected={isSelected}
                           onClick={() => {
-                            onTripChange?.(trip?.id ?? null);
+                            onPlanningOptionChange?.({ type: option?.type, id: option?.id });
                             setIsClientMenuOpen(false);
                           }}
                         >
@@ -183,8 +186,9 @@ export default function AgentCommandCenter({
                             {initials}
                           </span>
                           <span className="client-option-body">
-                            <strong>{trip?.clientName}</strong>
-                            {trip?.destination && <span>{trip.destination}</span>}
+                            <strong>{optionName}</strong>
+                            <span>{option?.destination || option?.statusLabel}</span>
+                            {option?.statusLabel && <small>{option.statusLabel}</small>}
                           </span>
                           {isSelected && (
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
@@ -203,6 +207,15 @@ export default function AgentCommandCenter({
                 </div>
               )}
             </div>
+            {canApproveDraft && (
+              <button
+                className="approve-draft-button"
+                onClick={() => onApproveDraft?.()}
+                type="button"
+              >
+                Save to Client
+              </button>
+            )}
           </div>
           <div className={`agent-status-tag ${isStreaming ? "streaming" : ""}`}>
             <span className="status-dot" />
@@ -589,6 +602,10 @@ export default function AgentCommandCenter({
           flex-shrink: 0;
         }
 
+        .client-option.draft .client-option-badge {
+          background: var(--voyage-accent);
+        }
+
         .client-option-body {
           display: flex;
           flex-direction: column;
@@ -606,6 +623,36 @@ export default function AgentCommandCenter({
           font-size: 12px;
           color: inherit;
           opacity: 0.72;
+        }
+
+        .client-option-body small {
+          font-size: 10px;
+          font-weight: 800;
+          color: inherit;
+          opacity: 0.58;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .approve-draft-button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid var(--voyage-border-strong);
+          border-radius: 999px;
+          background: var(--voyage-surface);
+          color: var(--voyage-primary);
+          padding: 10px 16px;
+          font-size: 13px;
+          font-weight: 800;
+          cursor: pointer;
+          white-space: nowrap;
+          height: 44px;
+        }
+
+        .approve-draft-button:hover {
+          border-color: var(--voyage-secondary);
+          color: var(--voyage-secondary);
         }
 
         .client-menu-empty {

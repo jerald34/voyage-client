@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import HomePage from "../app/components/trip-dashboard/HomePage.jsx";
 import { useTripDashboard } from "../app/hooks/useTripDashboard.js";
@@ -8,14 +8,7 @@ import { useTripDashboard } from "../app/hooks/useTripDashboard.js";
 const mocks = vi.hoisted(() => ({
   startStreamMock: vi.fn(),
   sendMessageMock: vi.fn(async () => ({ runId: "run-1" })),
-  createAgentThreadMock: vi.fn(async (_agencyId, tripId) => ({
-    thread: {
-      id: `created-${tripId}`,
-      tripId,
-      messages: [],
-      events: [],
-    },
-  })),
+  createAgentThreadMock: vi.fn(),
   listAgentThreadsMock: vi.fn(async () => ({
     threads: [
       { id: "thread-1", tripId: "trip-1" },
@@ -50,6 +43,25 @@ const mocks = vi.hoisted(() => ({
     },
   })),
 }));
+
+function resetApiMocks() {
+  mocks.startStreamMock.mockClear();
+  mocks.sendMessageMock.mockReset();
+  mocks.sendMessageMock.mockImplementation(async () => ({ runId: "run-1" }));
+  mocks.createAgentThreadMock.mockReset();
+  mocks.createAgentThreadMock.mockImplementation(async (_agencyId, tripId) => ({
+    thread: {
+      id: tripId ? `created-${tripId}` : "created-draft",
+      title: tripId ? `Trip ${tripId}` : "Planning draft",
+      tripId,
+      messages: [],
+      events: [],
+    },
+  }));
+  mocks.listAgentThreadsMock.mockClear();
+  mocks.fetchAgentThreadMock.mockClear();
+  mocks.fetchItineraryDraftMock.mockClear();
+}
 
 vi.mock("../app/hooks/useAgentRunStream.js", () => ({
   useAgentRunStream: () => ({
@@ -129,6 +141,10 @@ function DashboardHookHarness() {
 }
 
 describe("useTripDashboard", () => {
+  beforeEach(() => {
+    resetApiMocks();
+  });
+
   it("updates dashboard progress and derived highlights after mutations", () => {
     render(<DashboardHookHarness />);
 
@@ -186,6 +202,10 @@ describe("Agency portfolio HomePage", () => {
     memberships: [{ agencyId: "agency-1" }],
   };
 
+  beforeEach(() => {
+    resetApiMocks();
+  });
+
   it("renders the Agent-centered agency portfolio dashboard", () => {
     render(<HomePage agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
@@ -236,9 +256,94 @@ describe("Agency portfolio HomePage", () => {
     await waitFor(() => {
       expect(mocks.sendMessageMock).toHaveBeenCalledWith(
         "agency-1",
-        "created-undefined",
+        "created-draft",
         "Create a 4-day Cebu itinerary",
       );
+    });
+  });
+
+  it("creates and adds a new draft option for each New Itinerary click", async () => {
+    mocks.createAgentThreadMock
+      .mockResolvedValueOnce({
+        thread: { id: "draft-thread-1", title: "Draft itinerary 1", tripId: null, messages: [], events: [] },
+      })
+      .mockResolvedValueOnce({
+        thread: { id: "draft-thread-2", title: "Draft itinerary 2", tripId: null, messages: [], events: [] },
+      });
+
+    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+
+    await waitFor(() => {
+      expect(mocks.createAgentThreadMock).toHaveBeenCalledWith("agency-1");
+    });
+
+    expect(screen.getByRole("button", { name: "Current client: Draft itinerary 1" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+
+    await waitFor(() => {
+      expect(mocks.createAgentThreadMock).toHaveBeenCalledTimes(2);
+    });
+
+    expect(screen.getByRole("button", { name: "Current client: Draft itinerary 2" })).toBeInTheDocument();
+    expect(mocks.createAgentThreadMock).toHaveBeenNthCalledWith(1, "agency-1");
+    expect(mocks.createAgentThreadMock).toHaveBeenNthCalledWith(2, "agency-1");
+  });
+
+  it("keeps both draft options in the current client dropdown after two New Itinerary clicks", async () => {
+    mocks.createAgentThreadMock
+      .mockResolvedValueOnce({
+        thread: { id: "draft-thread-1", title: "Draft itinerary 1", tripId: null, messages: [], events: [] },
+      })
+      .mockResolvedValueOnce({
+        thread: { id: "draft-thread-2", title: "Draft itinerary 2", tripId: null, messages: [], events: [] },
+      });
+
+    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    await screen.findByRole("button", { name: "Current client: Draft itinerary 1" });
+
+    fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    await screen.findByRole("button", { name: "Current client: Draft itinerary 2" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Current client: Draft itinerary 2" }));
+
+    expect(screen.getByRole("option", { name: /Draft itinerary 2/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Draft itinerary 1/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Santos Family/i })).toBeInTheDocument();
+  });
+
+  it("sends messages through the selected draft thread", async () => {
+    mocks.createAgentThreadMock
+      .mockResolvedValueOnce({
+        thread: { id: "draft-thread-1", title: "Draft itinerary 1", tripId: null, messages: [], events: [] },
+      })
+      .mockResolvedValueOnce({
+        thread: { id: "draft-thread-2", title: "Draft itinerary 2", tripId: null, messages: [], events: [] },
+      });
+
+    const { container } = render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    await screen.findByRole("button", { name: "Current client: Draft itinerary 1" });
+
+    fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    await screen.findByRole("button", { name: "Current client: Draft itinerary 2" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Current client: Draft itinerary 2" }));
+    fireEvent.click(screen.getByRole("option", { name: /Draft itinerary 1/i }));
+
+    fireEvent.change(screen.getByPlaceholderText("Ask the agent to adjust the draft..."), {
+      target: { value: "Plan the selected draft" },
+    });
+
+    fireEvent.click(container.querySelector(".send-button"));
+
+    await waitFor(() => {
+      expect(mocks.sendMessageMock).toHaveBeenCalledWith("agency-1", "draft-thread-1", "Plan the selected draft");
     });
   });
 
