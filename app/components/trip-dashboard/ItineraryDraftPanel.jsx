@@ -242,36 +242,61 @@ export default function ItineraryDraftPanel({
           {!isMinimized && (
             <>
               <div className="timeline-container">
-                {mapItems.length > 0 ? (
+                {safeDays.length > 0 ? (
                   <div className="timeline-list">
-                    {mapItems.map((item, index) => (
-                      <div
-                        key={`${item.__dayNumber ?? "day"}-${item.__itemIndex ?? index}`}
-                        className={`timeline-item ${activeStopIndex === index ? "active" : ""}`}
-                        onMouseEnter={() => setActiveStopIndex(index)}
-                      >
-                        <div className="timeline-rail">
-                          <span className={`timeline-dot ${activeStopIndex === index ? "active" : ""}`} />
-                          {index < mapItems.length - 1 && <div className="timeline-line" />}
-                        </div>
-                        <div className="timeline-content">
-                          <div className="item-time">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <circle cx="12" cy="12" r="10" />
-                              <polyline points="12 6 12 12 16 14" />
-                            </svg>
-                            {getItemTimeLabel(item)}
+                    {safeDays.map((day, dIdx) => {
+                      const dayItems = Array.isArray(day.items) ? day.items : [];
+                      
+                      return (
+                        <div key={day.id || day.dayNumber || dIdx} className="day-group">
+                          <div className="day-header">
+                            <span className="day-badge">Day {day.dayNumber}</span>
+                            <span className="day-title">{day.title}</span>
                           </div>
-                          {item.__dayNumber ? (
-                            <div className="day-label">
-                              Day {item.__dayNumber}{item.__dayTitle ? `: ${item.__dayTitle}` : ""}
+                          
+                          {dayItems.length > 0 ? (
+                            dayItems.map((item, iIdx) => {
+                              // Find the global index of this item in mapItems for the hover state
+                              const globalIndex = mapItems.findIndex(
+                                (m) => m.__dayNumber === day.dayNumber && m.__itemIndex === iIdx
+                              );
+                              
+                              return (
+                                <div
+                                  key={`${day.dayNumber}-${iIdx}`}
+                                  className={`timeline-item ${activeStopIndex === globalIndex ? "active" : ""}`}
+                                  onMouseEnter={() => setActiveStopIndex(globalIndex)}
+                                >
+                                  <div className="timeline-rail">
+                                    <span className={`timeline-dot ${activeStopIndex === globalIndex ? "active" : ""}`} />
+                                    <div className="timeline-line" />
+                                  </div>
+                                  <div className="timeline-content">
+                                    <div className="item-time">
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <polyline points="12 6 12 12 16 14" />
+                                      </svg>
+                                      {getItemTimeLabel(item)}
+                                    </div>
+                                    <h3>{item.title || "Untitled itinerary item"}</h3>
+                                    {item.description ? <p>{item.description}</p> : null}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="empty-day-placeholder">
+                              <div className="timeline-rail">
+                                <span className="timeline-dot empty" />
+                                <div className="timeline-line dashed" />
+                              </div>
+                              <p>No activities planned yet for this day.</p>
                             </div>
-                          ) : null}
-                          <h3>{item.title || "Untitled itinerary item"}</h3>
-                          {item.description ? <p>{item.description}</p> : null}
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="empty-itinerary">
@@ -602,6 +627,63 @@ export default function ItineraryDraftPanel({
           font-size: 13px;
           color: rgba(255, 255, 255, 0.6);
           line-height: 1.6;
+        }
+
+        .day-group {
+          margin-bottom: 32px;
+        }
+
+        .day-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 20px;
+          position: sticky;
+          top: 0;
+          background: rgba(34, 56, 67, 0.01);
+          padding: 4px 0;
+          z-index: 5;
+        }
+
+        .day-badge {
+          background: var(--voyage-secondary);
+          color: white;
+          padding: 4px 12px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+        }
+
+        .day-title {
+          font-family: "DM Serif Display", serif;
+          font-size: 18px;
+          color: white;
+        }
+
+        .empty-day-placeholder {
+          display: flex;
+          gap: 20px;
+          color: rgba(255, 255, 255, 0.35);
+          font-style: italic;
+          font-size: 13px;
+        }
+
+        .timeline-dot.empty {
+          background: rgba(255, 255, 255, 0.1);
+          width: 8px;
+          height: 8px;
+        }
+
+        .timeline-line.dashed {
+          background: repeating-linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0.1) 0,
+            rgba(255, 255, 255, 0.1) 4px,
+            transparent 4px,
+            transparent 8px
+          );
         }
 
         .empty-itinerary {

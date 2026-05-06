@@ -422,7 +422,8 @@ export default function AgentCommandCenter({
 
         .client-switcher-wrap {
           position: relative;
-          display: inline-flex;
+          display: flex;
+          width: fit-content;
           flex-direction: column;
           gap: 6px;
           max-width: 100%;
@@ -562,9 +563,10 @@ export default function AgentCommandCenter({
 
         .client-menu {
           position: absolute;
-          top: calc(100% + 8px);
-          right: 0;
-          width: min(460px, 100vw - 48px);
+          top: 100%;
+          margin-top: 8px;
+          left: 0;
+          width: 320px;
           background: var(--voyage-primary);
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 18px;
