@@ -187,7 +187,7 @@ export default function ApproveItineraryModal({
               Cancel
             </button>
             <button type="submit" className="primary-button" disabled={!canSubmit}>
-              {isSaving ? "Saving..." : "Save draft"}
+              {isSaving ? "Saving..." : "Save client plan"}
             </button>
           </footer>
         </form>

@@ -34,6 +34,7 @@ export default function AgentCommandCenter({
   onNewItinerary,
   canApproveDraft = false,
   onApproveDraft,
+  isCreatingDraftThread = false,
   activeMessages = 0,
   activeToolLabel = null,
 }) {
@@ -129,12 +130,13 @@ export default function AgentCommandCenter({
             <button
               className="new-itinerary-button"
               onClick={() => onNewItinerary?.()}
+              disabled={isCreatingDraftThread}
               type="button"
             >
               <span className="new-itinerary-icon" aria-hidden="true">
                 +
               </span>
-              New Itinerary
+              {isCreatingDraftThread ? "Creating..." : "New Itinerary"}
             </button>
             <div className="client-switcher-wrap" ref={clientMenuRef}>
               <span className="client-switcher-label">Current client</span>
@@ -459,6 +461,13 @@ export default function AgentCommandCenter({
           transform: translateY(-1px);
           opacity: 0.9;
           box-shadow: 0 6px 14px rgba(34, 56, 67, 0.16);
+        }
+
+        .new-itinerary-button:disabled {
+          cursor: wait;
+          opacity: 0.72;
+          transform: none;
+          box-shadow: none;
         }
 
         .new-itinerary-icon {
