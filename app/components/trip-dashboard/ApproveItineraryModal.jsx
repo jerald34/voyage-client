@@ -43,7 +43,10 @@ export default function ApproveItineraryModal({
 
     return {
       clientName: normalizeText(trip.clientName),
-      destination: normalizeText(trip.destinationSummary) || normalizeText(destinationFallback),
+      destination:
+        normalizeText(trip.destination) ||
+        normalizeText(trip.destinationSummary) ||
+        normalizeText(destinationFallback),
       startDate: formatDateInputValue(trip.startDate),
       endDate: formatDateInputValue(trip.endDate),
       travelerCount: formatInitialValue(trip.travelerCount),
@@ -87,7 +90,7 @@ export default function ApproveItineraryModal({
   };
 
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={onCancel}>
+    <div className="modal-backdrop" role="presentation">
       <div
         className="modal-shell"
         role="dialog"
