@@ -480,6 +480,14 @@
   color: var(--voyage-secondary);
 }
 
+.place-inline-link:focus-visible {
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px rgba(215, 122, 97, 0.24);
+  color: var(--voyage-secondary);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
 .message-place-cards {
   display: grid;
   gap: 8px;
@@ -506,6 +514,13 @@
   border-color: rgba(215, 122, 97, 0.72);
   box-shadow: 0 10px 20px rgba(34, 56, 67, 0.08);
   transform: translateY(-1px);
+}
+
+.message-place-card:focus-visible {
+  border-color: var(--voyage-secondary);
+  box-shadow: 0 0 0 3px rgba(215, 122, 97, 0.24), 0 10px 20px rgba(34, 56, 67, 0.08);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
 }
 
 .place-card-pin {

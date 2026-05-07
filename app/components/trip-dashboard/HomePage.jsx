@@ -70,6 +70,8 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("command-center");
   const [selectedPlaceId, setSelectedPlaceId] = useState("");
+  const completedAssistantMessageRef = useRef(null);
+  const itineraryFetchSequenceRef = useRef(0);
 
   const {
     isStreaming,
@@ -115,13 +117,23 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   // Stream updates handling (Keeping this here for now as it couples with useAgentRunStream and UI states)
   useEffect(() => {
     if (runStatus !== "completed" || !assistantMessage || !runTargetRef.current) return;
-    const runTarget = parseRunTargetKey(runTargetRef.current);
+    const targetKey = runTargetRef.current;
+    const completedContent = assistantMessage.trim();
+    const runTarget = parseRunTargetKey(targetKey);
     if (!runTarget) return;
 
     const update = (prev) => {
       const current = prev[runTarget.id] || { messages: [], loaded: false };
-      if (current.messages.some(m => m.role === "assistant" && m.content.trim() === assistantMessage.trim())) return prev;
-      return { ...prev, [runTarget.id]: { ...current, loaded: true, messages: [...current.messages, { id: `assistant-${Date.now()}`, role: "assistant", content: assistantMessage }] } };
+      if (current.messages.some(m => m.role === "assistant" && m.content.trim() === completedContent)) return prev;
+      completedAssistantMessageRef.current = { targetKey, content: completedContent };
+      const itineraryId = current.itinerary?.id ?? null;
+      const message = {
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: assistantMessage,
+        ...(itineraryId ? { itineraryId } : {}),
+      };
+      return { ...prev, [runTarget.id]: { ...current, loaded: true, messages: [...current.messages, message] } };
     };
 
     if (runTarget.type === "draft") setDraftThreadStates(update);
@@ -130,15 +142,51 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
 
   useEffect(() => {
     if (!agencyId || !lastItineraryUpdate || !runTargetRef.current) return;
-    const runTarget = parseRunTargetKey(runTargetRef.current);
+    itineraryFetchSequenceRef.current += 1;
+    const requestSequence = itineraryFetchSequenceRef.current;
+    const targetKey = runTargetRef.current;
+    const runTarget = parseRunTargetKey(targetKey);
     if (!runTarget) return;
+    const completedAssistant =
+      completedAssistantMessageRef.current?.targetKey === targetKey ? completedAssistantMessageRef.current : null;
+    let isCancelled = false;
 
     fetchItineraryDraft(agencyId, lastItineraryUpdate).then(res => {
+      if (
+        isCancelled ||
+        !shouldApplyItineraryFetchResult({
+          requestSequence,
+          latestSequence: itineraryFetchSequenceRef.current,
+          requestTargetKey: targetKey,
+          currentTargetKey: runTargetRef.current,
+        })
+      ) {
+        return;
+      }
+
       const itinerary = res?.itinerary ?? res ?? null;
-      const update = (prev) => ({ ...prev, [runTarget.id]: { ...(prev[runTarget.id] || {}), itinerary, loaded: true } });
+      const update = (prev) => {
+        const current = prev[runTarget.id] || {};
+        return {
+          ...prev,
+          [runTarget.id]: {
+            ...current,
+            itinerary,
+            loaded: true,
+            messages: tagAssistantMessageByCompletedContent(current.messages, itinerary?.id, completedAssistant),
+          },
+        };
+      };
       if (runTarget.type === "draft") setDraftThreadStates(update);
       else setTripStates(update);
+      if (completedAssistantMessageRef.current?.targetKey === targetKey) {
+        completedAssistantMessageRef.current = null;
+      }
     }).catch(e => console.error(e));
+
+    return () => {
+      isCancelled = true;
+    };
   }, [agencyId, lastItineraryUpdate]);
 
   // UI state derivation
@@ -200,8 +248,8 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
       }
       if (runTargetRef.current === createRunTargetKey(option)) runTargetRef.current = null;
       if (selectedPlaceId) setSelectedPlaceId("");
-      if (option.type === "draft" && activeContext?.id === option.id) {
-        const next = planningOptions.find(o => !(o.type === option.type && o.id === option.id));
+      if (activeContext?.type === option.type && activeContext?.id === option.id) {
+        const next = getNextPlanningContextAfterDelete(planningOptions, option);
         setActiveContext(next ? createPlanningContext(next.type, next.id) : null);
       }
     } catch (e) { console.error(e); setAgentError(e.message); } finally { setDeletingThreadId(null); }
@@ -279,6 +327,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
                   onApproveDraft={() => { setApprovalError(""); setIsApprovalModalOpen(true); }}
                   isCreatingDraftThread={isCreatingDraftThread}
                   deletingThreadId={deletingThreadId}
+                  itinerary={activeTripState?.itinerary ?? null}
                   placeEntities={placeEntities}
                   selectedPlaceId={selectedPlaceId}
                   onPlaceSelect={setSelectedPlaceId}
@@ -314,4 +363,44 @@ function parseRunTargetKey(key) {
   const idx = key.indexOf(":");
   if (idx <= 0) return null;
   return { type: key.slice(0, idx), id: key.slice(idx + 1) };
+}
+
+export function tagAssistantMessageByCompletedContent(messages, itineraryId, completedAssistantMessage) {
+  if (!itineraryId || !Array.isArray(messages) || messages.length === 0) {
+    return Array.isArray(messages) ? messages : [];
+  }
+
+  const completedContent = String(completedAssistantMessage?.content ?? "").trim();
+  if (!completedContent) return messages;
+
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role === "assistant" && String(message?.content ?? "").trim() === completedContent) {
+      return messages.map((item, itemIndex) => (
+        itemIndex === index ? { ...item, itineraryId } : item
+      ));
+    }
+  }
+
+  return messages;
+}
+
+export function getNextPlanningContextAfterDelete(planningOptions, deletedOption) {
+  const next = (Array.isArray(planningOptions) ? planningOptions : [])
+    .find((option) => !(option?.type === deletedOption?.type && option?.id === deletedOption?.id));
+
+  return next ? { type: next.type, id: next.id } : null;
+}
+
+export function shouldApplyItineraryFetchResult({
+  requestSequence,
+  latestSequence,
+  requestTargetKey,
+  currentTargetKey,
+}) {
+  return (
+    requestSequence === latestSequence &&
+    Boolean(requestTargetKey) &&
+    requestTargetKey === currentTargetKey
+  );
 }

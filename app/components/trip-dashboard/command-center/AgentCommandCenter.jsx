@@ -41,6 +41,7 @@ export default function AgentCommandCenter({
   isCreatingDraftThread = false,
   deletingThreadId = null,
   activeToolLabel = null,
+  itinerary = null,
   placeEntities = [],
   selectedPlaceId = "",
   onPlaceSelect,
@@ -87,6 +88,12 @@ export default function AgentCommandCenter({
 
   const userName = user?.displayName || "You";
   const userInitials = getInitials(userName);
+  const itineraryId = itinerary?.id != null ? String(itinerary.id) : null;
+
+  function shouldRenderMessageAsItinerary(message) {
+    if (!itineraryId || message?.role !== "assistant") return false;
+    return String(message?.itineraryId ?? "") === itineraryId || String(message?.metadata?.itineraryId ?? "") === itineraryId;
+  }
 
   useEffect(() => {
     function handleOutsideClick(event) {
@@ -189,6 +196,8 @@ export default function AgentCommandCenter({
               isUser={message.role === "user"}
               userName={userName}
               userInitials={userInitials}
+              itinerary={itinerary}
+              renderAsItinerary={shouldRenderMessageAsItinerary(message)}
               placeEntities={placeEntities}
               selectedPlaceId={selectedPlaceId}
               onPlaceSelect={onPlaceSelect}
@@ -238,6 +247,8 @@ export default function AgentCommandCenter({
             isUser={false}
             userName={userName}
             userInitials={userInitials}
+            itinerary={itinerary}
+            renderAsItinerary={false}
             placeEntities={placeEntities}
             selectedPlaceId={selectedPlaceId}
             onPlaceSelect={onPlaceSelect}

@@ -1,6 +1,7 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import { getMatchedPlaces, matchPlaceMentions } from "../../../lib/trip-dashboard/placeEntities.js";
+import RichItineraryMessage from "./RichItineraryMessage.jsx";
 
 function PlaceLinkedText({ children, placeEntities, selectedPlaceId, onPlaceSelect }) {
   if (typeof children !== "string" && typeof children !== "number") {
@@ -93,11 +94,14 @@ export default function ChatMessage({
   isUser,
   userName,
   userInitials,
+  itinerary = null,
+  renderAsItinerary = false,
   placeEntities = [],
   selectedPlaceId = "",
   onPlaceSelect,
 }) {
   const matchedPlaces = isUser ? [] : getMatchedPlaces(message?.content, placeEntities);
+  const shouldRenderRichItinerary = !isUser && renderAsItinerary && itinerary;
 
   return (
     <div className={`chat-row ${isUser ? "user" : "assistant"}`}>
@@ -117,6 +121,13 @@ export default function ChatMessage({
         <div className={`bubble ${isUser ? "user-bubble" : "assistant-bubble"}`}>
           {isUser ? (
             <p>{message.content}</p>
+          ) : shouldRenderRichItinerary ? (
+            <RichItineraryMessage
+              itinerary={itinerary}
+              placeEntities={placeEntities}
+              selectedPlaceId={selectedPlaceId}
+              onPlaceSelect={onPlaceSelect}
+            />
           ) : (
             <div className="markdown-content">
               <ReactMarkdown
