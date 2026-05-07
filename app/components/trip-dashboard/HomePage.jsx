@@ -229,7 +229,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   }, [draftThreadOrder, draftThreadStates, safeTrips, tripStates]);
 
   const activeOption = useMemo(() => activeContext ? planningOptions.find(o => o.type === activeContext.type && o.id === activeContext.id) : planningOptions[0], [activeContext, planningOptions]);
-  
+
   const activeContextKey = createRunTargetKey(activeContext);
   const isVisible = Boolean(activeContextKey && activeContextKey === runTargetRef.current);
   const liveStatus = getRunStatusLabel(isVisible ? runStatus : "idle", isVisible ? streamError : null);
@@ -312,9 +312,9 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
           onSubmit={submitDraftApproval}
         />
       )}
-      
-      <DashboardHeader 
-        isSidebarOpen={isSidebarOpen} 
+
+      <DashboardHeader
+        isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
         liveStatus={liveStatus}
         scopedStreamError={isVisible ? streamError : null}
@@ -343,8 +343,8 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
       />
 
       <div className="voyage-body">
-        <DashboardSidebar 
-          isSidebarOpen={isSidebarOpen} 
+        <DashboardSidebar
+          isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -366,7 +366,6 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
                   setComposerInput={setComposerInput}
                   isSending={isSending}
                   agentError={agentError}
-                  user={user}
                   user={user}
                   itinerary={activeTripState?.itinerary ?? null}
                   placeEntities={placeEntities}
