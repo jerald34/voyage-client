@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   },
   sendMessageMock: vi.fn(async () => ({ runId: "run-1" })),
   createAgentThreadMock: vi.fn(),
+  deleteAgentThreadMock: vi.fn(async () => ({})),
   listAgentThreadsMock: vi.fn(async () => ({
     threads: [
       { id: "thread-1", tripId: "trip-1" },
@@ -104,6 +105,8 @@ function resetApiMocks() {
       events: [],
     },
   }));
+  mocks.deleteAgentThreadMock.mockReset();
+  mocks.deleteAgentThreadMock.mockImplementation(async () => ({}));
   mocks.listAgentThreadsMock.mockReset();
   mocks.listAgentThreadsMock.mockImplementation(async () => ({
     threads: [
@@ -182,6 +185,7 @@ vi.mock("../app/hooks/useAuth.js", () => ({
 vi.mock("../app/lib/api.js", () => ({
   approveAgentThreadItinerary: (...args) => mocks.approveAgentThreadItineraryMock(...args),
   createAgentThread: (...args) => mocks.createAgentThreadMock(...args),
+  deleteAgentThread: (...args) => mocks.deleteAgentThreadMock(...args),
   fetchAgentThread: (...args) => mocks.fetchAgentThreadMock(...args),
   fetchItineraryDraft: (...args) => mocks.fetchItineraryDraftMock(...args),
   listAgentThreads: (...args) => mocks.listAgentThreadsMock(...args),
@@ -507,6 +511,34 @@ describe("Agency portfolio HomePage", () => {
     await waitFor(() => {
       expect(mocks.sendMessageMock).toHaveBeenCalledWith("agency-1", "draft-thread-1", "Plan the selected draft");
     });
+  });
+
+  it("deletes a draft thread from the current client dropdown", async () => {
+    mocks.createAgentThreadMock
+      .mockResolvedValueOnce({
+        thread: { id: "draft-thread-1", title: "Draft itinerary 1", tripId: null, messages: [], events: [] },
+      })
+      .mockResolvedValueOnce({
+        thread: { id: "draft-thread-2", title: "Draft itinerary 2", tripId: null, messages: [], events: [] },
+      });
+
+    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    await screen.findByRole("button", { name: "Current client: Draft itinerary 1" });
+
+    fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    await screen.findByRole("button", { name: "Current client: Draft itinerary 2" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Current client: Draft itinerary 2" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Draft itinerary 1 thread" }));
+
+    await waitFor(() => {
+      expect(mocks.deleteAgentThreadMock).toHaveBeenCalledWith("agency-1", "draft-thread-1");
+    });
+
+    expect(screen.queryByRole("option", { name: /Draft itinerary 1/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Draft itinerary 2/i })).toBeInTheDocument();
   });
 
   it("hides live stream output when the selected planning context changes", async () => {

@@ -4,6 +4,7 @@ import { useAgentRunStream } from "../../hooks/useAgentRunStream.js";
 import {
   approveAgentThreadItinerary,
   createAgentThread,
+  deleteAgentThread,
   fetchAgentThread,
   fetchItineraryDraft,
   listAgentThreads,
@@ -234,6 +235,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   const [composerInput, setComposerInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isCreatingDraftThread, setIsCreatingDraftThread] = useState(false);
+  const [deletingThreadId, setDeletingThreadId] = useState(null);
   const [agentError, setAgentError] = useState("");
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
   const [isApprovingDraft, setIsApprovingDraft] = useState(false);
@@ -821,6 +823,53 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     }
   }
 
+  async function handleDeletePlanningOption(option) {
+    const threadId = option?.threadId ?? (option?.type === "draft" ? option.id : null);
+    if (!agencyId || !threadId || deletingThreadId) return;
+
+    setAgentError("");
+    setDeletingThreadId(threadId);
+
+    try {
+      await deleteAgentThread(agencyId, threadId);
+
+      if (option.type === "draft") {
+        setDraftThreadStates((previous) => {
+          const next = { ...previous };
+          delete next[option.id];
+          return next;
+        });
+        setDraftThreadOrder((previous) => previous.filter((id) => id !== option.id));
+      } else if (option.tripId) {
+        setTripStates((previous) => {
+          const next = { ...previous };
+          delete next[option.tripId];
+          return next;
+        });
+      }
+
+      if (runTargetRef.current === createRunTargetKey({ type: option.type, id: option.id })) {
+        runTargetRef.current = null;
+      }
+
+      if (
+        option.type === "draft" &&
+        activeContextRef.current?.type === option.type &&
+        activeContextRef.current?.id === option.id
+      ) {
+        const nextOption = planningOptions.find(
+          (candidate) => !(candidate.type === option.type && candidate.id === option.id),
+        );
+        setActiveContext(nextOption ? createPlanningContext(nextOption.type, nextOption.id) : null);
+      }
+    } catch (error) {
+      console.error("Failed to delete agent thread", error);
+      setAgentError(error?.message || "Unable to delete this thread.");
+    } finally {
+      setDeletingThreadId(null);
+    }
+  }
+
   async function submitDraftApproval(fields) {
     if (!agencyId || activeContextRef.current?.type !== "draft") return;
 
@@ -1046,6 +1095,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
                   activeOption={activeOption}
                   planningOptions={planningOptions}
                   onNewItinerary={handleNewItinerary}
+                  onPlanningOptionDelete={handleDeletePlanningOption}
                   onPlanningOptionChange={(context) => {
                     setActiveContext(createPlanningContext(context?.type, context?.id));
                     setComposerInput("");
@@ -1056,6 +1106,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
                     setIsApprovalModalOpen(true);
                   }}
                   isCreatingDraftThread={isCreatingDraftThread}
+                  deletingThreadId={deletingThreadId}
                 />
                 <ItineraryDraftPanel
                   itinerary={activeTripState?.itinerary ?? null}

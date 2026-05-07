@@ -31,10 +31,12 @@ export default function AgentCommandCenter({
   activeOption,
   planningOptions = [],
   onPlanningOptionChange,
+  onPlanningOptionDelete,
   onNewItinerary,
   canApproveDraft = false,
   onApproveDraft,
   isCreatingDraftThread = false,
+  deletingThreadId = null,
   activeMessages = 0,
   activeToolLabel = null,
 }) {
@@ -171,33 +173,61 @@ export default function AgentCommandCenter({
                       const isSelected = option?.type === activeOption?.type && option?.id === activeOption?.id;
                       const optionName = option?.clientName || option?.label || "Planning item";
                       const initials = getInitials(optionName);
+                      const optionThreadId = option?.threadId ?? (option?.type === "draft" ? option?.id : null);
+                      const canDeleteThread = Boolean(optionThreadId && onPlanningOptionDelete);
+                      const isDeletingThread = Boolean(optionThreadId && deletingThreadId === optionThreadId);
 
                       return (
-                        <button
+                        <div
                           key={`${option?.type ?? "option"}:${option?.id ?? optionName}`}
-                          type="button"
-                          className={`client-option ${option?.type === "draft" ? "draft" : "trip"} ${isSelected ? "selected" : ""}`}
-                          role="option"
-                          aria-selected={isSelected}
-                          onClick={() => {
-                            onPlanningOptionChange?.({ type: option?.type, id: option?.id });
-                            setIsClientMenuOpen(false);
-                          }}
+                          className={`client-option-row ${option?.type === "draft" ? "draft" : "trip"} ${isSelected ? "selected" : ""}`}
                         >
-                          <span className="client-option-badge" aria-hidden="true">
-                            {initials}
-                          </span>
-                          <span className="client-option-body">
-                            <strong>{optionName}</strong>
-                            <span>{option?.destination || option?.statusLabel}</span>
-                            {option?.statusLabel && <small>{option.statusLabel}</small>}
-                          </span>
-                          {isSelected && (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                              <path d="m20 6-11 11-5-5" />
-                            </svg>
+                          <button
+                            type="button"
+                            className="client-option"
+                            role="option"
+                            aria-selected={isSelected}
+                            onClick={() => {
+                              onPlanningOptionChange?.({ type: option?.type, id: option?.id });
+                              setIsClientMenuOpen(false);
+                            }}
+                          >
+                            <span className="client-option-badge" aria-hidden="true">
+                              {initials}
+                            </span>
+                            <span className="client-option-body">
+                              <strong>{optionName}</strong>
+                              <span>{option?.destination || option?.statusLabel}</span>
+                              {option?.statusLabel && <small>{option.statusLabel}</small>}
+                            </span>
+                            {isSelected && (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                                <path d="m20 6-11 11-5-5" />
+                              </svg>
+                            )}
+                          </button>
+                          {canDeleteThread && (
+                            <button
+                              type="button"
+                              className="client-option-delete"
+                              aria-label={`Delete ${optionName} thread`}
+                              disabled={isDeletingThread}
+                              onClick={() => onPlanningOptionDelete?.(option)}
+                            >
+                              {isDeletingThread ? (
+                                <span aria-hidden="true">...</span>
+                              ) : (
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                  <path d="M3 6h18" />
+                                  <path d="M8 6V4h8v2" />
+                                  <path d="M19 6l-1 14H6L5 6" />
+                                  <path d="M10 11v5" />
+                                  <path d="M14 11v5" />
+                                </svg>
+                              )}
+                            </button>
                           )}
-                        </button>
+                        </div>
                       );
                     })
                   ) : (
@@ -219,10 +249,10 @@ export default function AgentCommandCenter({
               </button>
             )}
           </div>
-          <div className={`agent-status-tag ${isStreaming ? "streaming" : ""}`}>
+          {/* <div className={`agent-status-tag ${isStreaming ? "streaming" : ""}`}>
             <span className="status-dot" />
             {isStreaming ? "Agent active" : "Agent idle"}
-          </div>
+          </div> */}
         </div>
       </header>
 
@@ -285,20 +315,20 @@ export default function AgentCommandCenter({
               </svg>
             </div>
             <div className="message-content">
-                <div className="bubble thinking-bubble">
-                  <div className="thinking-header">
-                    <span className="thinking-dot" />
-                    Agent working
+              <div className="bubble thinking-bubble">
+                <div className="thinking-header">
+                  <span className="thinking-dot" />
+                  Agent working
+                </div>
+                {activeToolLabel && (
+                  <div className="system-banner" role="status" aria-live="polite">
+                    <span className="system-banner-label">SYS</span>
+                    <span className="system-banner-text">{activeToolLabel}</span>
                   </div>
-                  {activeToolLabel && (
-                    <div className="system-banner" role="status" aria-live="polite">
-                      <span className="system-banner-label">SYS</span>
-                      <span className="system-banner-text">{activeToolLabel}</span>
-                    </div>
-                  )}
-                  {activeToolCalls.length > 0 && (
-                    <div className="tool-stepper">
-                      {activeToolCalls.map((name, idx) => (
+                )}
+                {activeToolCalls.length > 0 && (
+                  <div className="tool-stepper">
+                    {activeToolCalls.map((name, idx) => (
                       <div key={name} className="step">
                         <div className="step-icon">{idx + 1}</div>
                         <div className="step-text">
@@ -578,23 +608,34 @@ export default function AgentCommandCenter({
           gap: 2px;
         }
 
+        .client-option-row {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          width: 100%;
+          border-radius: 14px;
+          color: #e2e8f0;
+          transition: all 0.18s ease;
+        }
+
         .client-option {
           display: flex;
           align-items: center;
           gap: 10px;
-          width: 100%;
+          min-width: 0;
+          flex: 1;
           border: none;
           background: transparent;
-          color: #e2e8f0;
-          padding: 12px;
+          color: inherit;
+          padding: 12px 8px 12px 12px;
           border-radius: 14px;
           cursor: pointer;
           text-align: left;
           transition: all 0.18s ease;
         }
 
-        .client-option:hover,
-        .client-option.selected {
+        .client-option-row:hover,
+        .client-option-row.selected {
           background: rgba(255, 255, 255, 0.1);
           color: white;
         }
@@ -613,8 +654,33 @@ export default function AgentCommandCenter({
           flex-shrink: 0;
         }
 
-        .client-option.draft .client-option-badge {
+        .client-option-row.draft .client-option-badge {
           background: var(--voyage-accent);
+        }
+
+        .client-option-delete {
+          width: 34px;
+          height: 34px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          border: none;
+          border-radius: 999px;
+          background: transparent;
+          color: rgba(226, 232, 240, 0.72);
+          cursor: pointer;
+          transition: all 0.18s ease;
+        }
+
+        .client-option-delete:hover:not(:disabled) {
+          background: rgba(185, 28, 28, 0.22);
+          color: #fecaca;
+        }
+
+        .client-option-delete:disabled {
+          cursor: wait;
+          opacity: 0.55;
         }
 
         .client-option-body {
