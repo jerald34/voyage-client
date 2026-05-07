@@ -1,0 +1,431 @@
+.agent-command-center {
+  background: var(--voyage-surface);
+  border-radius: 18px;
+  border: 1px solid var(--voyage-border);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  box-shadow: var(--voyage-shadow-soft);
+  backdrop-filter: blur(8px);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: currentColor;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+
+.chat-log {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-right: 8px;
+  margin-bottom: 20px;
+}
+
+.empty-state {
+  display: grid;
+  gap: 10px;
+  place-items: center;
+  min-height: 220px;
+  text-align: center;
+  color: var(--voyage-text-muted);
+}
+
+.empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(--voyage-background);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--voyage-text-soft);
+  margin-bottom: 8px;
+}
+
+.chat-row {
+  display: flex;
+  gap: 12px;
+  max-width: 100%;
+}
+
+.chat-row.user {
+  justify-content: flex-end;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.assistant-avatar {
+  background: var(--voyage-primary);
+  color: white;
+}
+
+.user-avatar {
+  background: var(--voyage-secondary);
+  color: white;
+}
+
+.message-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 85%;
+}
+
+.chat-row.user .message-content {
+  align-items: flex-end;
+}
+
+.message-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--voyage-text-soft);
+  padding: 0 4px;
+}
+
+.bubble {
+  padding: 12px 16px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+
+.user-bubble {
+  background: var(--voyage-secondary);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.assistant-bubble {
+  background: var(--voyage-background);
+  color: var(--voyage-text);
+  border: 1px solid var(--voyage-border);
+  border-bottom-left-radius: 4px;
+}
+
+.assistant-bubble.streaming {
+  border-color: var(--voyage-secondary-soft);
+  background: rgba(215, 122, 97, 0.04);
+}
+
+.markdown-content {
+  overflow-wrap: break-word;
+}
+
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+.itinerary-message-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.itinerary-message-followup {
+  border-top: 1px solid var(--voyage-border);
+  padding-top: 12px;
+}
+
+.itinerary-message-followup .markdown-content {
+  color: var(--voyage-text);
+}
+
+
+.place-inline-link {
+  display: inline;
+  border: none;
+  border-bottom: 1px solid currentColor;
+  background: transparent;
+  color: #2563eb;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: inherit;
+}
+
+.place-inline-link:hover,
+.place-inline-link.selected {
+  color: var(--voyage-secondary);
+}
+
+.place-inline-link:focus-visible {
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px rgba(215, 122, 97, 0.24);
+  color: var(--voyage-secondary);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.message-place-cards {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.message-place-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid var(--voyage-border);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--voyage-text);
+  padding: 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.message-place-card:hover,
+.message-place-card.selected {
+  border-color: rgba(215, 122, 97, 0.72);
+  box-shadow: 0 10px 20px rgba(34, 56, 67, 0.08);
+  transform: translateY(-1px);
+}
+
+.message-place-card:focus-visible {
+  border-color: var(--voyage-secondary);
+  box-shadow: 0 0 0 3px rgba(215, 122, 97, 0.24), 0 10px 20px rgba(34, 56, 67, 0.08);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.place-card-pin {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--voyage-primary);
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.place-card-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.place-card-body strong {
+  color: var(--voyage-primary);
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.place-card-body span,
+.place-card-body small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--voyage-text-soft);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.thinking-bubble {
+  background: var(--voyage-surface-soft);
+  border: 1px dashed var(--voyage-border-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.thinking-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--voyage-primary);
+}
+
+.thinking-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--voyage-secondary);
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.2); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.system-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--voyage-primary);
+  border-radius: 10px;
+  color: white;
+}
+
+.system-banner-label {
+  font-size: 9px;
+  font-weight: 900;
+  padding: 2px 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.system-banner-text {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tool-stepper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.step-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: var(--voyage-border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--voyage-primary);
+}
+
+.step-connector {
+  color: var(--voyage-text-soft);
+  font-weight: 800;
+}
+
+.chat-input-area {
+  padding-top: 12px;
+  border-top: 1px solid var(--voyage-border);
+}
+
+.composer-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  background: var(--voyage-background);
+  border: 1px solid var(--voyage-border);
+  border-radius: 20px;
+  padding: 8px 12px;
+  transition: all 0.2s ease;
+}
+
+.composer-form:focus-within {
+  border-color: var(--voyage-secondary);
+  box-shadow: 0 0 0 3px rgba(215, 122, 97, 0.1);
+}
+
+.composer-form textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  resize: none;
+  padding: 8px 0;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--voyage-text);
+  max-height: 200px;
+  outline: none;
+}
+
+.attach-button, .send-button {
+  background: transparent;
+  border: none;
+  padding: 8px;
+  color: var(--voyage-text-soft);
+  cursor: pointer;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.attach-button:hover {
+  background: var(--voyage-surface);
+  color: var(--voyage-primary);
+}
+
+.send-button {
+  color: var(--voyage-secondary);
+}
+
+.send-button:hover:not(:disabled) {
+  background: var(--voyage-secondary);
+  color: white;
+}
+
+.send-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.composer-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.error-text {
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 8px;
+  padding-left: 12px;
+}
+
+@media (max-width: 600px) {
+  .header-main {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .client-switcher {
+    min-width: 0;
+    width: 100%;
+  }
+}

@@ -86,6 +86,7 @@ export function useAgentRunStream(agencyId) {
   const [activeToolLabel, setActiveToolLabel] = useState(null);
   const [lastItineraryUpdate, setLastItineraryUpdate] = useState(null);
   const [lastCompletedItineraryTool, setLastCompletedItineraryTool] = useState(null);
+  const [completedMessageContent, setCompletedMessageContent] = useState(null);
   const [error, setError] = useState(null);
 
   const eventSourceRef = useRef(null);
@@ -109,6 +110,7 @@ export function useAgentRunStream(agencyId) {
     setActiveToolLabel(null);
     setLastItineraryUpdate(null);
     setLastCompletedItineraryTool(null);
+    setCompletedMessageContent(null);
     setError(null);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
@@ -161,6 +163,7 @@ export function useAgentRunStream(agencyId) {
 
       if (typeof data.payload?.content === 'string') {
         setAssistantMessage(data.payload.content);
+        setCompletedMessageContent(data.payload.content);
       }
     });
 
@@ -191,6 +194,9 @@ export function useAgentRunStream(agencyId) {
       const tool = data?.payload;
       if (!tool) return;
 
+      // Clear intermediate streaming content so it doesn't concatenate with
+      // the post-tool synthesis output that will arrive later.
+      setAssistantMessage('');
       setToolCalls(prev => [...prev, { ...tool, status: 'Running' }]);
       setActiveToolLabel(buildActiveToolLabel(tool));
     });
@@ -334,6 +340,7 @@ export function useAgentRunStream(agencyId) {
     isStreaming,
     runStatus,
     assistantMessage,
+    completedMessageContent,
     tasks,
     toolCalls,
     sources,
