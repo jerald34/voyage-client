@@ -3,10 +3,15 @@ import { describe, expect, it, vi } from "vitest";
 
 import ChatMessage from "../app/components/trip-dashboard/command-center/ChatMessage.jsx";
 import {
+  getAssistantMessageItineraryId,
   getNextPlanningContextAfterDelete,
   shouldApplyItineraryFetchResult,
   tagAssistantMessageByCompletedContent,
 } from "../app/components/trip-dashboard/HomePage.jsx";
+import {
+  isLikelyItineraryAssistantContent,
+  normalizeThreadMessages,
+} from "../app/hooks/useTripPlanning.js";
 
 const itinerary = {
   id: "itinerary-olongapo",
@@ -192,5 +197,69 @@ describe("HomePage itinerary chat helpers", () => {
       requestTargetKey: "draft:thread-1",
       currentTargetKey: "trip:trip-1",
     })).toBe(false);
+  });
+
+  it("does not tag ordinary assistant replies just because the thread already has an itinerary", () => {
+    const existingItinerary = { id: "itinerary-1" };
+
+    expect(getAssistantMessageItineraryId({
+      currentItinerary: existingItinerary,
+      lastCompletedItineraryTool: null,
+      lastItineraryUpdate: null,
+    })).toBe("");
+
+    expect(getAssistantMessageItineraryId({
+      currentItinerary: existingItinerary,
+      lastCompletedItineraryTool: { output: { itinerary: { id: "itinerary-1" } } },
+      lastItineraryUpdate: null,
+    })).toBe("itinerary-1");
+  });
+
+  it("restores rich itinerary metadata for persisted itinerary replies without tagging greetings", () => {
+    const messages = normalizeThreadMessages({
+      itineraryId: "itinerary-1",
+      messages: [
+        { id: "user-1", role: "USER", content: "Hello" },
+        { id: "assistant-hello", role: "ASSISTANT", content: "Hello! How can I assist you with your travel planning today?" },
+        {
+          id: "assistant-itinerary",
+          role: "ASSISTANT",
+          content: [
+            'The itinerary draft has been created.',
+            'Itinerary title: 1-Day Olongapo, Philippines City Highlights & Nature Itinerary',
+            'Day 1 - "Day 1"',
+            '| Order | Activity | Description |',
+            '| 1 | Subic Bay Freeport Zone | Explore the boardwalk. |',
+          ].join("\n"),
+        },
+      ],
+    });
+
+    expect(messages.find((message) => message.id === "assistant-hello")).not.toHaveProperty("itineraryId");
+    expect(messages.find((message) => message.id === "assistant-itinerary")).toMatchObject({
+      itineraryId: "itinerary-1",
+    });
+  });
+
+  it("only tags the latest persisted itinerary-looking assistant response", () => {
+    const messages = normalizeThreadMessages({
+      itineraryId: "itinerary-2",
+      messages: [
+        { id: "assistant-old", role: "ASSISTANT", content: "Day 1 - Old draft\n| Time | Activity |" },
+        { id: "user-2", role: "USER", content: "Regenerate it" },
+        { id: "assistant-new", role: "ASSISTANT", content: "Day 1 - Updated draft\n| Time | Activity |" },
+      ],
+    });
+
+    expect(messages.find((message) => message.id === "assistant-old")).not.toHaveProperty("itineraryId");
+    expect(messages.find((message) => message.id === "assistant-new")).toMatchObject({
+      itineraryId: "itinerary-2",
+    });
+  });
+
+  it("identifies itinerary assistant content conservatively", () => {
+    expect(isLikelyItineraryAssistantContent("Hello! How can I assist you today?")).toBe(false);
+    expect(isLikelyItineraryAssistantContent("Day 1 - Olongapo Highlights\n| Time | Activity |")).toBe(true);
+    expect(isLikelyItineraryAssistantContent("The itinerary draft has been created.\nTrip title: 1-Day Olongapo Trip")).toBe(true);
   });
 });

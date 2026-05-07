@@ -31,34 +31,15 @@ export default function AgentCommandCenter({
   isSending,
   agentError,
   user,
-  activeOption,
-  planningOptions = [],
-  onPlanningOptionChange,
-  onPlanningOptionDelete,
-  onNewItinerary,
-  canApproveDraft = false,
-  onApproveDraft,
-  isCreatingDraftThread = false,
-  deletingThreadId = null,
   activeToolLabel = null,
   itinerary = null,
   placeEntities = [],
   selectedPlaceId = "",
   onPlaceSelect,
 }) {
-  const [isClientMenuOpen, setIsClientMenuOpen] = useState(false);
   const messagesEndRef = useRef(null);
-  const clientMenuRef = useRef(null);
   const textareaRef = useRef(null);
 
-  const safeOptions = useMemo(() => (Array.isArray(planningOptions) ? planningOptions.filter(Boolean) : []), [planningOptions]);
-  const hasOptions = safeOptions.length > 0;
-  const selectedOption = activeOption ?? safeOptions[0] ?? null;
-  const activeTripClientName = String(selectedOption?.clientName ?? selectedOption?.label ?? "").trim();
-  const activeTripInitials = activeTripClientName ? getInitials(activeTripClientName) : "";
-  const activeTripOrganizerInitials = selectedOption?.assignedOrganizer ? getInitials(selectedOption.assignedOrganizer) : "";
-  const clientMenuEmptyTitle = "No client trips available";
-  const clientMenuEmptyBody = "Use New Itinerary to create the first trip.";
 
   const displayedMessages = useMemo(() => {
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -66,6 +47,7 @@ export default function AgentCommandCenter({
     }
     return messages.slice(-12);
   }, [messages]);
+
 
   const hasStreamingBubble =
     isStreaming &&
@@ -95,17 +77,7 @@ export default function AgentCommandCenter({
     return String(message?.itineraryId ?? "") === itineraryId || String(message?.metadata?.itineraryId ?? "") === itineraryId;
   }
 
-  useEffect(() => {
-    function handleOutsideClick(event) {
-      if (!clientMenuRef.current) return;
-      if (!clientMenuRef.current.contains(event.target)) {
-        setIsClientMenuOpen(false);
-      }
-    }
 
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, []);
 
   useEffect(() => {
     if (messagesEndRef.current && typeof messagesEndRef.current.scrollIntoView === "function") {
@@ -139,43 +111,7 @@ export default function AgentCommandCenter({
 
   return (
     <div className="agent-command-center">
-      <header className="chat-header">
-        <div className="header-main">
-          <div className="header-tools">
-            <button
-              className="new-itinerary-button"
-              onClick={() => onNewItinerary?.()}
-              disabled={isCreatingDraftThread}
-              type="button"
-            >
-              <span className="new-itinerary-icon" aria-hidden="true">+</span>
-              {isCreatingDraftThread ? "Creating..." : "New Itinerary"}
-            </button>
-            <ClientSwitcher
-              isClientMenuOpen={isClientMenuOpen}
-              setIsClientMenuOpen={setIsClientMenuOpen}
-              clientMenuRef={clientMenuRef}
-              hasOptions={hasOptions}
-              activeTripClientName={activeTripClientName}
-              activeTripInitials={activeTripInitials}
-              activeTripOrganizerInitials={activeTripOrganizerInitials}
-              clientMenuEmptyTitle={clientMenuEmptyTitle}
-              clientMenuEmptyBody={clientMenuEmptyBody}
-              safeOptions={safeOptions}
-              activeOption={activeOption}
-              getInitials={getInitials}
-              onPlanningOptionDelete={onPlanningOptionDelete}
-              deletingThreadId={deletingThreadId}
-              onPlanningOptionChange={onPlanningOptionChange}
-            />
-            {canApproveDraft && (
-              <button className="approve-draft-button" onClick={() => onApproveDraft?.()} type="button">
-                Save to Client
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
+
 
       <div className="chat-log">
         {displayedMessages.length === 0 ? (

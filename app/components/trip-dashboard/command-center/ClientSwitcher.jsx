@@ -19,7 +19,7 @@ export default function ClientSwitcher({
 }) {
   return (
     <div className="client-switcher-wrap" ref={clientMenuRef}>
-      <span className="client-switcher-label">Current client</span>
+      {/* <span className="client-switcher-label">Current client</span> */}
       <button
         className={`client-switcher ${isClientMenuOpen ? "open" : ""}`}
         onClick={() => setIsClientMenuOpen((current) => !current)}

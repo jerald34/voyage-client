@@ -23,16 +23,46 @@ function toUiRole(role) {
   return "system";
 }
 
-function normalizeThreadMessages(thread) {
-  return Array.isArray(thread?.messages)
+export function isLikelyItineraryAssistantContent(content) {
+  const text = String(content ?? "").trim();
+  if (!text) return false;
+
+  return (
+    /\bitinerary draft\b/i.test(text) ||
+    /\bitinerary title\s*:/i.test(text) ||
+    /\btrip title\s*:/i.test(text) ||
+    /(^|\n)\s*#{1,4}\s*day\s+\d+\b/i.test(text) ||
+    /(^|\n)\s*day\s+\d+\s*[–\-:]/i.test(text) ||
+    /\|\s*(time|order)\s*\|\s*(activity|description)/i.test(text)
+  );
+}
+
+export function normalizeThreadMessages(thread, itineraryId = null) {
+  const normalized = Array.isArray(thread?.messages)
     ? thread.messages
       .filter((message) => message?.role === "USER" || message?.role === "ASSISTANT")
       .map((message) => ({
         id: message.id,
         role: toUiRole(message.role),
         content: message.content,
+        ...(message.itineraryId ? { itineraryId: message.itineraryId } : {}),
+        ...(message.metadata?.itineraryId ? { metadata: { itineraryId: message.metadata.itineraryId } } : {}),
       }))
     : [];
+
+  const targetItineraryId = String(itineraryId ?? thread?.itineraryId ?? "").trim();
+  if (!targetItineraryId) return normalized;
+
+  for (let index = normalized.length - 1; index >= 0; index -= 1) {
+    const message = normalized[index];
+    if (message?.role === "assistant" && isLikelyItineraryAssistantContent(message.content)) {
+      return normalized.map((item, itemIndex) => (
+        itemIndex === index ? { ...item, itineraryId: targetItineraryId } : item
+      ));
+    }
+  }
+
+  return normalized;
 }
 
 function getThreadTripId(thread) {
@@ -59,7 +89,7 @@ function normalizeDraftThreadState(thread, itinerary = null) {
     threadId: thread.id,
     title: String(thread.title ?? thread.name ?? "").trim(),
     tripId: null,
-    messages: normalizeThreadMessages(thread),
+    messages: normalizeThreadMessages(thread, getThreadItineraryId(thread)),
     itinerary,
     loaded: true,
   };
@@ -123,7 +153,7 @@ export function useTripPlanning(agencyId) {
       const itinerary = itineraryResult ? normalizeItineraryResponse(itineraryResult) : null;
       const nextState = {
         threadId: thread.id,
-        messages: normalizeThreadMessages(thread),
+        messages: normalizeThreadMessages(thread, itineraryId),
         itinerary,
         loaded: true,
       };
@@ -200,7 +230,7 @@ export function useTripPlanning(agencyId) {
         if (tripId) {
           nextTripStates[tripId] = {
             threadId: thread.id,
-            messages: normalizeThreadMessages(thread),
+            messages: normalizeThreadMessages(thread, itineraryId),
             itinerary,
             loaded: true,
           };

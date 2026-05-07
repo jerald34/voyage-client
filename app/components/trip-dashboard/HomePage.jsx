@@ -70,7 +70,11 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("command-center");
   const [selectedPlaceId, setSelectedPlaceId] = useState("");
+  const [isClientMenuOpen, setIsClientMenuOpen] = useState(false);
+  const clientMenuRef = useRef(null);
   const completedAssistantMessageRef = useRef(null);
+
+
   const itineraryFetchSequenceRef = useRef(0);
 
   const {
@@ -126,7 +130,11 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
       const current = prev[runTarget.id] || { messages: [], loaded: false };
       if (current.messages.some(m => m.role === "assistant" && m.content.trim() === completedContent)) return prev;
       completedAssistantMessageRef.current = { targetKey, content: completedContent };
-      const itineraryId = current.itinerary?.id ?? null;
+      const itineraryId = getAssistantMessageItineraryId({
+        currentItinerary: current.itinerary,
+        lastCompletedItineraryTool,
+        lastItineraryUpdate,
+      });
       const message = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
@@ -138,7 +146,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
 
     if (runTarget.type === "draft") setDraftThreadStates(update);
     else setTripStates(update);
-  }, [runStatus, assistantMessage]);
+  }, [runStatus, assistantMessage, lastCompletedItineraryTool, lastItineraryUpdate]);
 
   useEffect(() => {
     if (!agencyId || !lastItineraryUpdate || !runTargetRef.current) return;
@@ -224,12 +232,23 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     setSelectedPlaceId("");
   }, [activeContextKey]);
 
+  const activeTripClientName = String(activeOption?.clientName ?? activeOption?.label ?? "").trim();
+  const activeTripInitials = activeTripClientName ? getInitials(activeTripClientName) : "";
+  const activeTripOrganizerInitials = activeOption?.assignedOrganizer ? getInitials(activeOption.assignedOrganizer) : "";
+  const clientMenuEmptyTitle = "No client trips available";
+  const clientMenuEmptyBody = "Use New Itinerary to create the first trip.";
+
   useEffect(() => {
-    if (!selectedPlaceId) return;
-    if (!placeEntities.some((place) => place.id === selectedPlaceId)) {
-      setSelectedPlaceId("");
+    function handleOutsideClick(event) {
+      if (!clientMenuRef.current) return;
+      if (!clientMenuRef.current.contains(event.target)) {
+        setIsClientMenuOpen(false);
+      }
     }
-  }, [placeEntities, selectedPlaceId]);
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
 
   // Actions
   const handleNewItinerary = () => { onNewItinerary?.(); setActiveContext(null); /* useTripPlanning handles creation when message sent */ };
@@ -291,6 +310,24 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
         getInitials={getInitials}
         displayName={user?.displayName || "Traveler"}
         agencyId={agencyId}
+        onNewItinerary={handleNewItinerary}
+        isCreatingDraftThread={isCreatingDraftThread}
+        isClientMenuOpen={isClientMenuOpen}
+        setIsClientMenuOpen={setIsClientMenuOpen}
+        clientMenuRef={clientMenuRef}
+        hasOptions={planningOptions.length > 0}
+        activeTripClientName={activeTripClientName}
+        activeTripInitials={activeTripInitials}
+        activeTripOrganizerInitials={activeTripOrganizerInitials}
+        clientMenuEmptyTitle={clientMenuEmptyTitle}
+        clientMenuEmptyBody={clientMenuEmptyBody}
+        safeOptions={planningOptions}
+        activeOption={activeOption}
+        onPlanningOptionDelete={handleDeleteOption}
+        deletingThreadId={deletingThreadId}
+        onPlanningOptionChange={(ctx) => { setActiveContext(createPlanningContext(ctx?.type, ctx?.id)); setComposerInput(""); }}
+        canApproveDraft={activeContext?.type === "draft" && Boolean(activeTripState?.itinerary?.id)}
+        onApproveDraft={() => { setApprovalError(""); setIsApprovalModalOpen(true); }}
       />
 
       <div className="voyage-body">
@@ -318,15 +355,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
                   isSending={isSending}
                   agentError={agentError}
                   user={user}
-                  activeOption={activeOption}
-                  planningOptions={planningOptions}
-                  onNewItinerary={handleNewItinerary}
-                  onPlanningOptionDelete={handleDeleteOption}
-                  onPlanningOptionChange={(ctx) => { setActiveContext(createPlanningContext(ctx?.type, ctx?.id)); setComposerInput(""); }}
-                  canApproveDraft={activeContext?.type === "draft" && Boolean(activeTripState?.itinerary?.id)}
-                  onApproveDraft={() => { setApprovalError(""); setIsApprovalModalOpen(true); }}
-                  isCreatingDraftThread={isCreatingDraftThread}
-                  deletingThreadId={deletingThreadId}
+                  user={user}
                   itinerary={activeTripState?.itinerary ?? null}
                   placeEntities={placeEntities}
                   selectedPlaceId={selectedPlaceId}
@@ -403,4 +432,21 @@ export function shouldApplyItineraryFetchResult({
     Boolean(requestTargetKey) &&
     requestTargetKey === currentTargetKey
   );
+}
+
+export function getAssistantMessageItineraryId({
+  currentItinerary,
+  lastCompletedItineraryTool,
+  lastItineraryUpdate,
+}) {
+  const currentItineraryId = currentItinerary?.id != null ? String(currentItinerary.id) : "";
+  if (!currentItineraryId) return "";
+
+  const toolItineraryId =
+    lastCompletedItineraryTool?.output?.itinerary?.id ??
+    lastCompletedItineraryTool?.output?.id ??
+    "";
+  const completedItineraryId = String(toolItineraryId || lastItineraryUpdate || "");
+
+  return completedItineraryId && completedItineraryId === currentItineraryId ? completedItineraryId : "";
 }

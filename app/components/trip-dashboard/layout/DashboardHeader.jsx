@@ -1,4 +1,5 @@
 import React from "react";
+import ClientSwitcher from "../command-center/ClientSwitcher.jsx";
 
 export default function DashboardHeader({ 
   isSidebarOpen, 
@@ -8,7 +9,26 @@ export default function DashboardHeader({
   scopedIsStreaming, 
   getInitials, 
   displayName, 
-  agencyId 
+  agencyId,
+  // Trip management props
+  onNewItinerary,
+  isCreatingDraftThread,
+  isClientMenuOpen,
+  setIsClientMenuOpen,
+  clientMenuRef,
+  hasOptions,
+  activeTripClientName,
+  activeTripInitials,
+  activeTripOrganizerInitials,
+  clientMenuEmptyTitle,
+  clientMenuEmptyBody,
+  safeOptions,
+  activeOption,
+  onPlanningOptionDelete,
+  deletingThreadId,
+  onPlanningOptionChange,
+  canApproveDraft,
+  onApproveDraft
 }) {
   return (
     <header className="voyage-header">
@@ -37,6 +57,43 @@ export default function DashboardHeader({
         </div>
       </div>
 
+      <div className="header-center">
+        <button
+          className="new-itinerary-button"
+          onClick={() => onNewItinerary?.()}
+          disabled={isCreatingDraftThread}
+          type="button"
+        >
+          <span className="new-itinerary-icon" aria-hidden="true">+</span>
+          {isCreatingDraftThread ? "Creating..." : "New Itinerary"}
+        </button>
+
+        <div className="agent-thread-actions">
+          <ClientSwitcher
+            isClientMenuOpen={isClientMenuOpen}
+            setIsClientMenuOpen={setIsClientMenuOpen}
+            clientMenuRef={clientMenuRef}
+            hasOptions={hasOptions}
+            activeTripClientName={activeTripClientName}
+            activeTripInitials={activeTripInitials}
+            activeTripOrganizerInitials={activeTripOrganizerInitials}
+            clientMenuEmptyTitle={clientMenuEmptyTitle}
+            clientMenuEmptyBody={clientMenuEmptyBody}
+            safeOptions={safeOptions}
+            activeOption={activeOption}
+            getInitials={getInitials}
+            onPlanningOptionDelete={onPlanningOptionDelete}
+            deletingThreadId={deletingThreadId}
+            onPlanningOptionChange={onPlanningOptionChange}
+          />
+          {canApproveDraft && (
+            <button className="approve-draft-button" onClick={() => onApproveDraft?.()} type="button">
+              Save to Client
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="header-actions">
         <div className={`run-status ${scopedStreamError ? "danger" : scopedIsStreaming ? "streaming" : "idle"}`}>
           <span className="status-dot" />
@@ -55,3 +112,4 @@ export default function DashboardHeader({
     </header>
   );
 }
+
