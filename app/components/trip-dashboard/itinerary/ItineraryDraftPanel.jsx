@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import "./ItineraryDraftPanel.css";
 import dynamic from "next/dynamic";
+import { getItineraryPlaceEntityId } from "../../../lib/trip-dashboard/placeEntities.js";
 
 const ItineraryLiveMap = dynamic(() => import("./ItineraryLiveMap.jsx"), { ssr: false });
 
@@ -26,20 +27,33 @@ export default function ItineraryDraftPanel({
   itinerary = null,
   draftDays,
   draftVersion,
-  onContinue = () => {},
+  onContinue = () => { },
   dispatchAgentMessage,
   mapMarkers = [],
   routeEstimates = [],
+  placeEntities = [],
+  selectedPlaceId = "",
+  onPlaceSelect,
 }) {
   const safeDays = useMemo(() => Array.isArray(itinerary?.days) ? itinerary.days : (Array.isArray(draftDays) ? draftDays : []), [itinerary, draftDays]);
   const panelTitle = itinerary?.title || "Live Itinerary";
   const panelSummary = itinerary?.summary || "";
   const latestEstimate = routeEstimates?.[routeEstimates.length - 1];
-  
+
   const mapItems = useMemo(() => safeDays.reduce((acc, day) => {
-    (day?.items || []).forEach((item, idx) => acc.push({ ...item, __dayNumber: day?.dayNumber, __dayTitle: day?.title, __itemIndex: idx }));
+    (day?.items || []).forEach((item, idx) => acc.push({
+      ...item,
+      __dayNumber: day?.dayNumber,
+      __dayTitle: day?.title,
+      __itemIndex: idx,
+      __placeEntityId: getItineraryPlaceEntityId(item, day, idx),
+    }));
     return acc;
   }, []), [safeDays]);
+  const selectedPlace = useMemo(
+    () => placeEntities.find((place) => place.id === selectedPlaceId) ?? null,
+    [placeEntities, selectedPlaceId],
+  );
 
   const [activeStopIndex, setActiveStopIndex] = useState(mapItems.length > 0 ? 0 : -1);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -49,6 +63,14 @@ export default function ItineraryDraftPanel({
   const containerRef = useRef(null);
 
   useEffect(() => { setActiveStopIndex(mapItems.length > 0 ? 0 : -1); }, [mapItems.length]);
+
+  useEffect(() => {
+    if (!selectedPlaceId) return;
+    const nextIndex = mapItems.findIndex((item) => item.__placeEntityId === selectedPlaceId);
+    if (nextIndex >= 0) {
+      setActiveStopIndex(nextIndex);
+    }
+  }, [mapItems, selectedPlaceId]);
 
   useEffect(() => {
     const handleMove = (e) => {
@@ -70,10 +92,19 @@ export default function ItineraryDraftPanel({
   return (
     <div className="itinerary-draft-panel" ref={containerRef}>
       <div className="map-background">
-        <ItineraryLiveMap items={mapItems} liveMarkers={mapMarkers} routeEstimates={routeEstimates} activeIndex={activeStopIndex} onHoverItem={setActiveStopIndex} />
+        <ItineraryLiveMap
+          items={mapItems}
+          liveMarkers={mapMarkers}
+          routeEstimates={routeEstimates}
+          activeIndex={activeStopIndex}
+          onHoverItem={setActiveStopIndex}
+          selectedPlaceId={selectedPlaceId}
+          selectedPlace={selectedPlace}
+          onSelectPlace={onPlaceSelect}
+        />
       </div>
 
-      <header className="panel-header">
+      {/* <header className="panel-header">
         <div className="header-actions">
           <span className="draft-version-tag"><span className="dot" />{draftVersion}</span>
           <button className="btn-action primary" onClick={onContinue} type="button">
@@ -91,7 +122,7 @@ export default function ItineraryDraftPanel({
             {latestEstimate && <span className="telemetry-chip">Route {formatDistance(latestEstimate.distanceMeters)} | {formatDuration(latestEstimate.durationSeconds)}</span>}
           </div>
         )}
-      </header>
+      </header> */}
 
       <div className={`hover-container ${isMinimized ? "minimized" : ""}`} style={{ transform: `translate(${position.x}px, ${position.y}px)`, right: "auto", bottom: "auto" }}>
         <article className="itinerary-floating-card">
@@ -120,7 +151,12 @@ export default function ItineraryDraftPanel({
                         {(day.items || []).length > 0 ? (day.items.map((item, iIdx) => {
                           const gIdx = mapItems.findIndex(m => m.__dayNumber === day.dayNumber && m.__itemIndex === iIdx);
                           return (
-                            <div key={`${day.dayNumber}-${iIdx}`} className={`timeline-item ${activeStopIndex === gIdx ? "active" : ""}`} onMouseEnter={() => setActiveStopIndex(gIdx)}>
+                            <div
+                              key={`${day.dayNumber}-${iIdx}`}
+                              className={`timeline-item ${activeStopIndex === gIdx ? "active" : ""}`}
+                              onMouseEnter={() => setActiveStopIndex(gIdx)}
+                              onClick={() => onPlaceSelect?.(mapItems[gIdx]?.__placeEntityId)}
+                            >
                               <div className="timeline-rail"><span className={`timeline-dot ${activeStopIndex === gIdx ? "active" : ""}`} /><div className="timeline-line" /></div>
                               <div className="timeline-content">
                                 <div className="item-time"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>{getItemTimeLabel(item)}</div>

@@ -41,6 +41,9 @@ export default function AgentCommandCenter({
   isCreatingDraftThread = false,
   deletingThreadId = null,
   activeToolLabel = null,
+  placeEntities = [],
+  selectedPlaceId = "",
+  onPlaceSelect,
 }) {
   const [isClientMenuOpen, setIsClientMenuOpen] = useState(false);
   const messagesEndRef = useRef(null);
@@ -122,7 +125,9 @@ export default function AgentCommandCenter({
 
   function submitComposer(event) {
     event.preventDefault();
+    if (!composerInput.trim()) return;
     void dispatchAgentMessage(composerInput);
+    setComposerInput("");
   }
 
   return (
@@ -184,6 +189,9 @@ export default function AgentCommandCenter({
               isUser={message.role === "user"}
               userName={userName}
               userInitials={userInitials}
+              placeEntities={placeEntities}
+              selectedPlaceId={selectedPlaceId}
+              onPlaceSelect={onPlaceSelect}
             />
           ))
         )}
@@ -230,6 +238,9 @@ export default function AgentCommandCenter({
             isUser={false}
             userName={userName}
             userInitials={userInitials}
+            placeEntities={placeEntities}
+            selectedPlaceId={selectedPlaceId}
+            onPlaceSelect={onPlaceSelect}
           />
         )}
         <div ref={messagesEndRef} />

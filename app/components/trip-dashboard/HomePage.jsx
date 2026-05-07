@@ -14,6 +14,7 @@ import {
   getApprovalBlockers,
   getUrgentDepartures,
 } from "../../lib/agency-dashboard/selectors.js";
+import { buildPlaceEntities } from "../../lib/trip-dashboard/placeEntities.js";
 
 import AgentCommandCenter from "./command-center/AgentCommandCenter.jsx";
 import ItineraryDraftPanel from "./itinerary/ItineraryDraftPanel.jsx";
@@ -68,6 +69,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   const [approvalError, setApprovalError] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("command-center");
+  const [selectedPlaceId, setSelectedPlaceId] = useState("");
 
   const {
     isStreaming,
@@ -163,6 +165,23 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   const activeContextKey = createRunTargetKey(activeContext);
   const isVisible = Boolean(activeContextKey && activeContextKey === runTargetRef.current);
   const liveStatus = getRunStatusLabel(isVisible ? runStatus : "idle", isVisible ? streamError : null);
+  const visibleMapMarkers = isVisible ? mapMarkers : [];
+  const visibleRouteEstimates = isVisible ? routeEstimates : [];
+  const placeEntities = useMemo(
+    () => buildPlaceEntities({ itinerary: activeTripState?.itinerary ?? null, liveMarkers: visibleMapMarkers }),
+    [activeTripState?.itinerary, visibleMapMarkers],
+  );
+
+  useEffect(() => {
+    setSelectedPlaceId("");
+  }, [activeContextKey]);
+
+  useEffect(() => {
+    if (!selectedPlaceId) return;
+    if (!placeEntities.some((place) => place.id === selectedPlaceId)) {
+      setSelectedPlaceId("");
+    }
+  }, [placeEntities, selectedPlaceId]);
 
   // Actions
   const handleNewItinerary = () => { onNewItinerary?.(); setActiveContext(null); /* useTripPlanning handles creation when message sent */ };
@@ -180,6 +199,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
         setTripStates(prev => { const n = { ...prev }; delete n[option.tripId]; return n; });
       }
       if (runTargetRef.current === createRunTargetKey(option)) runTargetRef.current = null;
+      if (selectedPlaceId) setSelectedPlaceId("");
       if (option.type === "draft" && activeContext?.id === option.id) {
         const next = planningOptions.find(o => !(o.type === option.type && o.id === option.id));
         setActiveContext(next ? createPlanningContext(next.type, next.id) : null);
@@ -259,14 +279,20 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
                   onApproveDraft={() => { setApprovalError(""); setIsApprovalModalOpen(true); }}
                   isCreatingDraftThread={isCreatingDraftThread}
                   deletingThreadId={deletingThreadId}
+                  placeEntities={placeEntities}
+                  selectedPlaceId={selectedPlaceId}
+                  onPlaceSelect={setSelectedPlaceId}
                 />
                 <ItineraryDraftPanel
                   itinerary={activeTripState?.itinerary ?? null}
                   draftDays={Array.isArray(activeTripState?.itinerary?.days) ? activeTripState.itinerary.days : []}
                   draftVersion={activeTripState?.itinerary?.version ? `Draft v${activeTripState.itinerary.version}` : "Draft unavailable"}
                   tripSummary={activeTripState?.itinerary?.trip ?? null}
-                  mapMarkers={isVisible ? mapMarkers : []}
-                  routeEstimates={isVisible ? routeEstimates : []}
+                  mapMarkers={visibleMapMarkers}
+                  routeEstimates={visibleRouteEstimates}
+                  placeEntities={placeEntities}
+                  selectedPlaceId={selectedPlaceId}
+                  onPlaceSelect={setSelectedPlaceId}
                   onContinue={onContinue}
                   dispatchAgentMessage={(prompt) => dispatchMessage(prompt, startStream)}
                 />

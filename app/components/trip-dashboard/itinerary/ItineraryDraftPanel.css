@@ -273,6 +273,23 @@
   padding-bottom: 24px;
 }
 
+.timeline-content h3 {
+  margin: 0 0 8px;
+  color: white;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.timeline-content p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .item-time {
   display: flex;
   align-items: center;
