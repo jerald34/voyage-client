@@ -20,6 +20,8 @@ function getInitials(name) {
     .join("");
 }
 
+const EMPTY_ARRAY = Object.freeze([]);
+
 export default function AgentCommandCenter({
   messages,
   isStreaming,
@@ -43,7 +45,7 @@ export default function AgentCommandCenter({
 
   const displayedMessages = useMemo(() => {
     if (!Array.isArray(messages) || messages.length === 0) {
-      return [];
+      return EMPTY_ARRAY;
     }
     return messages.slice(-12);
   }, [messages]);
@@ -56,6 +58,10 @@ export default function AgentCommandCenter({
     displayedMessages[displayedMessages.length - 1]?.content !== assistantMessage;
 
   const activeToolCalls = useMemo(() => {
+    if (!isStreaming) {
+      return EMPTY_ARRAY;
+    }
+
     const recent = Array.isArray(toolCalls) ? [...toolCalls].slice(-4).reverse() : [];
     const uniqueNames = [];
 
@@ -66,7 +72,7 @@ export default function AgentCommandCenter({
     }
 
     return uniqueNames;
-  }, [toolCalls]);
+  }, [isStreaming, toolCalls]);
 
   const userName = user?.displayName || "You";
   const userInitials = getInitials(userName);
@@ -79,11 +85,19 @@ export default function AgentCommandCenter({
 
 
 
+  const prevMessageCountRef = useRef(messages?.length ?? 0);
+
   useEffect(() => {
-    if (messagesEndRef.current && typeof messagesEndRef.current.scrollIntoView === "function") {
+    const currentCount = messages?.length ?? 0;
+    const isNewMessage = currentCount > prevMessageCountRef.current;
+    prevMessageCountRef.current = currentCount;
+
+    const shouldScroll = isNewMessage || (isStreaming && assistantMessage);
+
+    if (shouldScroll && messagesEndRef.current && typeof messagesEndRef.current.scrollIntoView === "function") {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [displayedMessages, assistantMessage, activeToolCalls]);
+  }, [messages?.length, isStreaming, assistantMessage, activeToolCalls]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -141,7 +155,7 @@ export default function AgentCommandCenter({
           ))
         )}
 
-        {(isStreaming || activeToolCalls.length > 0) && (
+        {isStreaming && (
           <div className="chat-row assistant">
             <div className="avatar assistant-avatar" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -1,5 +1,5 @@
 import React from "react";
-import ReactMarkdown from "react-markdown";
+import AgentMarkdown from "../../agent/chat/AgentMarkdown";
 import { getMatchedPlaces, matchPlaceMentions } from "../../../lib/trip-dashboard/placeEntities.js";
 import RichItineraryMessage from "./RichItineraryMessage.jsx";
 
@@ -35,30 +35,6 @@ function PlaceLinkedText({ children, placeEntities, selectedPlaceId, onPlaceSele
   );
 }
 
-function renderLinkedChildren(children, placeEntities, selectedPlaceId, onPlaceSelect) {
-  return React.Children.map(children, (child) => {
-    if (typeof child === "string" || typeof child === "number") {
-      return (
-        <PlaceLinkedText placeEntities={placeEntities} selectedPlaceId={selectedPlaceId} onPlaceSelect={onPlaceSelect}>
-          {child}
-        </PlaceLinkedText>
-      );
-    }
-
-    if (React.isValidElement(child) && child.type === PlaceLinkedText) {
-      return child;
-    }
-
-    if (React.isValidElement(child) && child.props?.children) {
-      return React.cloneElement(child, {
-        children: renderLinkedChildren(child.props.children, placeEntities, selectedPlaceId, onPlaceSelect),
-      });
-    }
-
-    return child;
-  });
-}
-
 function PlaceCards({ places, selectedPlaceId, onPlaceSelect }) {
   if (!Array.isArray(places) || places.length === 0) {
     return null;
@@ -89,6 +65,37 @@ function PlaceCards({ places, selectedPlaceId, onPlaceSelect }) {
   );
 }
 
+function MarkdownContent({
+  content,
+  placeEntities,
+  selectedPlaceId,
+  onPlaceSelect,
+  showPlaceLinks = true,
+  showPlaceCards = true,
+}) {
+  const matchedPlaces = showPlaceCards ? getMatchedPlaces(content, placeEntities) : [];
+
+  const renderText = showPlaceLinks
+    ? (text, key) => (
+        <PlaceLinkedText
+          key={key}
+          placeEntities={placeEntities}
+          selectedPlaceId={selectedPlaceId}
+          onPlaceSelect={onPlaceSelect}
+        >
+          {text}
+        </PlaceLinkedText>
+      )
+    : undefined;
+
+  return (
+    <div className="markdown-content">
+      <AgentMarkdown content={content} renderText={renderText} />
+      <PlaceCards places={matchedPlaces} selectedPlaceId={selectedPlaceId} onPlaceSelect={onPlaceSelect} />
+    </div>
+  );
+}
+
 export default function ChatMessage({
   message,
   isUser,
@@ -100,7 +107,6 @@ export default function ChatMessage({
   selectedPlaceId = "",
   onPlaceSelect,
 }) {
-  const matchedPlaces = isUser ? [] : getMatchedPlaces(message?.content, placeEntities);
   const shouldRenderRichItinerary = !isUser && renderAsItinerary && itinerary;
 
   return (
@@ -122,43 +128,33 @@ export default function ChatMessage({
           {isUser ? (
             <p>{message.content}</p>
           ) : shouldRenderRichItinerary ? (
-            <RichItineraryMessage
-              itinerary={itinerary}
+            <div className="itinerary-message-stack">
+              <RichItineraryMessage
+                itinerary={itinerary}
+                placeEntities={placeEntities}
+                selectedPlaceId={selectedPlaceId}
+                onPlaceSelect={onPlaceSelect}
+              />
+              {String(message?.content ?? "").trim() ? (
+                <div className="itinerary-message-followup">
+                  <MarkdownContent
+                    content={message.content}
+                    placeEntities={placeEntities}
+                    selectedPlaceId={selectedPlaceId}
+                    onPlaceSelect={onPlaceSelect}
+                    showPlaceLinks={false}
+                    showPlaceCards={false}
+                  />
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <MarkdownContent
+              content={message.content}
               placeEntities={placeEntities}
               selectedPlaceId={selectedPlaceId}
               onPlaceSelect={onPlaceSelect}
             />
-          ) : (
-            <div className="markdown-content">
-              <ReactMarkdown
-                components={{
-                  p({ children }) {
-                    return <p>{renderLinkedChildren(children, placeEntities, selectedPlaceId, onPlaceSelect)}</p>;
-                  },
-                  li({ children }) {
-                    return <li>{renderLinkedChildren(children, placeEntities, selectedPlaceId, onPlaceSelect)}</li>;
-                  },
-                  strong({ children }) {
-                    return <strong>{renderLinkedChildren(children, placeEntities, selectedPlaceId, onPlaceSelect)}</strong>;
-                  },
-                  em({ children }) {
-                    return <em>{renderLinkedChildren(children, placeEntities, selectedPlaceId, onPlaceSelect)}</em>;
-                  },
-                  h1({ children }) {
-                    return <h1>{renderLinkedChildren(children, placeEntities, selectedPlaceId, onPlaceSelect)}</h1>;
-                  },
-                  h2({ children }) {
-                    return <h2>{renderLinkedChildren(children, placeEntities, selectedPlaceId, onPlaceSelect)}</h2>;
-                  },
-                  h3({ children }) {
-                    return <h3>{renderLinkedChildren(children, placeEntities, selectedPlaceId, onPlaceSelect)}</h3>;
-                  },
-                }}
-              >
-                {message.content}
-              </ReactMarkdown>
-              <PlaceCards places={matchedPlaces} selectedPlaceId={selectedPlaceId} onPlaceSelect={onPlaceSelect} />
-            </div>
           )}
         </div>
       </div>

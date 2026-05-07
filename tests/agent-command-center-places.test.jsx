@@ -160,7 +160,60 @@ describe("AgentCommandCenter place interactions", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Olongapo Route Draft" })).toBeInTheDocument();
+    expect(
+      screen.getByText((_, element) => element?.tagName === "P" && element.textContent === "Coco Lime is a strong lunch option."),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /show coco lime on map/i })).not.toBeInTheDocument();
+  });
+
+  it("stacks a rich itinerary above the final assistant markdown", () => {
+    const itinerary = {
+      id: "itinerary-1",
+      title: "Olongapo Route Draft",
+      days: [
+        {
+          id: "day-1",
+          dayNumber: 1,
+          title: "Food route",
+          items: [
+            {
+              id: "item-1",
+              title: "Lunch at Coco Lime",
+              placeSnapshotId: "snap-coco",
+              placeSnapshot: {
+                id: "snap-coco",
+                name: "Coco Lime",
+                latitude: 14.827,
+                longitude: 120.285,
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    render(
+      <ChatMessage
+        message={{
+          id: "assistant-5",
+          role: "assistant",
+          content: "Final agent notes: review timing before sending to the client.",
+        }}
+        isUser={false}
+        userName="Jerald"
+        userInitials="JS"
+        itinerary={itinerary}
+        renderAsItinerary
+        placeEntities={placeEntities}
+        selectedPlaceId=""
+        onPlaceSelect={vi.fn()}
+      />,
+    );
+
+    const itineraryHeading = screen.getByRole("heading", { name: "Olongapo Route Draft" });
+    const finalMarkdown = screen.getByText("Final agent notes: review timing before sending to the client.");
+
+    expect(itineraryHeading.compareDocumentPosition(finalMarkdown)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
   it("renders saved itinerary-tagged assistant messages as rich output without converting streaming text", () => {
@@ -212,5 +265,30 @@ describe("AgentCommandCenter place interactions", () => {
 
     expect(screen.getAllByRole("heading", { name: "Olongapo Route Draft" })).toHaveLength(1);
     expect(screen.getByRole("button", { name: /show coco lime on map/i })).toBeInTheDocument();
+  });
+
+  it("does not keep the tool activity bubble after streaming ends", () => {
+    render(
+      <AgentCommandCenter
+        messages={[
+          { id: "assistant-6", role: "assistant", content: "Itinerary created.", metadata: { itineraryId: "itinerary-1" } },
+        ]}
+        isStreaming={false}
+        assistantMessage=""
+        toolCalls={[{ name: "create_itinerary", status: "completed" }]}
+        dispatchAgentMessage={vi.fn()}
+        composerInput=""
+        setComposerInput={vi.fn()}
+        isSending={false}
+        agentError=""
+        user={{ displayName: "Jerald" }}
+        itinerary={{ id: "itinerary-1", title: "Draft", days: [] }}
+        placeEntities={[]}
+        selectedPlaceId=""
+        onPlaceSelect={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText("Agent working")).not.toBeInTheDocument();
   });
 });

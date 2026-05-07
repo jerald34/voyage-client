@@ -1,0 +1,120 @@
+/* AgentMarkdown.css */
+
+.markdown-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  line-height: 1.6;
+}
+
+.markdown-paragraph {
+  margin: 0;
+}
+
+.markdown-heading {
+  margin: 12px 0 4px 0;
+  line-height: 1.25;
+  font-weight: 700;
+  color: var(--voyage-primary);
+}
+
+.markdown-heading.level-1 { font-size: 20px; }
+.markdown-heading.level-2 { font-size: 18px; }
+.markdown-heading.level-3 { font-size: 16px; }
+
+.markdown-list {
+  margin: 4px 0;
+  padding-left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.markdown-list.unordered { list-style-type: disc; }
+.markdown-list.ordered { list-style-type: decimal; }
+
+.markdown-blockquote {
+  margin: 8px 0;
+  padding: 8px 16px;
+  border-left: 4px solid var(--voyage-secondary);
+  background: rgba(215, 122, 97, 0.05);
+  border-radius: 0 12px 12px 0;
+  color: var(--voyage-text-soft);
+  font-style: italic;
+}
+
+.markdown-code-block {
+  margin: 8px 0;
+  padding: 14px;
+  border-radius: 12px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.inline-code {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  background-color: rgba(175, 184, 193, 0.2);
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.markdown-link {
+  color: var(--voyage-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 600;
+}
+
+.markdown-link:hover {
+  color: var(--voyage-primary);
+}
+
+/* ── Markdown Table ─────────────────────────────────────────── */
+
+.markdown-table-wrapper {
+  overflow-x: auto;
+  margin: 12px 0;
+  border-radius: 12px;
+  border: 1px solid var(--voyage-border);
+  background: white;
+}
+
+.markdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.markdown-table th,
+.markdown-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--voyage-border);
+  text-align: left;
+}
+
+.markdown-table th {
+  background: var(--voyage-surface-soft, #f8f9fa);
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--voyage-primary);
+}
+
+.markdown-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.markdown-table tbody tr:nth-child(even) {
+  background: #fafafa;
+}
+
+.markdown-table tbody tr:hover {
+  background: rgba(215, 122, 97, 0.04);
+}
