@@ -39,6 +39,79 @@ function createKey(prefix, index) {
   return `${prefix}-${index}`;
 }
 
+/* ── Table helpers ─────────────────────────────────────────────── */
+
+/** A line looks like a table row if it contains at least one pipe character */
+function isTableRow(line) {
+  return line.trim().includes('|');
+}
+
+/** The separator row must consist only of pipes, dashes, colons and spaces */
+function isTableSeparator(line) {
+  return /^\|?[\s:]*-{2,}[\s:|-]*\|?$/.test(line.trim());
+}
+
+/** Split a pipe-delimited row into cell strings */
+function splitTableRow(line) {
+  let trimmed = line.trim();
+  if (trimmed.startsWith('|')) trimmed = trimmed.slice(1);
+  if (trimmed.endsWith('|')) trimmed = trimmed.slice(0, -1);
+  return trimmed.split('|').map((c) => c.trim());
+}
+
+/** Derive column alignments from a separator row (left / center / right / null) */
+function parseAlignments(sepLine) {
+  return splitTableRow(sepLine).map((cell) => {
+    const left = cell.startsWith(':');
+    const right = cell.endsWith(':');
+    if (left && right) return 'center';
+    if (right) return 'right';
+    if (left) return 'left';
+    return null;
+  });
+}
+
+function renderTable(headerLine, separatorLine, bodyLines, blockIndex) {
+  const headers = splitTableRow(headerLine);
+  const alignments = parseAlignments(separatorLine);
+  const rows = bodyLines.map(splitTableRow);
+
+  return (
+    <div key={createKey('table-wrap', blockIndex)} className="markdown-table-wrapper">
+      <table className="markdown-table">
+        <thead>
+          <tr>
+            {headers.map((cell, ci) => (
+              <th
+                key={createKey(`th-${blockIndex}`, ci)}
+                style={alignments[ci] ? { textAlign: alignments[ci] } : undefined}
+              >
+                {renderInline(cell, `th-${blockIndex}-${ci}`)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, ri) => (
+            <tr key={createKey(`tr-${blockIndex}`, ri)}>
+              {headers.map((_, ci) => (
+                <td
+                  key={createKey(`td-${blockIndex}-${ri}`, ci)}
+                  style={alignments[ci] ? { textAlign: alignments[ci] } : undefined}
+                >
+                  {renderInline(row[ci] ?? '', `td-${blockIndex}-${ri}-${ci}`)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ── Inline rendering ──────────────────────────────────────────── */
+
 function renderInline(text, keyPrefix = 'inline') {
   const nodes = [];
   let tokenIndex = 0;
@@ -154,6 +227,30 @@ function renderList(items, ordered, index) {
   );
 }
 
+/* ── Detect whether the current position starts a GFM table ──── */
+
+function tryParseTable(lines, startIndex) {
+  // We need at least 2 lines: header + separator
+  if (startIndex + 1 >= lines.length) return null;
+
+  const headerLine = lines[startIndex];
+  const sepLine = lines[startIndex + 1];
+
+  if (!isTableRow(headerLine) || !isTableSeparator(sepLine)) return null;
+
+  // Gather body rows (continue while lines contain pipes)
+  const bodyLines = [];
+  let j = startIndex + 2;
+  while (j < lines.length && !isBlankLine(lines[j]) && isTableRow(lines[j])) {
+    bodyLines.push(lines[j]);
+    j += 1;
+  }
+
+  return { headerLine, sepLine, bodyLines, endIndex: j };
+}
+
+/* ── Main block parser ─────────────────────────────────────────── */
+
 export function renderMarkdownContent(content) {
   const text = String(content ?? '').replace(/\r\n/g, '\n');
   if (!text.trim()) {
@@ -220,6 +317,22 @@ export function renderMarkdownContent(content) {
         i += 1;
       }
       blocks.push(renderList(items, ordered, blockIndex));
+      blockIndex += 1;
+      continue;
+    }
+
+    /* ── Table detection (must come before paragraph fallback) ── */
+    const tableResult = tryParseTable(lines, i);
+    if (tableResult) {
+      blocks.push(
+        renderTable(
+          tableResult.headerLine,
+          tableResult.sepLine,
+          tableResult.bodyLines,
+          blockIndex,
+        ),
+      );
+      i = tableResult.endIndex;
       blockIndex += 1;
       continue;
     }

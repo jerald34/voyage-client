@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import ChatMessage from "../app/components/trip-dashboard/command-center/ChatMessage.jsx";
 import {
-  getAssistantMessageItineraryId,
+  getAssistantMessageItineraryIdFromPendingTag,
   getNextPlanningContextAfterDelete,
   shouldApplyItineraryFetchResult,
   tagAssistantMessageByCompletedContent,
@@ -199,19 +199,25 @@ describe("HomePage itinerary chat helpers", () => {
     })).toBe(false);
   });
 
-  it("does not tag ordinary assistant replies just because the thread already has an itinerary", () => {
-    const existingItinerary = { id: "itinerary-1" };
-
-    expect(getAssistantMessageItineraryId({
-      currentItinerary: existingItinerary,
-      lastCompletedItineraryTool: null,
-      lastItineraryUpdate: null,
+  it("does not tag ordinary assistant replies unless they match a pending itinerary tag", () => {
+    expect(getAssistantMessageItineraryIdFromPendingTag({
+      pendingTag: {
+        targetKey: "draft:thread-1",
+        content: "Generated itinerary response",
+        itineraryId: "itinerary-1",
+      },
+      targetKey: "draft:thread-1",
+      completedContent: "Hello! How can I assist you with your travel planning today?",
     })).toBe("");
 
-    expect(getAssistantMessageItineraryId({
-      currentItinerary: existingItinerary,
-      lastCompletedItineraryTool: { output: { itinerary: { id: "itinerary-1" } } },
-      lastItineraryUpdate: null,
+    expect(getAssistantMessageItineraryIdFromPendingTag({
+      pendingTag: {
+        targetKey: "draft:thread-1",
+        content: "Generated itinerary response",
+        itineraryId: "itinerary-1",
+      },
+      targetKey: "draft:thread-1",
+      completedContent: "Generated itinerary response",
     })).toBe("itinerary-1");
   });
 

@@ -140,6 +140,50 @@
   margin-bottom: 0;
 }
 
+/* ── Markdown Table ─────────────────────────────────────────── */
+
+.markdown-table-wrapper {
+  overflow-x: auto;
+  margin: 8px 0;
+  border-radius: 10px;
+  border: 1px solid var(--voyage-border);
+}
+
+.markdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.markdown-table th,
+.markdown-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--voyage-border);
+  white-space: nowrap;
+}
+
+.markdown-table th {
+  background: var(--voyage-surface-soft, rgba(0,0,0,0.03));
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--voyage-primary);
+}
+
+.markdown-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.markdown-table tbody tr:nth-child(even) {
+  background: var(--voyage-surface-soft, rgba(0,0,0,0.015));
+}
+
+.markdown-table tbody tr:hover {
+  background: rgba(215, 122, 97, 0.06);
+}
+
 .place-inline-link {
   display: inline;
   border: none;

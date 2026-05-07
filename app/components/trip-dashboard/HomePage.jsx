@@ -81,12 +81,12 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     isStreaming,
     runStatus,
     assistantMessage,
+    completedMessageContent,
     toolCalls,
     mapMarkers,
     routeEstimates,
     activeToolLabel,
     lastItineraryUpdate,
-    lastCompletedItineraryTool,
     error: streamError,
     startStream,
   } = useAgentRunStream(agencyId ?? "");
@@ -118,27 +118,44 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     ensureTripThreadState(activeContext.id).catch(e => console.error(e));
   }, [activeContext, agencyId]);
 
+  // Clear stale refs from previous runs so they don't pollute the current
+  // run's itinerary tagging logic. Without this, a greeting message from
+  // run 1 would be wrongly tagged as the itinerary from run 2.
+  useEffect(() => {
+    if (runStatus === "running") {
+      completedAssistantMessageRef.current = null;
+    }
+  }, [runStatus]);
+
   // Stream updates handling (Keeping this here for now as it couples with useAgentRunStream and UI states)
   useEffect(() => {
-    if (runStatus !== "completed" || !assistantMessage || !runTargetRef.current) return;
+    if (runStatus !== "completed" || !runTargetRef.current) return;
+    // Prefer the authoritative message.completed content over the accumulated
+    // streaming deltas.  completedMessageContent is set from the
+    // message.completed SSE event which carries the server-persisted assistant
+    // response.  assistantMessage may still contain stale/concatenated deltas
+    // from the initial model output + synthesis phases.
+    const finalContent = (completedMessageContent ?? assistantMessage ?? "").trim();
+    if (!finalContent) return;
     const targetKey = runTargetRef.current;
-    const completedContent = assistantMessage.trim();
     const runTarget = parseRunTargetKey(targetKey);
     if (!runTarget) return;
 
     const update = (prev) => {
       const current = prev[runTarget.id] || { messages: [], loaded: false };
-      if (current.messages.some(m => m.role === "assistant" && m.content.trim() === completedContent)) return prev;
-      completedAssistantMessageRef.current = { targetKey, content: completedContent };
-      const itineraryId = getAssistantMessageItineraryId({
-        currentItinerary: current.itinerary,
-        lastCompletedItineraryTool,
-        lastItineraryUpdate,
-      });
+      if (current.messages.some(m => m.role === "assistant" && m.content.trim() === finalContent)) return prev;
+      completedAssistantMessageRef.current = { targetKey, content: finalContent };
+      // If an itinerary was created/updated during this run, tag this
+      // message so it renders as the rich itinerary card.
+      // lastItineraryUpdate is a React state value set by the
+      // itinerary.updated SSE event and reset on each new stream, so
+      // it is scoped to the current run and available in the same
+      // render cycle — no ref timing issues.
+      const itineraryId = lastItineraryUpdate ? String(lastItineraryUpdate) : "";
       const message = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: assistantMessage,
+        content: finalContent,
         ...(itineraryId ? { itineraryId } : {}),
       };
       return { ...prev, [runTarget.id]: { ...current, loaded: true, messages: [...current.messages, message] } };
@@ -146,7 +163,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
 
     if (runTarget.type === "draft") setDraftThreadStates(update);
     else setTripStates(update);
-  }, [runStatus, assistantMessage, lastCompletedItineraryTool, lastItineraryUpdate]);
+  }, [runStatus, completedMessageContent, assistantMessage, lastItineraryUpdate]);
 
   useEffect(() => {
     if (!agencyId || !lastItineraryUpdate || !runTargetRef.current) return;
@@ -155,8 +172,6 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     const targetKey = runTargetRef.current;
     const runTarget = parseRunTargetKey(targetKey);
     if (!runTarget) return;
-    const completedAssistant =
-      completedAssistantMessageRef.current?.targetKey === targetKey ? completedAssistantMessageRef.current : null;
     let isCancelled = false;
 
     fetchItineraryDraft(agencyId, lastItineraryUpdate).then(res => {
@@ -181,15 +196,12 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
             ...current,
             itinerary,
             loaded: true,
-            messages: tagAssistantMessageByCompletedContent(current.messages, itinerary?.id, completedAssistant),
+            messages: current.messages || [],
           },
         };
       };
       if (runTarget.type === "draft") setDraftThreadStates(update);
       else setTripStates(update);
-      if (completedAssistantMessageRef.current?.targetKey === targetKey) {
-        completedAssistantMessageRef.current = null;
-      }
     }).catch(e => console.error(e));
 
     return () => {
@@ -434,19 +446,13 @@ export function shouldApplyItineraryFetchResult({
   );
 }
 
-export function getAssistantMessageItineraryId({
-  currentItinerary,
-  lastCompletedItineraryTool,
-  lastItineraryUpdate,
+export function getAssistantMessageItineraryIdFromPendingTag({
+  pendingTag,
+  targetKey,
+  completedContent,
 }) {
-  const currentItineraryId = currentItinerary?.id != null ? String(currentItinerary.id) : "";
-  if (!currentItineraryId) return "";
-
-  const toolItineraryId =
-    lastCompletedItineraryTool?.output?.itinerary?.id ??
-    lastCompletedItineraryTool?.output?.id ??
-    "";
-  const completedItineraryId = String(toolItineraryId || lastItineraryUpdate || "");
-
-  return completedItineraryId && completedItineraryId === currentItineraryId ? completedItineraryId : "";
+  if (!pendingTag?.itineraryId || pendingTag?.targetKey !== targetKey) return "";
+  const pendingContent = String(pendingTag.content ?? "").trim();
+  const currentContent = String(completedContent ?? "").trim();
+  return pendingContent && pendingContent === currentContent ? String(pendingTag.itineraryId) : "";
 }
