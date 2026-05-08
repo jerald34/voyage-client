@@ -10,6 +10,7 @@ import {
   InfoWindow,
   useMapsLibrary,
 } from "@vis.gl/react-google-maps";
+import { getGoogleMapsPlaceUrl } from "../../../lib/trip-dashboard/placeEntities.js";
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "a1950eb4eae71842fa9590f9";
@@ -21,10 +22,14 @@ function mapItemToPoint(item, index) {
   const rawLng = Number(item?.lng ?? item?.longitude ?? item?.placeSnapshot?.longitude);
   if (Number.isFinite(rawLat) && Number.isFinite(rawLng)) {
     return {
+      id: item?.__placeEntityId || `point-${index}`,
       lat: rawLat,
       lng: rawLng,
-      title: item?.title || `Itinerary item ${index + 1}`,
+      title: item?.placeSnapshot?.name || item?.placeName || item?.title || `Itinerary item ${index + 1}`,
       description: item?.description || item?.type || "",
+      formattedAddress: item?.placeSnapshot?.formattedAddress || "",
+      dayLabel: item?.__dayNumber ? `Day ${item.__dayNumber}` : "",
+      timeLabel: item?.startTime && item?.endTime ? `${item.startTime} - ${item.endTime}` : item?.startTime || "",
     };
   }
 
@@ -40,7 +45,7 @@ function normalizeLiveMarker(marker, index) {
   }
 
   return {
-    id: String(marker?.id || marker?.placeSnapshotId || `live-marker-${index}`),
+    id: `live:${marker?.id || marker?.placeSnapshotId || `live-marker-${index}`}`,
     name: marker?.name || marker?.formattedAddress || marker?.address || `Resolved location ${index + 1}`,
     formattedAddress: marker?.formattedAddress || marker?.address || "",
     lat: rawLat,
@@ -223,9 +228,57 @@ function FocusLiveMarker({ liveMarkers }) {
   return null;
 }
 
-export default function ItineraryLiveMap({ items = [], liveMarkers = [], routeEstimates = [], activeIndex = -1, onHoverItem }) {
+function FocusSelectedPlace({ selectedPlace }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || !selectedPlace) return;
+    map.panTo({ lat: selectedPlace.lat, lng: selectedPlace.lng });
+    const currentZoom = map.getZoom();
+    if (!currentZoom || currentZoom < 15) {
+      map.setZoom(15);
+    }
+  }, [map, selectedPlace]);
+
+  return null;
+}
+
+function PlaceDetailPanel({ place, onClose }) {
+  if (!place) return null;
+
+  const mapsUrl = getGoogleMapsPlaceUrl(place);
+
+  return (
+    <aside className="map-place-detail" aria-live="polite">
+      <div className="map-place-detail-header">
+        <div>
+          <span>{place.source === "live" ? "Live map result" : place.dayLabel || "Itinerary stop"}</span>
+          <h3>{place.name}</h3>
+        </div>
+        <button type="button" onClick={onClose} aria-label="Close place detail">x</button>
+      </div>
+      {place.formattedAddress ? <p>{place.formattedAddress}</p> : null}
+      {place.timeLabel ? <small>{place.timeLabel}</small> : null}
+      {mapsUrl ? (
+        <a href={mapsUrl} target="_blank" rel="noreferrer noopener">
+          Open in Google Maps
+        </a>
+      ) : null}
+    </aside>
+  );
+}
+
+export default function ItineraryLiveMap({
+  items = [],
+  liveMarkers = [],
+  routeEstimates = [],
+  activeIndex = -1,
+  onHoverItem,
+  selectedPlaceId = "",
+  selectedPlace = null,
+  onSelectPlace,
+}) {
   const [selectedPoint, setSelectedPoint] = useState(null);
-  const [hoveredPoint, setHoveredPoint] = useState(null);
 
   const points = useMemo(() => items.map((item, index) => mapItemToPoint(item, index)).filter(Boolean), [items]);
   const liveMarkerPoints = useMemo(
@@ -244,9 +297,29 @@ export default function ItineraryLiveMap({ items = [], liveMarkers = [], routeEs
   const viewportPoints = useMemo(() => [...points, ...liveMarkerPoints], [points, liveMarkerPoints]);
   const center = viewportPoints[0] || EMPTY_MAP_CENTER;
 
+  useEffect(() => {
+    if (!selectedPlace) return;
+    setSelectedPoint({
+      id: selectedPlace.id,
+      lat: selectedPlace.lat,
+      lng: selectedPlace.lng,
+      title: selectedPlace.name,
+      name: selectedPlace.name,
+      description: selectedPlace.description,
+      formattedAddress: selectedPlace.formattedAddress,
+    });
+  }, [selectedPlace]);
+
+  useEffect(() => {
+    if (!selectedPlaceId) {
+      setSelectedPoint(null);
+    }
+  }, [selectedPlaceId]);
+
   const handleMarkerClick = useCallback((point) => {
     setSelectedPoint(point);
-  }, []);
+    onSelectPlace?.(point.id);
+  }, [onSelectPlace]);
 
   return (
     <div className="itinerary-live-map-shell">
@@ -262,6 +335,7 @@ export default function ItineraryLiveMap({ items = [], liveMarkers = [], routeEs
           {viewportPoints.length > 0 && <FitBounds points={viewportPoints} />}
           <FocusActiveStop points={points} activeIndex={activeIndex} />
           <FocusLiveMarker liveMarkers={liveMarkerPoints} />
+          <FocusSelectedPlace selectedPlace={selectedPlace} />
 
           {/* Planned path */}
           {points.length > 1 && (
@@ -286,7 +360,7 @@ export default function ItineraryLiveMap({ items = [], liveMarkers = [], routeEs
 
           {/* Itinerary Markers */}
           {points.map((point, index) => {
-            const isActive = activeIndex === index;
+            const isActive = activeIndex === index || selectedPlaceId === point.id;
             return (
               <AdvancedMarker
                 key={`point-${index}-${point.lat}-${point.lng}`}
@@ -317,10 +391,10 @@ export default function ItineraryLiveMap({ items = [], liveMarkers = [], routeEs
               onClick={() => handleMarkerClick(marker)}
             >
               <Pin
-                background="#d77a61"
+                background={selectedPlaceId === marker.id ? "#2563eb" : "#d77a61"}
                 borderColor="#b05b45"
                 glyphColor="#ffffff"
-                scale={1.1}
+                scale={selectedPlaceId === marker.id ? 1.22 : 1.1}
               />
             </AdvancedMarker>
           ))}
@@ -352,6 +426,8 @@ export default function ItineraryLiveMap({ items = [], liveMarkers = [], routeEs
           <span>Locations will appear after the backend resolves itinerary places.</span>
         </div>
       ) : null}
+
+      <PlaceDetailPanel place={selectedPlace} onClose={() => onSelectPlace?.("")} />
 
       <style jsx>{`
         .itinerary-live-map-shell {
@@ -394,6 +470,77 @@ export default function ItineraryLiveMap({ items = [], liveMarkers = [], routeEs
           color: #64748b;
           font-size: 13px;
           line-height: 1.5;
+        }
+
+        .map-place-detail {
+          position: absolute;
+          left: 18px;
+          bottom: 18px;
+          z-index: 520;
+          display: grid;
+          gap: 8px;
+          width: min(360px, calc(100% - 36px));
+          padding: 16px;
+          border-radius: 18px;
+          background: rgba(15, 23, 42, 0.92);
+          color: white;
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.28);
+          backdrop-filter: blur(12px);
+        }
+
+        .map-place-detail-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .map-place-detail-header span,
+        .map-place-detail small {
+          color: rgba(255, 255, 255, 0.62);
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+
+        .map-place-detail h3 {
+          margin: 2px 0 0;
+          color: white;
+          font-size: 20px;
+          line-height: 1.2;
+        }
+
+        .map-place-detail p {
+          margin: 0;
+          color: rgba(255, 255, 255, 0.72);
+          font-size: 13px;
+          line-height: 1.45;
+        }
+
+        .map-place-detail button {
+          width: 32px;
+          height: 32px;
+          border: none;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.12);
+          color: white;
+          cursor: pointer;
+          font-size: 20px;
+          line-height: 1;
+        }
+
+        .map-place-detail a {
+          display: inline-flex;
+          justify-content: center;
+          margin-top: 4px;
+          border-radius: 999px;
+          background: #dbeafe;
+          color: #0f3f86;
+          padding: 9px 12px;
+          font-size: 13px;
+          font-weight: 800;
+          text-decoration: none;
         }
       `}</style>
     </div>

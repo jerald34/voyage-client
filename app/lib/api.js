@@ -51,10 +51,23 @@ export async function fetchAgentThread(agencyId, threadId) {
   return fetchApi(`/agencies/${agencyId}/agent/threads/${threadId}`);
 }
 
+export async function deleteAgentThread(agencyId, threadId) {
+  return fetchApi(`/agencies/${agencyId}/agent/threads/${threadId}`, {
+    method: 'DELETE'
+  });
+}
+
 export async function sendMessage(agencyId, threadId, content) {
   return fetchApi(`/agencies/${agencyId}/agent/threads/${threadId}/messages`, {
     method: 'POST',
     body: JSON.stringify({ content })
+  });
+}
+
+export async function approveAgentThreadItinerary(agencyId, threadId, payload) {
+  return fetchApi(`/agencies/${agencyId}/agent/threads/${threadId}/approve-itinerary`, {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }
 
