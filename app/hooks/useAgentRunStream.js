@@ -74,6 +74,93 @@ function normalizeRouteEstimate(payload, index) {
   };
 }
 
+// Reducer helpers for granular itinerary streaming events. They patch a cached itinerary in place
+// so the existing rich-itinerary renderer can re-render smoothly without a full re-fetch on every event.
+function patchDayItems(itinerary, dayId, mapItems) {
+  if (!itinerary || !Array.isArray(itinerary.days)) return itinerary;
+  const days = itinerary.days.map((day) => {
+    if (day?.id !== dayId) return day;
+    const items = Array.isArray(day.items) ? day.items : [];
+    return { ...day, items: mapItems(items) };
+  });
+  return { ...itinerary, days };
+}
+
+function applyItineraryItemAdded(itinerary, payload) {
+  return patchDayItems(itinerary, payload?.dayId, (items) => {
+    if (!payload?.item) return items;
+    const exists = items.some((item) => item?.id && item.id === payload.item.id);
+    if (exists) {
+      return items.map((item) => (item?.id === payload.item.id ? payload.item : item));
+    }
+    return [...items, payload.item].sort(
+      (a, b) => (Number(a?.sortOrder ?? 0) - Number(b?.sortOrder ?? 0)),
+    );
+  });
+}
+
+function applyItineraryItemUpdated(itinerary, payload) {
+  if (!payload?.item) return itinerary;
+  return patchDayItems(itinerary, payload?.dayId, (items) =>
+    items.map((item) => (item?.id === payload.item.id ? { ...item, ...payload.item } : item)),
+  );
+}
+
+function applyItineraryItemRemoved(itinerary, payload) {
+  if (!itinerary) return itinerary;
+  if (Array.isArray(payload?.items)) {
+    return patchDayItems(itinerary, payload.dayId, () => payload.items);
+  }
+  return patchDayItems(itinerary, payload?.dayId, (items) =>
+    items.filter((item) => item?.id !== payload?.itemId),
+  );
+}
+
+function applyItineraryItemMoved(itinerary, payload) {
+  if (!itinerary || !Array.isArray(itinerary.days)) return itinerary;
+  const days = itinerary.days.map((day) => {
+    if (day?.id === payload?.fromDayId && Array.isArray(payload?.fromItems)) {
+      return { ...day, items: payload.fromItems };
+    }
+    if (day?.id === payload?.toDayId && Array.isArray(payload?.toItems)) {
+      return { ...day, items: payload.toItems };
+    }
+    return day;
+  });
+  return { ...itinerary, days };
+}
+
+function applyItineraryDayAdded(itinerary, payload) {
+  if (!itinerary || !payload?.day) return itinerary;
+  const days = Array.isArray(itinerary.days) ? itinerary.days : [];
+  const exists = days.some((day) => day?.id === payload.day.id);
+  const next = exists
+    ? days.map((day) => (day?.id === payload.day.id ? payload.day : day))
+    : [...days, payload.day];
+  next.sort((a, b) => Number(a?.dayNumber ?? 0) - Number(b?.dayNumber ?? 0));
+  return { ...itinerary, days: next };
+}
+
+function applyItineraryDayUpdated(itinerary, payload) {
+  if (!itinerary || !payload?.day) return itinerary;
+  const days = Array.isArray(itinerary.days) ? itinerary.days : [];
+  return {
+    ...itinerary,
+    days: days.map((day) => (day?.id === payload.day.id ? { ...day, ...payload.day } : day)),
+  };
+}
+
+function applyItineraryDayRemoved(itinerary, payload) {
+  if (!itinerary) return itinerary;
+  if (Array.isArray(payload?.days)) {
+    return { ...itinerary, days: payload.days };
+  }
+  return {
+    ...itinerary,
+    days: (itinerary.days || []).filter((day) => day?.id !== payload?.dayId),
+  };
+}
+
 export function useAgentRunStream(agencyId) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [runStatus, setRunStatus] = useState('idle'); // idle, running, completed, failed
@@ -87,6 +174,8 @@ export function useAgentRunStream(agencyId) {
   const [lastItineraryUpdate, setLastItineraryUpdate] = useState(null);
   const [lastCompletedItineraryTool, setLastCompletedItineraryTool] = useState(null);
   const [completedMessageContent, setCompletedMessageContent] = useState(null);
+  // streamingItinerary is the in-flight cached itinerary patched by granular events.
+  const [streamingItinerary, setStreamingItinerary] = useState(null);
   const [error, setError] = useState(null);
 
   const eventSourceRef = useRef(null);
@@ -111,6 +200,7 @@ export function useAgentRunStream(agencyId) {
     setLastItineraryUpdate(null);
     setLastCompletedItineraryTool(null);
     setCompletedMessageContent(null);
+    setStreamingItinerary(null);
     setError(null);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
@@ -282,6 +372,93 @@ export function useAgentRunStream(agencyId) {
       setLastItineraryUpdate(data?.payload?.itineraryId || null);
     });
 
+    // Server sends: { type: "itinerary.created", payload: { itineraryId, version, status, itinerary } }
+    es.addEventListener('itinerary.created', (e) => {
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      const payload = data?.payload;
+      if (!payload?.itineraryId) return;
+      setLastItineraryUpdate(payload.itineraryId);
+      if (payload.itinerary) {
+        setStreamingItinerary(payload.itinerary);
+      }
+    });
+
+    // Server sends: { type: "itinerary.deleted", payload: { itineraryId, tripDeleted } }
+    es.addEventListener('itinerary.deleted', (e) => {
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      setLastItineraryUpdate(data?.payload?.itineraryId || null);
+      setStreamingItinerary(null);
+    });
+
+    // Granular streaming reducers patch the cached itinerary in place so the UI lights up
+    // card-by-card as the agent populates the trip.
+    es.addEventListener('itinerary.item.added', (e) => {
+      if (!isCurrentStream()) return;
+      const data = parseEventData(e);
+      const payload = data?.payload;
+      if (!payload?.itineraryId) return;
+      setLastItineraryUpdate(payload.itineraryId);
+      setStreamingItinerary((prev) => applyItineraryItemAdded(prev, payload));
+    });
+
+    es.addEventListener('itinerary.item.updated', (e) => {
+      if (!isCurrentStream()) return;
+      const data = parseEventData(e);
+      const payload = data?.payload;
+      if (!payload?.itineraryId) return;
+      setLastItineraryUpdate(payload.itineraryId);
+      setStreamingItinerary((prev) => applyItineraryItemUpdated(prev, payload));
+    });
+
+    es.addEventListener('itinerary.item.removed', (e) => {
+      if (!isCurrentStream()) return;
+      const data = parseEventData(e);
+      const payload = data?.payload;
+      if (!payload?.itineraryId) return;
+      setLastItineraryUpdate(payload.itineraryId);
+      setStreamingItinerary((prev) => applyItineraryItemRemoved(prev, payload));
+    });
+
+    es.addEventListener('itinerary.item.moved', (e) => {
+      if (!isCurrentStream()) return;
+      const data = parseEventData(e);
+      const payload = data?.payload;
+      if (!payload?.itineraryId) return;
+      setLastItineraryUpdate(payload.itineraryId);
+      setStreamingItinerary((prev) => applyItineraryItemMoved(prev, payload));
+    });
+
+    es.addEventListener('itinerary.day.added', (e) => {
+      if (!isCurrentStream()) return;
+      const data = parseEventData(e);
+      const payload = data?.payload;
+      if (!payload?.itineraryId) return;
+      setLastItineraryUpdate(payload.itineraryId);
+      setStreamingItinerary((prev) => applyItineraryDayAdded(prev, payload));
+    });
+
+    es.addEventListener('itinerary.day.updated', (e) => {
+      if (!isCurrentStream()) return;
+      const data = parseEventData(e);
+      const payload = data?.payload;
+      if (!payload?.itineraryId) return;
+      setLastItineraryUpdate(payload.itineraryId);
+      setStreamingItinerary((prev) => applyItineraryDayUpdated(prev, payload));
+    });
+
+    es.addEventListener('itinerary.day.removed', (e) => {
+      if (!isCurrentStream()) return;
+      const data = parseEventData(e);
+      const payload = data?.payload;
+      if (!payload?.itineraryId) return;
+      setLastItineraryUpdate(payload.itineraryId);
+      setStreamingItinerary((prev) => applyItineraryDayRemoved(prev, payload));
+    });
+
     // Server sends: { type: "run.started", payload: { runId } }
     es.addEventListener('run.started', () => {
       if (!isCurrentStream()) return;
@@ -349,6 +526,7 @@ export function useAgentRunStream(agencyId) {
     activeToolLabel,
     lastItineraryUpdate,
     lastCompletedItineraryTool,
+    streamingItinerary,
     error,
     startStream
   };

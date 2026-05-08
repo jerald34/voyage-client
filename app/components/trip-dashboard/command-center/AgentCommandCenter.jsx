@@ -3,6 +3,7 @@ import "./AgentCommandCenter.css";
 import ClientSwitcher from "./ClientSwitcher.jsx";
 import ChatMessage from "./ChatMessage.jsx";
 import ChatInput from "./ChatInput.jsx";
+import RichItineraryMessage from "./RichItineraryMessage.jsx";
 
 function getInitials(name) {
   const parts = String(name ?? "")
@@ -82,6 +83,28 @@ export default function AgentCommandCenter({
     if (!itineraryId || message?.role !== "assistant") return false;
     return String(message?.itineraryId ?? "") === itineraryId || String(message?.metadata?.itineraryId ?? "") === itineraryId;
   }
+
+  // While the agent is actively streaming, render an in-progress rich itinerary bubble so the user
+  // sees days and items light up card-by-card instead of waiting for run completion. Suppress it once
+  // a completed assistant message already shows the same itinerary (post-completion takeover) to
+  // avoid a double-render flicker.
+  const itineraryHasContent = useMemo(() => {
+    if (!itinerary?.id) return false;
+    const days = Array.isArray(itinerary.days) ? itinerary.days : [];
+    const hasItems = days.some((day) => Array.isArray(day?.items) && day.items.length > 0);
+    const hasTitle = typeof itinerary.title === "string" && itinerary.title.trim().length > 0;
+    return hasItems || hasTitle || days.length > 0;
+  }, [itinerary]);
+
+  const isItineraryAlreadyShownByCompletedMessage = useMemo(() => {
+    if (!itineraryId) return false;
+    return displayedMessages.some((message) => shouldRenderMessageAsItinerary(message));
+    // shouldRenderMessageAsItinerary is stable for this dependency window; itineraryId already triggers re-eval.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayedMessages, itineraryId]);
+
+  const showInProgressItineraryBubble =
+    isStreaming && !!itinerary?.id && itineraryHasContent && !isItineraryAlreadyShownByCompletedMessage;
 
 
 
@@ -186,6 +209,33 @@ export default function AgentCommandCenter({
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showInProgressItineraryBubble && (
+          <div className="chat-row assistant">
+            <div className="avatar assistant-avatar" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="m16 10-4 4-4-4" />
+              </svg>
+            </div>
+            <div className="message-content">
+              <div className="message-meta">
+                <span className="sender">Voyage Agent</span>
+                <span className="time">Agent</span>
+              </div>
+              <div className="bubble assistant-bubble">
+                <div className="itinerary-message-stack">
+                  <RichItineraryMessage
+                    itinerary={itinerary}
+                    placeEntities={placeEntities}
+                    selectedPlaceId={selectedPlaceId}
+                    onPlaceSelect={onPlaceSelect}
+                  />
+                </div>
               </div>
             </div>
           </div>

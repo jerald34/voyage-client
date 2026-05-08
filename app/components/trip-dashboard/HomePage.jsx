@@ -87,6 +87,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     routeEstimates,
     activeToolLabel,
     lastItineraryUpdate,
+    streamingItinerary,
     error: streamError,
     startStream,
   } = useAgentRunStream(agencyId ?? "");
@@ -164,6 +165,36 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     if (runTarget.type === "draft") setDraftThreadStates(update);
     else setTripStates(update);
   }, [runStatus, completedMessageContent, assistantMessage, lastItineraryUpdate]);
+
+  // While the agent is streaming granular events, mirror the in-flight itinerary into the active
+  // trip/draft state so RichItineraryMessage and ItineraryDraftPanel re-render in real time.
+  // The post-completion fetch below still runs for the canonical, place-snapshot-enriched copy.
+  useEffect(() => {
+    if (!streamingItinerary || !runTargetRef.current) return;
+    const targetKey = runTargetRef.current;
+    const runTarget = parseRunTargetKey(targetKey);
+    if (!runTarget) return;
+
+    const update = (prev) => {
+      const current = prev[runTarget.id] || {};
+      // Preserve any nested trip context the renderer expects, but replace days/title/summary as they stream.
+      const merged = {
+        ...(current.itinerary ?? {}),
+        ...streamingItinerary,
+      };
+      return {
+        ...prev,
+        [runTarget.id]: {
+          ...current,
+          itinerary: merged,
+          loaded: true,
+          messages: current.messages || [],
+        },
+      };
+    };
+    if (runTarget.type === "draft") setDraftThreadStates(update);
+    else setTripStates(update);
+  }, [streamingItinerary]);
 
   useEffect(() => {
     if (!agencyId || !lastItineraryUpdate || !runTargetRef.current) return;
