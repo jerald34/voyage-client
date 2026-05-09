@@ -28,6 +28,7 @@ export default function ItineraryDraftPanel({
   draftDays,
   draftVersion,
   onContinue = () => { },
+  primaryActionLabel = "Send to Client",
   dispatchAgentMessage,
   mapMarkers = [],
   routeEstimates = [],
@@ -171,7 +172,7 @@ export default function ItineraryDraftPanel({
                   </div>
                 ) : <div className="empty-itinerary"><p>No active itinerary generated.</p></div>}
               </div>
-              <footer className="card-footer"><button type="button" className="send-client-btn" onClick={onContinue}>Send to Client</button></footer>
+              <footer className="card-footer"><button type="button" className="send-client-btn" onClick={onContinue}>{primaryActionLabel}</button></footer>
             </>
           )}
         </article>

@@ -2,8 +2,9 @@
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 8px;
-  height: calc(100vh - 120px);
-  min-height: 0;
+  height: auto;
+  min-height: min(760px, calc(100vh - 140px));
+  align-items: stretch;
 }
 
 .client-sidebar-pane {
@@ -21,13 +22,16 @@
   padding: 16px;
   border-bottom: 1px solid var(--voyage-border);
   background: rgba(255, 255, 255, 0.4);
+  display: grid;
+  gap: 12px;
 }
 
 .section-title {
   font-family: "DM Serif Display", serif;
   font-size: 1.4rem;
   color: var(--voyage-primary);
-  margin-bottom: 16px;
+  margin: 0;
+  letter-spacing: -0.01em;
 }
 
 .search-box {
@@ -153,18 +157,52 @@
   align-items: center;
 }
 
-.client-meta h2 {
-  font-family: "DM Serif Display", serif;
-  font-size: 1.8rem;
-  margin-bottom: 4px;
+.client-meta-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
 }
 
-.client-badge {
+.client-meta-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.client-meta-copy h2 {
+  font-family: "DM Serif Display", serif;
+  font-size: 1.8rem;
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.client-meta-label {
   font-size: 0.7rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.15em;
   color: var(--voyage-secondary);
+}
+
+.saved-count-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(215, 122, 97, 0.12);
+  border: 1px solid rgba(215, 122, 97, 0.2);
+  color: var(--voyage-secondary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .workspace-layout {
@@ -208,17 +246,65 @@
   box-shadow: 0 8px 24px rgba(215, 122, 97, 0.12);
 }
 
+.trip-card-body {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
 .trip-card-body strong {
   display: block;
   font-size: 1.05rem;
   color: var(--voyage-primary);
-  margin-bottom: 4px;
+  margin: 0;
+  line-height: 1.25;
 }
 
 .trip-dates {
   font-size: 0.8rem;
   color: var(--voyage-text-soft);
   font-weight: 600;
+}
+
+.trip-status-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: rgba(34, 56, 67, 0.06);
+  color: var(--voyage-primary);
+  border: 1px solid rgba(34, 56, 67, 0.08);
+}
+
+.trip-status-chip.approved {
+  background: rgba(22, 163, 74, 0.1);
+  color: #166534;
+  border-color: rgba(22, 163, 74, 0.15);
+}
+
+.trip-status-chip.saved {
+  background: rgba(215, 122, 97, 0.1);
+  color: var(--voyage-secondary);
+  border-color: rgba(215, 122, 97, 0.16);
+}
+
+.trip-status-chip.pending {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.18);
+}
+
+.trip-status-chip.default {
+  background: rgba(34, 56, 67, 0.06);
+  color: var(--voyage-primary);
+  border-color: rgba(34, 56, 67, 0.08);
 }
 
 .itinerary-preview-area {
@@ -262,7 +348,7 @@
   justify-content: center;
   height: 100%;
   color: var(--voyage-text-soft);
-  gap: 20px;
+  gap: 18px;
   text-align: center;
   padding: 40px;
 }
@@ -274,13 +360,108 @@
 
 .empty-workspace h3 {
   font-family: "DM Serif Display", serif;
-  font-size: 2rem;
+  font-size: 1.9rem;
   color: var(--voyage-primary);
+  margin: 0;
+  line-height: 1.1;
+}
+
+.empty-workspace p {
+  max-width: 32rem;
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.6;
 }
 
 .empty-results {
-  padding: 20px;
+  padding: 22px 14px;
   text-align: center;
   color: var(--voyage-text-soft);
   font-style: italic;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 1200px) {
+  .client-itinerary-surface {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+
+  .trip-strip {
+    padding-bottom: 14px;
+  }
+}
+
+@media (max-width: 960px) {
+  .client-itinerary-surface {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: auto;
+  }
+
+  .client-sidebar-pane,
+  .workspace-pane {
+    min-height: 0;
+  }
+
+  .client-list {
+    max-height: 260px;
+  }
+
+  .workspace-header {
+    align-items: flex-start;
+  }
+
+  .client-meta-row {
+    flex-direction: column;
+  }
+
+  .saved-count-pill {
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .pane-header,
+  .workspace-header,
+  .itinerary-preview-area {
+    padding: 14px;
+  }
+
+  .client-card {
+    padding: 10px 12px;
+    gap: 12px;
+  }
+
+  .client-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+  }
+
+  .client-meta-copy h2 {
+    font-size: 1.5rem;
+  }
+
+  .saved-count-pill {
+    padding: 7px 10px;
+    font-size: 0.68rem;
+  }
+
+  .trip-strip {
+    padding: 12px 14px;
+  }
+
+  .trip-card {
+    min-width: 200px;
+    padding: 14px;
+  }
+
+  .empty-workspace {
+    padding: 28px 20px;
+  }
+
+  .empty-workspace h3 {
+    font-size: 1.6rem;
+  }
 }
