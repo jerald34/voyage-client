@@ -7,6 +7,7 @@ import {
   approveAgentThreadItinerary,
   deleteAgentThread,
   fetchItineraryDraft,
+  listAgencyTrips,
 } from "../../lib/api.js";
 import {
   getAgencyPortfolioSummary,
@@ -29,6 +30,24 @@ const getInitials = (name) => {
   return parts.length === 0 ? "VP" : parts.slice(0, 2).map(p => p[0]?.toUpperCase() ?? "").join("");
 };
 
+function mapTripStatus(dbStatus) {
+  const s = String(dbStatus ?? "").toUpperCase();
+  if (s === "APPROVED_INTERNAL") return "Approved";
+  if (s === "IN_REVIEW") return "Awaiting itinerary approval";
+  if (s === "ARCHIVED") return "Archived";
+  return "Draft";
+}
+
+function formatTripDates(startDate, endDate) {
+  if (!startDate) return "Dates pending";
+  const fmt = (d) => {
+    const date = new Date(d);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+  if (!endDate) return fmt(startDate);
+  return `${fmt(startDate)} - ${fmt(endDate)}`;
+}
+
 const getRunStatusLabel = (runStatus, streamError) => {
   if (streamError) return "Needs attention";
   if (runStatus === "completed") return "Idle";
@@ -36,10 +55,13 @@ const getRunStatusLabel = (runStatus, streamError) => {
   return "Ready";
 };
 
-export default function HomePage({ user: userProp, agencyTrips = [], onContinue, onOpenTrip, onNewItinerary }) {
+export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp = [], onContinue, onOpenTrip, onNewItinerary }) {
   const { logout } = useAuth();
   const [user, setUser] = useState(userProp || null);
   const agencyId = user?.memberships?.[0]?.agencyId ?? null;
+  const [fetchedTrips, setFetchedTrips] = useState(null);
+  const agencyTrips = agencyTripsProp;
+  const savedTripsForPortfolio = fetchedTrips ?? [];
 
   const {
     activeContext,
@@ -103,16 +125,49 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   // Load initial data
   useEffect(() => { if (agencyId) loadInitialThreads(); }, [agencyId]);
 
+  useEffect(() => {
+    if (!agencyId) return;
+    let cancelled = false;
+    listAgencyTrips(agencyId)
+      .then((res) => {
+        if (cancelled) return;
+        const trips = Array.isArray(res?.trips) ? res.trips : [];
+        setFetchedTrips(
+          trips.map((t) => {
+            const firstItinerary = Array.isArray(t.itineraries) ? t.itineraries[0] : null;
+            return {
+              id: t.id,
+              clientName: t.clientName ?? t.title,
+              destination: t.destinationSummary ?? t.title,
+              travelWindow: formatTripDates(t.startDate, t.endDate),
+              status: t.status?.toLowerCase() === "archived" ? "archived" : "active",
+              approvalStatus: mapTripStatus(t.status),
+              itineraryId: firstItinerary?.id ?? null,
+              itineraryVersion: firstItinerary?.version ?? null,
+            };
+          })
+        );
+      })
+      .catch((err) => console.error("Failed to load agency trips:", err));
+    return () => { cancelled = true; };
+  }, [agencyId]);
+
   // Context management
   useEffect(() => {
-    if (!Array.isArray(agencyTrips) || agencyTrips.length === 0) {
+    const hasPropTrips = Array.isArray(agencyTrips) && agencyTrips.length > 0;
+    const hasThreadTrips = Object.keys(tripStates).length > 0;
+    if (!hasPropTrips && !hasThreadTrips) {
       if (activeContext?.type === "trip") setActiveContext(null);
       return;
     }
     if (activeContext?.type === "draft") return;
-    const hasCurrent = agencyTrips.some(t => t?.id === activeContext?.id);
-    if (!hasCurrent) setActiveContext(createPlanningContext("trip", agencyTrips[0]?.id ?? null));
-  }, [activeContext, agencyTrips]);
+    if (activeContext?.type === "trip") {
+      const existsInProp = agencyTrips.some(t => t?.id === activeContext?.id);
+      const existsInStates = Boolean(tripStates[activeContext?.id]);
+      if (existsInProp || existsInStates) return;
+    }
+    if (hasPropTrips) setActiveContext(createPlanningContext("trip", agencyTrips[0]?.id ?? null));
+  }, [activeContext, agencyTrips, tripStates]);
 
   useEffect(() => {
     if (!agencyId || activeContext?.type !== "trip" || !activeContext.id) return;
@@ -243,7 +298,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   // UI state derivation
   const safeTrips = Array.isArray(agencyTrips) ? agencyTrips : [];
   const activeTrip = activeContext?.type === "trip" ? safeTrips.find(t => t?.id === activeContext.id) : null;
-  const activeTripState = activeContext?.type === "draft" ? draftThreadStates[activeContext.id] : (activeTrip?.id ? tripStates[activeTrip.id] : null);
+  const activeTripState = activeContext?.type === "draft" ? draftThreadStates[activeContext.id] : (activeContext?.type === "trip" && activeContext.id ? tripStates[activeContext.id] : null);
 
   const planningOptions = useMemo(() => {
     const drafts = draftThreadOrder.map((id, i) => {
@@ -253,10 +308,20 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
       return { type: "draft", id, clientName: label, label, destination: s.itinerary?.trip?.destination || "Planning draft", statusLabel: "Draft itinerary", threadId: id };
     }).filter(Boolean);
 
+    const propTripIds = new Set(safeTrips.map(t => t.id));
     const trips = safeTrips.map(t => ({
       type: "trip", id: t.id, clientName: t.clientName, label: t.clientName, destination: t.destination, statusLabel: t.approvalStatus || t.status || "Client trip", tripId: t.id, threadId: tripStates[t.id]?.threadId ?? null, assignedOrganizer: t.assignedOrganizer
     }));
-    return [...drafts, ...trips];
+
+    const threadOnlyTrips = Object.entries(tripStates)
+      .filter(([tripId]) => !propTripIds.has(tripId))
+      .map(([tripId, state]) => {
+        const title = state.title || state.itinerary?.title || state.itinerary?.trip?.clientName || "Client trip";
+        const dest = state.itinerary?.trip?.destination || state.itinerary?.trip?.destinationSummary || "";
+        return { type: "trip", id: tripId, clientName: title, label: title, destination: dest, statusLabel: "Approved", tripId, threadId: state.threadId ?? null };
+      });
+
+    return [...drafts, ...trips, ...threadOnlyTrips];
   }, [draftThreadOrder, draftThreadStates, safeTrips, tripStates]);
 
   const activeOption = useMemo(() => activeContext ? planningOptions.find(o => o.type === activeContext.type && o.id === activeContext.id) : planningOptions[0], [activeContext, planningOptions]);
@@ -327,7 +392,46 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     try {
       const res = await approveAgentThreadItinerary(agencyId, threadId, { itineraryId, ...fields });
       const approved = res?.thread || res?.trip || {};
-      setDraftThreadStates(prev => ({ ...prev, [threadId]: { ...(prev[threadId] || {}), title: approved.title || approved.clientName || fields.clientName, tripId: approved.tripId || approved.id } }));
+      const tripId = approved.tripId || approved.id;
+      const draftState = draftThreadStates[threadId] || {};
+
+      if (tripId) {
+        setTripStates(prev => ({
+          ...prev,
+          [tripId]: {
+            ...draftState,
+            threadId,
+            title: approved.title || approved.clientName || fields.clientName,
+            tripId,
+            loaded: true,
+          },
+        }));
+        setDraftThreadStates(prev => { const next = { ...prev }; delete next[threadId]; return next; });
+        setDraftThreadOrder(prev => prev.filter(id => id !== threadId));
+        setActiveContext(createPlanningContext("trip", tripId));
+      }
+
+      listAgencyTrips(agencyId)
+        .then((r) => {
+          const trips = Array.isArray(r?.trips) ? r.trips : [];
+          setFetchedTrips(
+            trips.map((t) => {
+              const firstItinerary = Array.isArray(t.itineraries) ? t.itineraries[0] : null;
+              return {
+                id: t.id,
+                clientName: t.clientName ?? t.title,
+                destination: t.destinationSummary ?? t.title,
+                travelWindow: formatTripDates(t.startDate, t.endDate),
+                status: t.status?.toLowerCase() === "archived" ? "archived" : "active",
+                approvalStatus: mapTripStatus(t.status),
+                itineraryId: firstItinerary?.id ?? null,
+                itineraryVersion: firstItinerary?.version ?? null,
+              };
+            })
+          );
+        })
+        .catch((err) => console.error("Failed to refresh agency trips:", err));
+
       setIsApprovalModalOpen(false);
     } catch (e) { setApprovalError(e.message); } finally { setIsApprovingDraft(false); }
   };
@@ -353,6 +457,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
         getInitials={getInitials}
         displayName={user?.displayName || "Traveler"}
         agencyId={agencyId}
+        activeTab={activeTab}
         onNewItinerary={handleNewItinerary}
         isCreatingDraftThread={isCreatingDraftThread}
         isClientMenuOpen={isClientMenuOpen}
@@ -364,7 +469,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
         activeTripOrganizerInitials={activeTripOrganizerInitials}
         clientMenuEmptyTitle={clientMenuEmptyTitle}
         clientMenuEmptyBody={clientMenuEmptyBody}
-        safeOptions={planningOptions}
+        safeOptions={activeTab === "itineraries" ? planningOptions.filter(o => o.type !== "draft") : planningOptions}
         activeOption={activeOption}
         onPlanningOptionDelete={handleDeleteOption}
         deletingThreadId={deletingThreadId}
@@ -419,7 +524,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
               </div>
             </section>
           ) : activeTab === "itineraries" ? (
-            <ClientItineraryPage agencyTrips={agencyTrips} agencyId={agencyId} />
+            <ClientItineraryPage agencyTrips={savedTripsForPortfolio} agencyId={agencyId} />
           ) : null}
         </main>
       </div>

@@ -71,6 +71,10 @@ export async function approveAgentThreadItinerary(agencyId, threadId, payload) {
   });
 }
 
+export async function listAgencyTrips(agencyId) {
+  return fetchApi(`/agencies/${agencyId}/itineraries`);
+}
+
 export async function fetchItineraryDraft(agencyId, itineraryId) {
   return fetchApi(`/agencies/${agencyId}/itineraries/${itineraryId}`);
 }
