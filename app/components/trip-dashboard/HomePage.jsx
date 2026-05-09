@@ -8,6 +8,7 @@ import {
   deleteAgentThread,
   fetchItineraryDraft,
   listAgencyTrips,
+  fetchPendingCount,
 } from "../../lib/api.js";
 import {
   getAgencyPortfolioSummary,
@@ -23,6 +24,7 @@ import ClientItineraryPage from "./pages/ClientItineraryPage.jsx";
 import ApproveItineraryModal from "./modals/ApproveItineraryModal.jsx";
 import DashboardHeader from "./layout/DashboardHeader.jsx";
 import DashboardSidebar from "./layout/DashboardSidebar.jsx";
+import AdminAgenciesPage from "../admin/AdminAgenciesPage.jsx";
 
 // Minimal UI helpers
 const getInitials = (name) => {
@@ -93,9 +95,30 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   const [activeTab, setActiveTab] = useState("command-center");
   const [selectedPlaceId, setSelectedPlaceId] = useState("");
   const [isClientMenuOpen, setIsClientMenuOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
   const clientMenuRef = useRef(null);
   const completedAssistantMessageRef = useRef(null);
 
+  // Poll pending count for admin users
+  useEffect(() => {
+    if (user?.role !== "ADMIN") return;
+    let cancelled = false;
+    const load = () => {
+      fetchPendingCount()
+        .then((data) => { if (!cancelled) setPendingCount(data.count || 0); })
+        .catch(() => {});
+    };
+    load();
+    const interval = setInterval(load, 60000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [user?.role]);
+
+  const refreshPendingCount = () => {
+    if (user?.role !== "ADMIN") return;
+    fetchPendingCount()
+      .then((data) => setPendingCount(data.count || 0))
+      .catch(() => {});
+  };
 
   const itineraryFetchSequenceRef = useRef(0);
 
@@ -485,6 +508,8 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           logout={logout}
+          user={user}
+          pendingCount={pendingCount}
         />
 
         <main className="voyage-main-content">
@@ -525,6 +550,8 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
             </section>
           ) : activeTab === "itineraries" ? (
             <ClientItineraryPage agencyTrips={savedTripsForPortfolio} agencyId={agencyId} />
+          ) : activeTab === "admin" && user?.role === "ADMIN" ? (
+            <AdminAgenciesPage onPendingCountChange={refreshPendingCount} />
           ) : null}
         </main>
       </div>

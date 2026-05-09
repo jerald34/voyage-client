@@ -2450,6 +2450,188 @@ input[type="password"]:focus {
   text-decoration: underline;
 }
 
+/* ─── Registration wizard ─── */
+
+.auth-wizard-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 28px;
+}
+
+.auth-wizard-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.4;
+  transition: opacity 0.25s ease;
+}
+
+.auth-wizard-step.active {
+  opacity: 1;
+}
+
+.auth-wizard-step-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--voyage-border);
+  color: var(--voyage-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+.auth-wizard-step.active .auth-wizard-step-number {
+  background: var(--voyage-secondary);
+  color: #fff;
+}
+
+.auth-wizard-step-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--voyage-text-muted);
+}
+
+.auth-wizard-step.active .auth-wizard-step-label {
+  color: var(--voyage-text);
+}
+
+.auth-wizard-step-divider {
+  width: 48px;
+  height: 2px;
+  background: var(--voyage-border);
+  margin: 0 12px;
+}
+
+.auth-field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.auth-field-error {
+  font-size: 0.8rem;
+  color: #d44;
+  margin-top: 2px;
+}
+
+.auth-optional-tag {
+  font-size: 0.78rem;
+  color: var(--voyage-text-soft);
+  font-weight: 400;
+}
+
+.auth-back-step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--voyage-text-muted);
+  font-size: 0.88rem;
+  cursor: pointer;
+  padding: 8px 0;
+  transition: color 0.15s ease;
+}
+
+.auth-back-step:hover {
+  color: var(--voyage-primary);
+}
+
+/* ─── Agency status screen ─── */
+
+.agency-status-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 32px;
+  background: var(--voyage-background);
+}
+
+.agency-status-card {
+  background: var(--voyage-surface);
+  border-radius: var(--voyage-radius-lg);
+  box-shadow: var(--voyage-shadow-soft);
+  padding: clamp(36px, 5vw, 56px);
+  max-width: 520px;
+  width: 100%;
+  text-align: center;
+}
+
+.agency-status-icon {
+  margin-bottom: 20px;
+}
+
+.agency-status-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--voyage-text);
+  margin: 0 0 10px;
+}
+
+.agency-status-description {
+  font-size: 0.95rem;
+  color: var(--voyage-text-muted);
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+
+.agency-status-reason {
+  background: rgba(212, 68, 68, 0.06);
+  border: 1px solid rgba(212, 68, 68, 0.15);
+  border-radius: var(--voyage-radius-sm);
+  padding: 14px 18px;
+  font-size: 0.9rem;
+  color: var(--voyage-text);
+  text-align: left;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.agency-status-details {
+  text-align: left;
+  border-top: 1px solid var(--voyage-border);
+  padding-top: 20px;
+  margin-bottom: 28px;
+}
+
+.agency-status-details-heading {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--voyage-text-soft);
+  margin: 0 0 12px;
+}
+
+.agency-status-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 0.9rem;
+}
+
+.agency-status-detail-label {
+  color: var(--voyage-text-muted);
+}
+
+.agency-status-detail-value {
+  color: var(--voyage-text);
+  font-weight: 500;
+}
+
+.agency-status-logout {
+  width: 100%;
+}
+
 /* ─── Auth responsive ─── */
 
 @media (max-width: 980px) {

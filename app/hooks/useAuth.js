@@ -18,9 +18,30 @@ export function useAuth() {
         body: JSON.stringify({ email, password, displayName }),
       });
       localStorage.setItem("voyage-user", JSON.stringify(data.user));
-      router.push("/?authenticated=1");
+      return data.user;
     } catch (err) {
       setError(err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createAgency = async (agencyData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await fetchApi("/agencies", {
+        method: "POST",
+        body: JSON.stringify(agencyData),
+      });
+      const meData = await fetchApi("/auth/me");
+      localStorage.setItem("voyage-user", JSON.stringify(meData.user));
+      router.push("/?authenticated=1");
+      return meData.user;
+    } catch (err) {
+      setError(err);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -50,7 +71,6 @@ export function useAuth() {
     } finally {
       localStorage.removeItem("voyage-user");
       setLoading(false);
-      // Hard redirect to clear all states and land on the home page correctly
       window.location.href = "/";
     }
   };
@@ -61,10 +81,12 @@ export function useAuth() {
 
   return {
     register,
+    createAgency,
     login,
     logout,
     startOAuth,
     error,
+    setError,
     loading,
   };
 }

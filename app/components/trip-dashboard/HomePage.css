@@ -507,6 +507,23 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+}
+
+.nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--voyage-secondary);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
 }
 
 .nav-item span:last-child {
