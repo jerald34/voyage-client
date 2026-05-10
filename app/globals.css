@@ -1,3 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/60 backdrop-blur-md border border-white/30 rounded-2xl;
+    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05);
+  }
+  .bg-primary-navy {
+    background-color: #1A1D1F;
+  }
+  .bg-warm-sand {
+    background-color: #D9B39E;
+  }
+  .bg-off-white {
+    background-color: #F4F7F8;
+  }
+  .text-primary-navy {
+    color: #1A1D1F;
+  }
+  .text-warm-sand {
+    color: #D9B39E;
+  }
+  .shadow-soft {
+    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05);
+  }
+}
+
 :root {
   --voyage-primary: #223843;
   --voyage-secondary: #d77a61;
