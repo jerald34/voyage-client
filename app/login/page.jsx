@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "../hooks/useAuth";
@@ -61,7 +61,7 @@ function WizardProgress({ step }) {
   );
 }
 
-export default function LoginPage() {
+function LoginForm() {
   const auth = useAuth();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState("login");
@@ -180,354 +180,361 @@ export default function LoginPage() {
   const isRegister = mode === "register";
 
   return (
-    <main className="system-shell">
-      <div className="system-grain" aria-hidden="true" />
-
-      <div className={`auth-page ${mounted ? "auth-page-visible" : ""}`}>
-        {/* LEFT: Brand showcase panel */}
-        <div className="auth-brand-panel">
-          <div className="auth-brand-orbs" aria-hidden="true">
-            <FloatingOrb delay="0s" size="320px" left="-80px" top="-60px" />
-            <FloatingOrb delay="2.4s" size="200px" left="60%" top="55%" />
-            <FloatingOrb delay="4.8s" size="140px" left="30%" top="80%" />
-          </div>
-
-          <div className="auth-brand-content">
-            <Link href="/" className="auth-brand-logo" aria-label="Back to home">
-              Voyage
-            </Link>
-
-            <div className="auth-brand-copy">
-              <span className="frame-label">Welcome aboard</span>
-              <h1 className="auth-brand-title">
-                {isRegister && wizardStep === 2
-                  ? "Tell us about your agency"
-                  : "Every great trip starts with a single step"}
-              </h1>
-              <p className="auth-brand-subtitle">
-                {isRegister && wizardStep === 2
-                  ? "We'll review your application and get you set up quickly."
-                  : "Plan smarter itineraries with AI-powered route logic, real-time collaboration, and map-aware scheduling — all in one workspace."}
-              </p>
-            </div>
-
-            <div className="auth-brand-stats">
-              <div className="auth-stat">
-                <strong>2.4k+</strong>
-                <span>Trips planned</span>
-              </div>
-              <div className="auth-stat-divider" />
-              <div className="auth-stat">
-                <strong>98%</strong>
-                <span>Satisfaction</span>
-              </div>
-              <div className="auth-stat-divider" />
-              <div className="auth-stat">
-                <strong>40+</strong>
-                <span>Destinations</span>
-              </div>
-            </div>
-          </div>
+    <div className={`auth-page ${mounted ? "auth-page-visible" : ""}`}>
+      {/* LEFT: Brand showcase panel */}
+      <div className="auth-brand-panel">
+        <div className="auth-brand-orbs" aria-hidden="true">
+          <FloatingOrb delay="0s" size="320px" left="-80px" top="-60px" />
+          <FloatingOrb delay="2.4s" size="200px" left="60%" top="55%" />
+          <FloatingOrb delay="4.8s" size="140px" left="30%" top="80%" />
         </div>
 
-        {/* RIGHT: Auth form */}
-        <div className="auth-form-panel">
-          <div className="auth-form-top-nav">
-            <Link href="/" className="auth-back-link">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 12H5M12 19l-7-7 7-7" />
-              </svg>
-              Back to Voyage
-            </Link>
+        <div className="auth-brand-content">
+          <Link href="/" className="auth-brand-logo" aria-label="Back to home">
+            Voyage
+          </Link>
+
+          <div className="auth-brand-copy">
+            <span className="frame-label">Welcome aboard</span>
+            <h1 className="auth-brand-title">
+              {isRegister && wizardStep === 2
+                ? "Tell us about your agency"
+                : "Every great trip starts with a single step"}
+            </h1>
+            <p className="auth-brand-subtitle">
+              {isRegister && wizardStep === 2
+                ? "We'll review your application and get you set up quickly."
+                : "Plan smarter itineraries with AI-powered route logic, real-time collaboration, and map-aware scheduling — all in one workspace."}
+            </p>
           </div>
 
-          <div className="auth-form-container">
-            {/* Mode toggle */}
-            {!isAuthenticated && (
-              <div className="auth-mode-toggle">
-                <button
-                  className={`auth-mode-btn ${mode === "login" ? "active" : ""}`}
-                  onClick={() => handleModeSwitch("login")}
-                  type="button"
-                >
-                  Sign in
-                </button>
-                <button
-                  className={`auth-mode-btn ${mode === "register" ? "active" : ""}`}
-                  onClick={() => handleModeSwitch("register")}
-                  type="button"
-                >
-                  Create account
-                </button>
-                <div
-                  className="auth-mode-indicator"
-                  style={{
-                    transform: mode === "register" ? "translateX(100%)" : "translateX(0)",
-                  }}
-                />
-              </div>
-            )}
-
-            {/* Wizard progress for register mode */}
-            {isRegister && <WizardProgress step={wizardStep} />}
-
-            <div className={`auth-form-body ${isTransitioning ? "auth-form-exit" : "auth-form-enter"}`}>
-
-              {/* ─── LOGIN FORM ─── */}
-              {mode === "login" && (
-                <>
-                  <div className="auth-form-heading">
-                    <h2>Welcome back</h2>
-                    <p className="lede">Sign in to pick up where you left off.</p>
-                  </div>
-
-                  <div className="auth-social-group">
-                    {socialProviders.map((provider) => (
-                      <button
-                        key={provider.id}
-                        className="auth-social-btn"
-                        type="button"
-                        onClick={() => auth.startOAuth(provider.id)}
-                      >
-                        {provider.icon}
-                        <span>{provider.label}</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="auth-divider"><span>or continue with email</span></div>
-
-                  <form onSubmit={handleLoginSubmit} className="auth-fields">
-                    <div className="auth-field">
-                      <label htmlFor="auth-email">Email address</label>
-                      <div className="auth-input-wrap">
-                        <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="2" y="4" width="20" height="16" rx="2" />
-                          <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                        </svg>
-                        <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
-                      </div>
-                    </div>
-
-                    <div className="auth-field">
-                      <div className="auth-field-header">
-                        <label htmlFor="auth-password">Password</label>
-                        <button type="button" className="auth-forgot-link">Forgot password?</button>
-                      </div>
-                      <div className="auth-input-wrap">
-                        <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                        <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
-                        <button type="button" className="auth-toggle-vis" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>
-                          {showPassword ? (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
-                          ) : (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    {auth.error && <div className="auth-error" role="alert">{auth.error.message}</div>}
-
-                    <button type="submit" className="button button-primary auth-submit" disabled={auth.loading}>
-                      {auth.loading ? "Signing in…" : "Sign in to Voyage"}
-                    </button>
-                  </form>
-                </>
-              )}
-
-              {/* ─── REGISTER STEP 1: Personal Account ─── */}
-              {isRegister && wizardStep === 1 && (
-                <>
-                  <div className="auth-form-heading">
-                    <h2>Create your account</h2>
-                    <p className="lede">Start planning unforgettable trips today.</p>
-                  </div>
-
-                  <div className="auth-social-group">
-                    {socialProviders.map((provider) => (
-                      <button
-                        key={provider.id}
-                        className="auth-social-btn"
-                        type="button"
-                        onClick={() => auth.startOAuth(provider.id)}
-                      >
-                        {provider.icon}
-                        <span>{provider.label}</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="auth-divider"><span>or continue with email</span></div>
-
-                  <form onSubmit={handleStep1Next} className="auth-fields">
-                    <div className="auth-field">
-                      <label htmlFor="auth-fullname">Full name</label>
-                      <div className="auth-input-wrap">
-                        <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-                        </svg>
-                        <input id="auth-fullname" type="text" placeholder="Your full name" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" />
-                      </div>
-                      {step1Errors.fullName && <span className="auth-field-error">{step1Errors.fullName}</span>}
-                    </div>
-
-                    <div className="auth-field">
-                      <label htmlFor="auth-email">Email address</label>
-                      <div className="auth-input-wrap">
-                        <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                        </svg>
-                        <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
-                      </div>
-                      {step1Errors.email && <span className="auth-field-error">{step1Errors.email}</span>}
-                    </div>
-
-                    <div className="auth-field">
-                      <label htmlFor="auth-password">Password</label>
-                      <div className="auth-input-wrap">
-                        <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                        <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
-                        <button type="button" className="auth-toggle-vis" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>
-                          {showPassword ? (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
-                          ) : (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                          )}
-                        </button>
-                      </div>
-                      {step1Errors.password && <span className="auth-field-error">{step1Errors.password}</span>}
-                    </div>
-
-                    <div className="auth-field">
-                      <label htmlFor="auth-confirm-password">Confirm password</label>
-                      <div className="auth-input-wrap">
-                        <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                        </svg>
-                        <input id="auth-confirm-password" type="password" placeholder="Repeat your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" />
-                      </div>
-                      {step1Errors.confirmPassword && <span className="auth-field-error">{step1Errors.confirmPassword}</span>}
-                    </div>
-
-                    <label className="auth-checkbox-row" htmlFor="auth-terms">
-                      <input type="checkbox" id="auth-terms" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} />
-                      <span>
-                        I agree to the{" "}
-                        <a href="#" className="auth-inline-link">Terms of Service</a> and{" "}
-                        <a href="#" className="auth-inline-link">Privacy Policy</a>
-                      </span>
-                    </label>
-                    {step1Errors.terms && <span className="auth-field-error">{step1Errors.terms}</span>}
-
-                    <button type="submit" className="button button-primary auth-submit">
-                      Next: Agency Details
-                    </button>
-                  </form>
-                </>
-              )}
-
-              {/* ─── REGISTER STEP 2: Agency Details ─── */}
-              {isRegister && wizardStep === 2 && (
-                <>
-                  <div className="auth-form-heading">
-                    <h2>Your agency</h2>
-                    <p className="lede">Tell us about your travel agency so we can set up your workspace.</p>
-                  </div>
-
-                  <form onSubmit={handleStep2Submit} className="auth-fields">
-                    <div className="auth-field">
-                      <label htmlFor="auth-agency-name">Agency name</label>
-                      <div className="auth-input-wrap">
-                        <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
-                        </svg>
-                        <input id="auth-agency-name" type="text" placeholder="e.g. Wanderlust Travel Co." value={agencyName} onChange={(e) => setAgencyName(e.target.value)} required />
-                      </div>
-                    </div>
-
-                    <div className="auth-field">
-                      <label htmlFor="auth-business-phone">Business phone</label>
-                      <div className="auth-input-wrap">
-                        <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                        </svg>
-                        <input id="auth-business-phone" type="tel" placeholder="+1 (555) 123-4567" value={businessPhone} onChange={(e) => setBusinessPhone(e.target.value)} required />
-                      </div>
-                    </div>
-
-                    <div className="auth-field">
-                      <label htmlFor="auth-business-email">Business email <span className="auth-optional-tag">(optional)</span></label>
-                      <div className="auth-input-wrap">
-                        <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                        </svg>
-                        <input id="auth-business-email" type="email" placeholder="info@youragency.com" value={businessEmail} onChange={(e) => setBusinessEmail(e.target.value)} />
-                      </div>
-                    </div>
-
-                    <div className="auth-field-grid">
-                      <div className="auth-field">
-                        <label htmlFor="auth-country">Country</label>
-                        <div className="auth-input-wrap">
-                          <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                          </svg>
-                          <input id="auth-country" type="text" placeholder="Philippines" value={country} onChange={(e) => setCountry(e.target.value)} required />
-                        </div>
-                      </div>
-
-                      <div className="auth-field">
-                        <label htmlFor="auth-city">City</label>
-                        <div className="auth-input-wrap">
-                          <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
-                          </svg>
-                          <input id="auth-city" type="text" placeholder="Manila" value={city} onChange={(e) => setCity(e.target.value)} required />
-                        </div>
-                      </div>
-                    </div>
-
-                    {auth.error && <div className="auth-error" role="alert">{auth.error.message}</div>}
-
-                    <button type="submit" className="button button-primary auth-submit" disabled={auth.loading}>
-                      {auth.loading ? "Setting up your agency…" : "Create my agency"}
-                    </button>
-
-                    {!isAuthenticated && (
-                      <button type="button" className="auth-back-step" onClick={handleStep2Back}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M19 12H5M12 19l-7-7 7-7" />
-                        </svg>
-                        Back to account details
-                      </button>
-                    )}
-                  </form>
-                </>
-              )}
+          <div className="auth-brand-stats">
+            <div className="auth-stat">
+              <strong>2.4k+</strong>
+              <span>Trips planned</span>
             </div>
-
-            {/* Bottom switch prompt */}
-            {!isAuthenticated && (
-              <p className="auth-switch-prompt">
-                {mode === "login" ? "Don’t have an account? " : "Already have an account? "}
-                <button
-                  type="button"
-                  className="auth-switch-btn"
-                  onClick={() => handleModeSwitch(mode === "login" ? "register" : "login")}
-                >
-                  {mode === "login" ? "Create one" : "Sign in"}
-                </button>
-              </p>
-            )}
+            <div className="auth-stat-divider" />
+            <div className="auth-stat">
+              <strong>98%</strong>
+              <span>Satisfaction</span>
+            </div>
+            <div className="auth-stat-divider" />
+            <div className="auth-stat">
+              <strong>40+</strong>
+              <span>Destinations</span>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* RIGHT: Auth form */}
+      <div className="auth-form-panel">
+        <div className="auth-form-top-nav">
+          <Link href="/" className="auth-back-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Back to Voyage
+          </Link>
+        </div>
+
+        <div className="auth-form-container">
+          {/* Mode toggle */}
+          {!isAuthenticated && (
+            <div className="auth-mode-toggle">
+              <button
+                className={`auth-mode-btn ${mode === "login" ? "active" : ""}`}
+                onClick={() => handleModeSwitch("login")}
+                type="button"
+              >
+                Sign in
+              </button>
+              <button
+                className={`auth-mode-btn ${mode === "register" ? "active" : ""}`}
+                onClick={() => handleModeSwitch("register")}
+                type="button"
+              >
+                Create account
+              </button>
+              <div
+                className="auth-mode-indicator"
+                style={{
+                  transform: mode === "register" ? "translateX(100%)" : "translateX(0)",
+                }}
+              />
+            </div>
+          )}
+
+          {/* Wizard progress for register mode */}
+          {isRegister && <WizardProgress step={wizardStep} />}
+
+          <div className={`auth-form-body ${isTransitioning ? "auth-form-exit" : "auth-form-enter"}`}>
+
+            {/* ─── LOGIN FORM ─── */}
+            {mode === "login" && (
+              <>
+                <div className="auth-form-heading">
+                  <h2>Welcome back</h2>
+                  <p className="lede">Sign in to pick up where you left off.</p>
+                </div>
+
+                <div className="auth-social-group">
+                  {socialProviders.map((provider) => (
+                    <button
+                      key={provider.id}
+                      className="auth-social-btn"
+                      type="button"
+                      onClick={() => auth.startOAuth(provider.id)}
+                    >
+                      {provider.icon}
+                      <span>{provider.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="auth-divider"><span>or continue with email</span></div>
+
+                <form onSubmit={handleLoginSubmit} className="auth-fields">
+                  <div className="auth-field">
+                    <label htmlFor="auth-email">Email address</label>
+                    <div className="auth-input-wrap">
+                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="4" width="20" height="16" rx="2" />
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                      </svg>
+                      <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+                    </div>
+                  </div>
+
+                  <div className="auth-field">
+                    <div className="auth-field-header">
+                      <label htmlFor="auth-password">Password</label>
+                      <button type="button" className="auth-forgot-link">Forgot password?</button>
+                    </div>
+                    <div className="auth-input-wrap">
+                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                      <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+                      <button type="button" className="auth-toggle-vis" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>
+                        {showPassword ? (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+                        ) : (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {auth.error && <div className="auth-error" role="alert">{auth.error.message}</div>}
+
+                  <button type="submit" className="button button-primary auth-submit" disabled={auth.loading}>
+                    {auth.loading ? "Signing in…" : "Sign in to Voyage"}
+                  </button>
+                </form>
+              </>
+            )}
+
+            {/* ─── REGISTER STEP 1: Personal Account ─── */}
+            {isRegister && wizardStep === 1 && (
+              <>
+                <div className="auth-form-heading">
+                  <h2>Create your account</h2>
+                  <p className="lede">Start planning unforgettable trips today.</p>
+                </div>
+
+                <div className="auth-social-group">
+                  {socialProviders.map((provider) => (
+                    <button
+                      key={provider.id}
+                      className="auth-social-btn"
+                      type="button"
+                      onClick={() => auth.startOAuth(provider.id)}
+                    >
+                      {provider.icon}
+                      <span>{provider.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="auth-divider"><span>or continue with email</span></div>
+
+                <form onSubmit={handleStep1Next} className="auth-fields">
+                  <div className="auth-field">
+                    <label htmlFor="auth-fullname">Full name</label>
+                    <div className="auth-input-wrap">
+                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+                      </svg>
+                      <input id="auth-fullname" type="text" placeholder="Your full name" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" />
+                    </div>
+                    {step1Errors.fullName && <span className="auth-field-error">{step1Errors.fullName}</span>}
+                  </div>
+
+                  <div className="auth-field">
+                    <label htmlFor="auth-email">Email address</label>
+                    <div className="auth-input-wrap">
+                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                      </svg>
+                      <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+                    </div>
+                    {step1Errors.email && <span className="auth-field-error">{step1Errors.email}</span>}
+                  </div>
+
+                  <div className="auth-field">
+                    <label htmlFor="auth-password">Password</label>
+                    <div className="auth-input-wrap">
+                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                      <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+                      <button type="button" className="auth-toggle-vis" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>
+                        {showPassword ? (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+                        ) : (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        )}
+                      </button>
+                    </div>
+                    {step1Errors.password && <span className="auth-field-error">{step1Errors.password}</span>}
+                  </div>
+
+                  <div className="auth-field">
+                    <label htmlFor="auth-confirm-password">Confirm password</label>
+                    <div className="auth-input-wrap">
+                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                      </svg>
+                      <input id="auth-confirm-password" type="password" placeholder="Repeat your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" />
+                    </div>
+                    {step1Errors.confirmPassword && <span className="auth-field-error">{step1Errors.confirmPassword}</span>}
+                  </div>
+
+                  <label className="auth-checkbox-row" htmlFor="auth-terms">
+                    <input type="checkbox" id="auth-terms" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} />
+                    <span>
+                      I agree to the{" "}
+                      <a href="#" className="auth-inline-link">Terms of Service</a> and{" "}
+                      <a href="#" className="auth-inline-link">Privacy Policy</a>
+                    </span>
+                  </label>
+                  {step1Errors.terms && <span className="auth-field-error">{step1Errors.terms}</span>}
+
+                  <button type="submit" className="button button-primary auth-submit">
+                    Next: Agency Details
+                  </button>
+                </form>
+              </>
+            )}
+
+            {/* ─── REGISTER STEP 2: Agency Details ─── */}
+            {isRegister && wizardStep === 2 && (
+              <>
+                <div className="auth-form-heading">
+                  <h2>Your agency</h2>
+                  <p className="lede">Tell us about your travel agency so we can set up your workspace.</p>
+                </div>
+
+                <form onSubmit={handleStep2Submit} className="auth-fields">
+                  <div className="auth-field">
+                    <label htmlFor="auth-agency-name">Agency name</label>
+                    <div className="auth-input-wrap">
+                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+                      </svg>
+                      <input id="auth-agency-name" type="text" placeholder="e.g. Wanderlust Travel Co." value={agencyName} onChange={(e) => setAgencyName(e.target.value)} required />
+                    </div>
+                  </div>
+
+                  <div className="auth-field">
+                    <label htmlFor="auth-business-phone">Business phone</label>
+                    <div className="auth-input-wrap">
+                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                      </svg>
+                      <input id="auth-business-phone" type="tel" placeholder="+1 (555) 123-4567" value={businessPhone} onChange={(e) => setBusinessPhone(e.target.value)} required />
+                    </div>
+                  </div>
+
+                  <div className="auth-field">
+                    <label htmlFor="auth-business-email">Business email <span className="auth-optional-tag">(optional)</span></label>
+                    <div className="auth-input-wrap">
+                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                      </svg>
+                      <input id="auth-business-email" type="email" placeholder="info@youragency.com" value={businessEmail} onChange={(e) => setBusinessEmail(e.target.value)} />
+                    </div>
+                  </div>
+
+                  <div className="auth-field-grid">
+                    <div className="auth-field">
+                      <label htmlFor="auth-country">Country</label>
+                      <div className="auth-input-wrap">
+                        <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                        </svg>
+                        <input id="auth-country" type="text" placeholder="Philippines" value={country} onChange={(e) => setCountry(e.target.value)} required />
+                      </div>
+                    </div>
+
+                    <div className="auth-field">
+                      <label htmlFor="auth-city">City</label>
+                      <div className="auth-input-wrap">
+                        <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
+                        </svg>
+                        <input id="auth-city" type="text" placeholder="Manila" value={city} onChange={(e) => setCity(e.target.value)} required />
+                      </div>
+                    </div>
+                  </div>
+
+                  {auth.error && <div className="auth-error" role="alert">{auth.error.message}</div>}
+
+                  <button type="submit" className="button button-primary auth-submit" disabled={auth.loading}>
+                    {auth.loading ? "Setting up your agency…" : "Create my agency"}
+                  </button>
+
+                  {!isAuthenticated && (
+                    <button type="button" className="auth-back-step" onClick={handleStep2Back}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 12H5M12 19l-7-7 7-7" />
+                      </svg>
+                      Back to account details
+                    </button>
+                  )}
+                </form>
+              </>
+            )}
+          </div>
+
+          {/* Bottom switch prompt */}
+          {!isAuthenticated && (
+            <p className="auth-switch-prompt">
+              {mode === "login" ? "Don’t have an account? " : "Already have an account? "}
+              <button
+                type="button"
+                className="auth-switch-btn"
+                onClick={() => handleModeSwitch(mode === "login" ? "register" : "login")}
+              >
+                {mode === "login" ? "Create one" : "Sign in"}
+              </button>
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <main className="system-shell">
+      <div className="system-grain" aria-hidden="true" />
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+        <LoginForm />
+      </Suspense>
     </main>
   );
 }
