@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   --voyage-primary: #223843;
   --voyage-secondary: #d77a61;
@@ -85,7 +87,7 @@ body::before {
   z-index: -1;
 }
 
-h1,
+/* h1,
 h2,
 h3,
 h4 {
@@ -98,7 +100,6 @@ h4 {
 
 h1 {
   font-size: clamp(3rem, 7vw, 5.5rem);
-  max-width: 12ch;
 }
 
 h2 {
@@ -107,7 +108,7 @@ h2 {
 
 h3 {
   font-size: clamp(1.35rem, 2vw, 1.9rem);
-}
+} */
 
 p,
 li,
@@ -2767,5 +2768,33 @@ input[type="password"]:focus {
 
   .system-shell {
     padding: 16px 12px 32px;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    background-color: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 1rem;
+    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05);
+  }
+  .bg-primary-navy {
+    background-color: #1A1D1F;
+  }
+  .bg-warm-sand {
+    background-color: #D9B39E;
+  }
+  .bg-off-white {
+    background-color: #F4F7F8;
+  }
+  .text-primary-navy {
+    color: #1A1D1F;
+  }
+  .text-warm-sand {
+    color: #D9B39E;
+  }
+  .shadow-soft {
+    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05);
   }
 }
