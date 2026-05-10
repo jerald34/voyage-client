@@ -321,6 +321,91 @@ input.search-input {
   color: #16a34a;
 }
 
+/* ── Trip card inner button (replaces outer <button>) ── */
+
+.trip-card-select {
+  all: unset;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.trip-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--voyage-text-soft);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
+.trip-card:hover .trip-delete-btn {
+  opacity: 1;
+}
+
+.trip-delete-btn:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.delete-confirm-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--voyage-border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--voyage-text-soft);
+}
+
+.delete-confirm-bar .confirm-yes {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: none;
+  background: #dc2626;
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.delete-confirm-bar .confirm-yes:hover {
+  background: #b91c1c;
+}
+
+.delete-confirm-bar .confirm-yes:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.delete-confirm-bar .confirm-no {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--voyage-border);
+  background: white;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--voyage-text-soft);
+}
+
+.delete-confirm-bar .confirm-no:hover {
+  background: var(--voyage-background);
+}
+
 /* ── Itinerary Preview Area ── */
 
 .itinerary-preview-area {
@@ -403,6 +488,35 @@ input.search-input {
 .more-btn {
   width: 36px;
   height: 36px;
+}
+
+/* ── PDF download button ─────────────────────────────────── */
+
+.pdf-btn {
+  /* inherits .action-btn + .share-btn — just colour overrides */
+  color: var(--voyage-primary);
+}
+
+.pdf-btn:disabled,
+.pdf-btn--loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.pdf-spinner {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--voyage-border);
+  border-top-color: var(--voyage-secondary);
+  border-radius: 50%;
+  animation: cip-pdf-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes cip-pdf-spin {
+  to { transform: rotate(360deg); }
 }
 
 .itinerary-meta-row {
@@ -605,13 +719,494 @@ input.search-input {
   line-height: 1.5;
 }
 
+/* ── Comments Button ── */
+
+.comments-btn {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  gap: 8px;
+  position: relative;
+}
+
+.comments-btn.active {
+  background: var(--voyage-primary);
+  color: white;
+  border-color: var(--voyage-primary);
+}
+
+.comments-btn.active:hover {
+  background: #1a2d35;
+  border-color: #1a2d35;
+}
+
+/* ── Notification Badge (button inline) ── */
+
+.comment-notification-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+  flex-shrink: 0;
+}
+
+/* ── Trip Card Comment Badge ── */
+
+.trip-card-comment-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ── Comments Panel ── */
+
+.comments-panel {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--voyage-border);
+  border-radius: var(--voyage-radius-md);
+  background: white;
+  overflow: hidden;
+  flex-shrink: 0;
+  max-height: 480px;
+}
+
+.comments-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--voyage-border);
+  background: var(--voyage-background);
+  flex-shrink: 0;
+}
+
+.comments-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--voyage-primary);
+}
+
+.comments-count-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--voyage-secondary);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.comments-panel-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--voyage-text-soft);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.comments-panel-close:hover {
+  background: rgba(34, 56, 67, 0.08);
+  color: var(--voyage-primary);
+}
+
+.comments-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Loading / Empty / Error states ── */
+
+.comments-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  color: var(--voyage-text-soft);
+  font-size: 0.9rem;
+}
+
+.comments-error {
+  padding: 20px;
+  text-align: center;
+  color: #b91c1c;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.comments-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 20px;
+  color: var(--voyage-text-soft);
+  text-align: center;
+}
+
+.comments-empty p {
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Comment Groups ── */
+
+.comment-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.comment-group-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--voyage-text-soft);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--voyage-border);
+}
+
+/* ── Individual Comment Card ── */
+
+.comment-card {
+  border: 1px solid var(--voyage-border);
+  border-radius: var(--voyage-radius-sm);
+  background: white;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: box-shadow 0.2s ease;
+}
+
+.comment-card:hover {
+  box-shadow: 0 4px 12px rgba(34, 56, 67, 0.06);
+}
+
+.comment-card-top {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comment-author-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.comment-author-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--voyage-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.comment-author-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-author-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--voyage-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comment-timestamp {
+  font-size: 0.73rem;
+  color: var(--voyage-text-soft);
+}
+
+/* ── Status Badges ── */
+
+.comment-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  background: rgba(34, 56, 67, 0.06);
+  color: var(--voyage-primary);
+  border: 1px solid rgba(34, 56, 67, 0.08);
+}
+
+.comment-status-badge.pending {
+  background: #fef9c3;
+  color: #854d0e;
+  border-color: #fef08a;
+}
+
+.comment-status-badge.seen {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.comment-status-badge.addressed {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #dcfce7;
+}
+
+.comment-text {
+  font-size: 0.88rem;
+  color: var(--voyage-primary);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ── Agency Reply Bubble ── */
+
+.comment-reply-bubble {
+  background: var(--voyage-background);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-left: 3px solid var(--voyage-secondary);
+}
+
+.comment-reply-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--voyage-secondary);
+}
+
+.comment-reply-text {
+  font-size: 0.85rem;
+  color: var(--voyage-primary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.comment-reply-time {
+  font-size: 0.72rem;
+  color: var(--voyage-text-soft);
+  margin-top: 2px;
+}
+
+/* ── Reply actions / inline input ── */
+
+.comment-actions {
+  display: flex;
+  flex-direction: column;
+}
+
+.reply-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--voyage-border);
+  background: white;
+  color: var(--voyage-text-soft);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  align-self: flex-start;
+}
+
+.reply-toggle-btn:hover {
+  background: var(--voyage-background);
+  color: var(--voyage-primary);
+  border-color: var(--voyage-primary);
+}
+
+.reply-input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reply-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--voyage-border);
+  background: var(--voyage-background);
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--voyage-primary);
+  resize: none;
+  line-height: 1.5;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.reply-textarea:focus {
+  outline: none;
+  border-color: var(--voyage-secondary);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(215, 122, 97, 0.1);
+}
+
+.reply-error {
+  font-size: 0.78rem;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.reply-input-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.reply-cancel-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--voyage-border);
+  background: white;
+  color: var(--voyage-text-soft);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.reply-cancel-btn:hover {
+  background: var(--voyage-background);
+  color: var(--voyage-primary);
+}
+
+.reply-submit-btn {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--voyage-secondary);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.reply-submit-btn:hover:not(:disabled) {
+  background: #c4674e;
+}
+
+.reply-submit-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Days column adjustment when comments open ── */
+
+.itinerary-days-column.comments-open {
+  gap: 16px;
+}
+
+/* ── Loading spinner (if not already globally defined) ── */
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--voyage-border);
+  border-top-color: var(--voyage-secondary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Responsive ── */
+
 @media (max-width: 1100px) {
   .client-itinerary-surface {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
   }
-  
+
   .itinerary-split-view {
     grid-template-columns: 1fr;
+  }
+
+  .comments-panel {
+    max-height: 360px;
+  }
+
+  .itinerary-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .comments-btn,
+  .share-btn {
+    font-size: 0.8rem;
+    padding: 7px 10px;
   }
 }

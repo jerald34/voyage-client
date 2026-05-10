@@ -6,6 +6,7 @@ import { useTripPlanning } from "../../hooks/useTripPlanning.js";
 import {
   approveAgentThreadItinerary,
   deleteAgentThread,
+  deleteAgencyTrip,
   fetchItineraryDraft,
   listAgencyTrips,
   fetchPendingCount,
@@ -549,7 +550,17 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
               </div>
             </section>
           ) : activeTab === "itineraries" ? (
-            <ClientItineraryPage agencyTrips={savedTripsForPortfolio} agencyId={agencyId} />
+            <ClientItineraryPage
+              agencyTrips={savedTripsForPortfolio}
+              agencyId={agencyId}
+              onDeleteTrip={async (aid, tripId) => {
+                await deleteAgencyTrip(aid, tripId);
+                setFetchedTrips(prev => (prev || []).filter(t => t.id !== tripId));
+                if (tripStates[tripId]) {
+                  setTripStates(prev => { const next = { ...prev }; delete next[tripId]; return next; });
+                }
+              }}
+            />
           ) : activeTab === "admin" && user?.role === "ADMIN" ? (
             <AdminAgenciesPage onPendingCountChange={refreshPendingCount} />
           ) : null}

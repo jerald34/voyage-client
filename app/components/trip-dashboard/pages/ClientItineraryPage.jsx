@@ -1,7 +1,13 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import "./ClientItineraryPage.css";
 import dynamic from "next/dynamic";
-import { fetchItineraryDraft } from "../../../lib/api.js";
+import {
+  fetchItineraryDraft,
+  getUnreadCommentCount,
+  listTripShares,
+  listShareComments,
+  replyToShareComment,
+} from "../../../lib/api.js";
 import { getItineraryPlaceEntityId } from "../../../lib/trip-dashboard/placeEntities.js";
 import {
   getSavedItineraryTrips,
@@ -11,6 +17,8 @@ import {
   normalizeItineraryResponse,
   resolveSavedPortfolioSelection,
 } from "../../../lib/trip-dashboard/savedItineraries.js";
+import ShareDialog from "../itinerary/ShareDialog.jsx";
+import { generateItineraryPdf, titleToFilename } from "../../../lib/pdfExport.js";
 
 const ItineraryLiveMap = dynamic(
   () => import("../itinerary/ItineraryLiveMap.jsx"),
@@ -52,7 +60,254 @@ function getAccommodationLabel(day) {
   return hotel?.title || hotel?.placeName || "";
 }
 
-export default function ClientItineraryPage({ agencyTrips = [], agencyId }) {
+function formatCommentTime(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) +
+    " at " +
+    d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+// ── Comment Panel Sub-component ──────────────────────────────────────────────
+
+function CommentsPanel({ agencyId, tripId, onClose }) {
+  const [comments, setComments] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null); // commentId
+  const [replyTexts, setReplyTexts] = useState({});   // { [commentId]: string }
+  const [submitting, setSubmitting] = useState(null);  // commentId being submitted
+  const [replyErrors, setReplyErrors] = useState({});  // { [commentId]: string }
+
+  useEffect(() => {
+    if (!agencyId || !tripId) return;
+    let cancelled = false;
+    setIsLoading(true);
+    setLoadError(null);
+    setComments([]);
+
+    (async () => {
+      try {
+        const sharesRes = await listTripShares(agencyId, tripId);
+        const shares = Array.isArray(sharesRes?.shares) ? sharesRes.shares : [];
+        if (cancelled) return;
+
+        const commentArrays = await Promise.all(
+          shares.map((share) =>
+            listShareComments(agencyId, share.id)
+              .then((r) => (Array.isArray(r?.comments) ? r.comments : []))
+              .catch(() => [])
+          )
+        );
+        if (cancelled) return;
+
+        const all = commentArrays.flat();
+        setComments(all);
+      } catch (err) {
+        if (!cancelled) setLoadError(err);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [agencyId, tripId]);
+
+  // Group by dayNumber; null/undefined => "General"
+  const grouped = useMemo(() => {
+    const map = new Map();
+    map.set("general", []);
+    comments.forEach((c) => {
+      if (c.dayNumber != null) {
+        const key = String(c.dayNumber);
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(c);
+      } else {
+        map.get("general").push(c);
+      }
+    });
+    // Sort day keys numerically, put "general" last
+    const dayKeys = [...map.keys()]
+      .filter((k) => k !== "general")
+      .sort((a, b) => Number(a) - Number(b));
+    const ordered = [];
+    dayKeys.forEach((k) => {
+      if (map.get(k).length > 0) ordered.push({ key: k, label: `Day ${k}`, comments: map.get(k) });
+    });
+    if (map.get("general").length > 0) {
+      ordered.push({ key: "general", label: "General", comments: map.get("general") });
+    }
+    return ordered;
+  }, [comments]);
+
+  const handleReplyChange = (commentId, value) => {
+    setReplyTexts((prev) => ({ ...prev, [commentId]: value }));
+  };
+
+  const handleReplySubmit = async (commentId) => {
+    const content = (replyTexts[commentId] || "").trim();
+    if (!content) return;
+    setSubmitting(commentId);
+    setReplyErrors((prev) => ({ ...prev, [commentId]: null }));
+    try {
+      const res = await replyToShareComment(agencyId, commentId, content);
+      const updated = res?.comment;
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === commentId
+            ? {
+                ...c,
+                agencyReply: updated?.agencyReply ?? content,
+                agencyRepliedAt: updated?.agencyRepliedAt ?? new Date().toISOString(),
+                status: "ADDRESSED",
+              }
+            : c
+        )
+      );
+      setReplyTexts((prev) => ({ ...prev, [commentId]: "" }));
+      setReplyingTo(null);
+    } catch (err) {
+      setReplyErrors((prev) => ({ ...prev, [commentId]: "Failed to send reply. Please try again." }));
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
+  const totalCount = comments.length;
+
+  return (
+    <div className="comments-panel">
+      <div className="comments-panel-header">
+        <div className="comments-panel-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          <span>Client Comments</span>
+          {totalCount > 0 && <span className="comments-count-chip">{totalCount}</span>}
+        </div>
+        <button className="comments-panel-close" onClick={onClose} aria-label="Close comments">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="comments-panel-body">
+        {isLoading && (
+          <div className="comments-loading">
+            <div className="loading-spinner" />
+            <span>Loading comments...</span>
+          </div>
+        )}
+        {!isLoading && loadError && (
+          <div className="comments-error">Unable to load comments. Please try again.</div>
+        )}
+        {!isLoading && !loadError && grouped.length === 0 && (
+          <div className="comments-empty">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            <p>No comments yet from this client.</p>
+          </div>
+        )}
+        {!isLoading && !loadError && grouped.map(({ key, label, comments: groupComments }) => (
+          <div key={key} className="comment-group">
+            <div className="comment-group-label">{label}</div>
+            {groupComments.map((comment) => (
+              <div key={comment.id} className="comment-card">
+                <div className="comment-card-top">
+                  <div className="comment-author-row">
+                    <div className="comment-author-avatar">
+                      {String(comment.authorName || "?")[0].toUpperCase()}
+                    </div>
+                    <div className="comment-author-info">
+                      <span className="comment-author-name">{comment.authorName || "Client"}</span>
+                      <span className="comment-timestamp">{formatCommentTime(comment.createdAt)}</span>
+                    </div>
+                    <span className={`comment-status-badge ${comment.status === "ADDRESSED" ? "addressed" : comment.status === "SEEN" ? "seen" : "pending"}`}>
+                      {comment.status === "ADDRESSED" ? "Addressed" : comment.status === "SEEN" ? "Seen" : "Pending"}
+                    </span>
+                  </div>
+                  <p className="comment-text">{comment.content}</p>
+                </div>
+
+                {comment.agencyReply && (
+                  <div className="comment-reply-bubble">
+                    <div className="comment-reply-label">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="9 17 4 12 9 7" /><path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+                      </svg>
+                      Your reply
+                    </div>
+                    <p className="comment-reply-text">{comment.agencyReply}</p>
+                    {comment.agencyRepliedAt && (
+                      <span className="comment-reply-time">{formatCommentTime(comment.agencyRepliedAt)}</span>
+                    )}
+                  </div>
+                )}
+
+                {!comment.agencyReply && (
+                  <div className="comment-actions">
+                    {replyingTo !== comment.id ? (
+                      <button
+                        className="reply-toggle-btn"
+                        onClick={() => setReplyingTo(comment.id)}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="9 17 4 12 9 7" /><path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+                        </svg>
+                        Reply
+                      </button>
+                    ) : (
+                      <div className="reply-input-area">
+                        <textarea
+                          className="reply-textarea"
+                          placeholder="Write a reply..."
+                          value={replyTexts[comment.id] || ""}
+                          onChange={(e) => handleReplyChange(comment.id, e.target.value)}
+                          rows={2}
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                              e.preventDefault();
+                              handleReplySubmit(comment.id);
+                            }
+                          }}
+                        />
+                        {replyErrors[comment.id] && (
+                          <span className="reply-error">{replyErrors[comment.id]}</span>
+                        )}
+                        <div className="reply-input-actions">
+                          <button
+                            className="reply-cancel-btn"
+                            onClick={() => { setReplyingTo(null); setReplyErrors((p) => ({ ...p, [comment.id]: null })); }}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            className="reply-submit-btn"
+                            disabled={submitting === comment.id || !(replyTexts[comment.id] || "").trim()}
+                            onClick={() => handleReplySubmit(comment.id)}
+                          >
+                            {submitting === comment.id ? "Sending..." : "Send Reply"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Main Component ───────────────────────────────────────────────────────────
+
+export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDeleteTrip }) {
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [selectedTripId, setSelectedTripId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -60,6 +315,12 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId }) {
   const [isLoadingItinerary, setIsLoadingItinerary] = useState(false);
   const [itineraryError, setItineraryError] = useState(null);
   const [activeStopIndex, setActiveStopIndex] = useState(0);
+  const [deletingTripId, setDeletingTripId] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showCommentsPanel, setShowCommentsPanel] = useState(false);
+  const [unreadCommentCount, setUnreadCommentCount] = useState(0);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const requestSequenceRef = useRef(0);
 
   const savedTrips = useMemo(() => getSavedItineraryTrips(agencyTrips), [agencyTrips]);
@@ -125,6 +386,28 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId }) {
     return () => { cancelled = true; };
   }, [agencyId, selectedTrip, selectedItineraryId]);
 
+  // Fetch unread comment count when a trip with a valid agencyId is selected
+  useEffect(() => {
+    if (!agencyId || !selectedTripId) {
+      setUnreadCommentCount(0);
+      return;
+    }
+    let cancelled = false;
+    getUnreadCommentCount(agencyId)
+      .then((res) => {
+        if (!cancelled) setUnreadCommentCount(res?.count ?? 0);
+      })
+      .catch(() => {
+        if (!cancelled) setUnreadCommentCount(0);
+      });
+    return () => { cancelled = true; };
+  }, [agencyId, selectedTripId]);
+
+  // Close comments panel when trip changes
+  useEffect(() => {
+    setShowCommentsPanel(false);
+  }, [selectedTripId]);
+
   const safeDays = useMemo(
     () => (Array.isArray(fullItinerary?.days) ? fullItinerary.days : []),
     [fullItinerary]
@@ -176,6 +459,44 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId }) {
     return parts.join(" / ");
   }, [safeDays.length, nightCount]);
 
+  const handleDeleteTrip = async (tripId) => {
+    if (!agencyId || !tripId || deletingTripId) return;
+    setDeletingTripId(tripId);
+    try {
+      await onDeleteTrip?.(agencyId, tripId);
+      setShowDeleteConfirm(null);
+      if (selectedTripId === tripId) {
+        const remaining = selectedClient?.trips.filter(t => t.id !== tripId) || [];
+        setSelectedTripId(remaining[0]?.id || null);
+      }
+    } catch (e) {
+      console.error("Failed to delete trip:", e);
+    } finally {
+      setDeletingTripId(null);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!fullItinerary || pdfLoading) return;
+    setPdfLoading(true);
+    try {
+      const dateRange = tripDateRange;
+      const doc = await generateItineraryPdf({
+        title:         tripTitle,
+        summary:       tripSummary,
+        dateRange,
+        travelerCount,
+        days:          safeDays,
+        agencyName:    "Voyage",
+      });
+      doc.save(titleToFilename(tripTitle));
+    } catch (err) {
+      console.error("PDF export failed:", err);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   function renderItineraryContent() {
     if (isLoadingItinerary) {
       return (
@@ -195,7 +516,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId }) {
     if (fullItinerary && safeDays.length > 0) {
       return (
         <div className="itinerary-split-view">
-          <div className="itinerary-days-column">
+          <div className={`itinerary-days-column${showCommentsPanel ? " comments-open" : ""}`}>
             <header className="itinerary-days-header">
               <div className="itinerary-title-group">
                 <h3>{selectedTrip?.destination || tripTitle}</h3>
@@ -205,16 +526,53 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId }) {
                 </span>
               </div>
               <div className="itinerary-actions">
-                <button className="action-btn share-btn">
+                <button
+                  className={`action-btn comments-btn${showCommentsPanel ? " active" : ""}`}
+                  onClick={() => setShowCommentsPanel((v) => !v)}
+                  title="View client comments"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                  Comments
+                  {unreadCommentCount > 0 && (
+                    <span className="comment-notification-badge">
+                      {unreadCommentCount > 99 ? "99+" : unreadCommentCount}
+                    </span>
+                  )}
+                </button>
+                <button className="action-btn share-btn" onClick={() => setShowShareDialog(true)}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg>
                   Share
+                </button>
+                <button
+                  className={`action-btn share-btn pdf-btn${pdfLoading ? " pdf-btn--loading" : ""}`}
+                  onClick={handleDownloadPdf}
+                  disabled={pdfLoading || !fullItinerary}
+                  title="Download itinerary as PDF"
+                >
+                  {pdfLoading ? (
+                    <>
+                      <span className="pdf-spinner" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      PDF
+                    </>
+                  )}
                 </button>
                 <button className="action-btn more-btn">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" /></svg>
                 </button>
               </div>
             </header>
-            
+
             <div className="itinerary-meta-row">
               {tripDateRange && (
                 <span className="meta-item">
@@ -229,6 +587,14 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId }) {
                 </span>
               )}
             </div>
+
+            {showCommentsPanel && (
+              <CommentsPanel
+                agencyId={agencyId}
+                tripId={selectedTripId}
+                onClose={() => setShowCommentsPanel(false)}
+              />
+            )}
 
             <div className="day-timeline-list">
               {safeDays.map((day, dIdx) => {
@@ -349,16 +715,40 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId }) {
             <div className="workspace-layout">
               <div className="trip-strip">
                 {selectedClient.trips.map(t => (
-                  <button key={t.id} className={`trip-card ${selectedTripId === t.id ? 'active' : ''}`} aria-pressed={selectedTripId === t.id} onClick={() => setSelectedTripId(t.id)}>
-                    <div className="trip-card-body">
-                      <strong>{t.destination || "Unnamed Trip"}</strong>
-                      <span className="trip-dates">{t.travelWindow || t.dates || "TBD"}</span>
-                      <span className={`trip-status-chip ${getSavedStatusClass(getSavedStatusLabel(t))}`}>
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
-                        {getSavedStatusLabel(t)}
-                      </span>
-                    </div>
-                  </button>
+                  <div key={t.id} className={`trip-card ${selectedTripId === t.id ? 'active' : ''}`}>
+                    <button className="trip-card-select" aria-pressed={selectedTripId === t.id} onClick={() => setSelectedTripId(t.id)}>
+                      <div className="trip-card-body">
+                        <strong>{t.destination || "Unnamed Trip"}</strong>
+                        <span className="trip-dates">{t.travelWindow || t.dates || "TBD"}</span>
+                        <span className={`trip-status-chip ${getSavedStatusClass(getSavedStatusLabel(t))}`}>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                          {getSavedStatusLabel(t)}
+                        </span>
+                      </div>
+                    </button>
+                    {selectedTripId === t.id && unreadCommentCount > 0 && (
+                      <div className="trip-card-comment-badge" title={`${unreadCommentCount} unread comment${unreadCommentCount !== 1 ? "s" : ""}`}>
+                        {unreadCommentCount > 99 ? "99+" : unreadCommentCount}
+                      </div>
+                    )}
+                    {showDeleteConfirm === t.id ? (
+                      <div className="delete-confirm-bar">
+                        <span>Delete this trip?</span>
+                        <button className="confirm-yes" disabled={deletingTripId === t.id} onClick={() => handleDeleteTrip(t.id)}>
+                          {deletingTripId === t.id ? "..." : "Yes"}
+                        </button>
+                        <button className="confirm-no" onClick={() => setShowDeleteConfirm(null)}>No</button>
+                      </div>
+                    ) : (
+                      <button
+                        className="trip-delete-btn"
+                        title="Delete trip"
+                        onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(t.id); }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
               <div className="itinerary-preview-area">
@@ -381,6 +771,15 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId }) {
           </div>
         )}
       </main>
+
+      <ShareDialog
+        isOpen={showShareDialog}
+        onClose={() => setShowShareDialog(false)}
+        agencyId={agencyId}
+        itineraryId={selectedItineraryId}
+        tripId={selectedTripId}
+        tripTitle={tripTitle}
+      />
     </div>
   );
 }
