@@ -1,186 +1,28 @@
-"use client";
-
-import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import prototypeData from "./data/prototype/trip-dashboard.js";
-import { usePrototypeState } from "./hooks/usePrototypeState.js";
-import { useTripDashboard } from "./hooks/useTripDashboard.js";
-import { useAuth } from "./hooks/useAuth.js";
-import { fetchApi } from "./lib/api";
-
-import LandingPage from "./components/landing/LandingPage.jsx";
-import HomePage from "./components/trip-dashboard/HomePage.jsx";
-import AgentKickoffScreen from "./components/agent/AgentKickoffScreen.jsx";
-import WorkspaceScreen from "./components/workspace/WorkspaceScreen.jsx";
-import ReviewScreen from "./components/review/ReviewScreen.jsx";
-import ShareScreen from "./components/share/ShareScreen.jsx";
-import AgencyStatusScreen from "./components/agency-status/AgencyStatusScreen.jsx";
-
-function HomePageInner() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { logout } = useAuth();
-  const authenticatedParam = searchParams.get("authenticated");
-  const [shouldBypassLanding, setShouldBypassLanding] = useState(false);
-  const [user, setUser] = useState(null);
-  const [agencyStatus, setAgencyStatus] = useState(null); // null | { status, name, rejectionReason, suspensionReason }
-  const {
-    activeScreen,
-    setActiveScreen,
-    activeWorkspaceTab,
-    setActiveWorkspaceTab,
-    tripBrief,
-    days,
-    selectedDayId,
-    setSelectedDayId,
-    selectedPlaceId,
-    setSelectedPlaceId,
-    agentMessages,
-    setDays,
-  } = usePrototypeState();
-  const mapPlaces = Array.isArray(prototypeData.mapPlaces) ? prototypeData.mapPlaces : [];
-  const dashboard = useTripDashboard({
-    days,
-    setDays,
-    tripBrief,
-    mapPlaces,
-  });
-
-  useEffect(() => {
-    if (authenticatedParam !== "1") return;
-
-    let cancelled = false;
-    fetchApi("/auth/me")
-      .then((data) => {
-        if (cancelled) return;
-
-        localStorage.setItem("voyage-user", JSON.stringify(data.user));
-        setUser(data.user);
-
-        const hasMembership = Array.isArray(data.user?.memberships) && data.user.memberships.length > 0;
-        if (!hasMembership) {
-          // No agency — redirect to registration wizard step 2
-          router.push("/login?step=agency");
-          return;
-        }
-
-        const membership = data.user.memberships[0];
-        const agency = membership.agency;
-
-        if (agency && agency.status !== "VERIFIED") {
-          // Agency not yet verified — show status screen
-          setAgencyStatus(agency);
-          setShouldBypassLanding(true);
-          return;
-        }
-
-        // Agency is verified — proceed to dashboard
-        setShouldBypassLanding(true);
-      })
-      .catch(() => {
-        const storedUser = typeof window !== "undefined" ? localStorage.getItem("voyage-user") : null;
-        if (!cancelled && storedUser) {
-          try {
-            const parsed = JSON.parse(storedUser);
-            setUser(parsed);
-            setShouldBypassLanding(true);
-          } catch {}
-        }
-      });
-
-    return () => { cancelled = true; };
-  }, [authenticatedParam, router]);
-
-  useEffect(() => {
-    if (shouldBypassLanding && activeScreen === "landing") {
-      setActiveScreen("trip-brief");
-    }
-  }, [activeScreen, setActiveScreen, shouldBypassLanding]);
-
-  // Show agency status screen for non-verified agencies
-  if (agencyStatus && agencyStatus.status !== "VERIFIED") {
-    return <AgencyStatusScreen agency={agencyStatus} user={user} onLogout={logout} />;
-  }
-
-  const currentScreen = activeScreen === "landing" ? "welcome" : activeScreen;
-  const currentWorkspaceTab =
-    activeWorkspaceTab === "overview" || activeWorkspaceTab === "itinerary" ? "trip" : activeWorkspaceTab;
-
-  const selectedDay = dashboard.days.find((day) => day.id === selectedDayId) || dashboard.days[0] || null;
-  const effectiveSelectedDayId = selectedDay?.id ?? null;
-  const selectedPlace = mapPlaces.find((place) => place.id === selectedPlaceId) || null;
-
-  if (currentScreen === "trip-brief") {
-    return (
-      <HomePage
-        user={user}
-        agencyTrips={[]}
-        onContinue={() => setActiveScreen("agent-kickoff")}
-        onOpenTrip={() => {
-          setActiveWorkspaceTab("trip");
-          setActiveScreen("workspace");
-        }}
-      />
-    );
-  }
-
+// Voyage-Client/app/page.jsx
+export default function LandingPage() {
   return (
-    <main className="system-shell">
-      <div className="system-grain" aria-hidden="true" />
+    <div className="p-8 max-w-6xl mx-auto mt-20">
+      <header className="text-center mb-16">
+        <h1 className="text-5xl font-serif text-primary-navy mb-4">AI-Powered Itinerary Intelligence for Travel Agencies</h1>
+        <div className="space-x-4">
+          <button className="bg-warm-sand text-white px-6 py-3 rounded-lg hover:opacity-90 transition-opacity">Start Free Trial</button>
+          <button className="border border-primary-navy text-primary-navy px-6 py-3 rounded-lg hover:bg-primary-navy hover:text-white transition-colors">View Demo</button>
+        </div>
+      </header>
 
-      <section className="wireframe-section">
-        {currentScreen === "welcome" && <LandingPage onStart={() => router.push("/login")} />}
-
-        {currentScreen === "agent-kickoff" && (
-          <AgentKickoffScreen onOpenWorkspace={() => setActiveScreen("workspace")} tripBrief={tripBrief} />
-        )}
-
-        {currentScreen === "workspace" && (
-          <WorkspaceScreen
-            activeWorkspaceTab={currentWorkspaceTab}
-            agentMessages={agentMessages}
-            days={dashboard.days}
-            mapPlaces={mapPlaces}
-            onReviewTrip={() => setActiveScreen("review")}
-            onSelectDay={setSelectedDayId}
-            onSelectPlace={setSelectedPlaceId}
-            onTabChange={(tab) => {
-              setActiveWorkspaceTab(tab);
-              if (tab === "map") {
-                const nextMapPlaceId = mapPlaces[0]?.id ?? null;
-                if (nextMapPlaceId === null) {
-                  setSelectedPlaceId(null);
-                } else if (!selectedPlaceId) {
-                  setSelectedPlaceId(nextMapPlaceId);
-                }
-              }
-            }}
-            selectedDay={selectedDay}
-            selectedDayId={effectiveSelectedDayId}
-            selectedPlace={selectedPlace}
-            tripBrief={tripBrief}
-          />
-        )}
-
-        {currentScreen === "review" && (
-          <ReviewScreen
-            days={dashboard.days}
-            onBackToWorkspace={() => setActiveScreen("workspace")}
-            onShare={() => setActiveScreen("share")}
-            tripBrief={tripBrief}
-          />
-        )}
-
-        {currentScreen === "share" && <ShareScreen onBackToWorkspace={() => setActiveScreen("workspace")} />}
+      <section className="grid grid-cols-3 gap-6">
+        <div className="col-span-2 bg-white rounded-2xl shadow-soft p-6 h-96 flex flex-col justify-end">
+          <h3 className="text-xl font-semibold text-primary-navy">Real-time Agent Sync</h3>
+        </div>
+        <div className="flex flex-col gap-6">
+          <div className="bg-white rounded-2xl shadow-soft p-6 h-44">
+            <h3 className="text-xl font-semibold text-primary-navy">Client-Ready in Seconds</h3>
+          </div>
+          <div className="bg-white rounded-2xl shadow-soft p-6 h-44">
+            <h3 className="text-xl font-semibold text-primary-navy">Centralized Directory</h3>
+          </div>
+        </div>
       </section>
-    </main>
-  );
-}
-
-export default function Page() {
-  return (
-    <Suspense>
-      <HomePageInner />
-    </Suspense>
+    </div>
   );
 }
