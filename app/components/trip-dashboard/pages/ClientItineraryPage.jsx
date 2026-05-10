@@ -321,6 +321,8 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
   const [showCommentsPanel, setShowCommentsPanel] = useState(false);
   const [unreadCommentCount, setUnreadCommentCount] = useState(0);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [showClientDeleteConfirm, setShowClientDeleteConfirm] = useState(null);
+  const [isDeletingClient, setIsDeletingClient] = useState(false);
   const requestSequenceRef = useRef(0);
 
   const savedTrips = useMemo(() => getSavedItineraryTrips(agencyTrips), [agencyTrips]);
@@ -473,6 +475,33 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
       console.error("Failed to delete trip:", e);
     } finally {
       setDeletingTripId(null);
+    }
+  };
+
+  const handleDeleteClient = async (client) => {
+    if (!agencyId || !client || isDeletingClient) return;
+    setIsDeletingClient(true);
+    try {
+      // Delete each trip sequentially to avoid overwhelming the server
+      for (const trip of client.trips) {
+        await onDeleteTrip?.(agencyId, trip.id);
+      }
+      setShowClientDeleteConfirm(null);
+      // Auto-select next client if the deleted one was selected
+      if (selectedClientId === client.id) {
+        const remaining = filteredClients.filter(c => c.id !== client.id);
+        if (remaining.length > 0) {
+          setSelectedClientId(remaining[0].id);
+          setSelectedTripId(remaining[0].trips[0]?.id || null);
+        } else {
+          setSelectedClientId(null);
+          setSelectedTripId(null);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to delete client trips:", err);
+    } finally {
+      setIsDeletingClient(false);
     }
   };
 
@@ -670,11 +699,62 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
           {filteredClients.length > 0 ? (
             filteredClients.map(c => {
               const initials = c.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+              const isConfirming = showClientDeleteConfirm === c.id;
+              const isSelected = selectedClientId === c.id;
+
               return (
-                <button key={c.id} className={`client-card ${selectedClientId === c.id ? 'active' : ''}`} aria-pressed={selectedClientId === c.id} onClick={() => { setSelectedClientId(c.id); setSelectedTripId(c.trips[0]?.id || null); }}>
-                  <div className="client-avatar">{initials}</div>
-                  <div className="client-info"><strong>{c.name}</strong><span>{c.trips.length} saved itineraries</span></div>
-                </button>
+                <div 
+                  key={c.id} 
+                  className={`client-card-container ${isSelected ? 'selected' : ''} ${isConfirming ? 'confirming' : ''}`}
+                >
+                  <button 
+                    className="client-card-main" 
+                    onClick={() => { 
+                      setSelectedClientId(c.id); 
+                      setSelectedTripId(c.trips[0]?.id || null); 
+                    }}
+                    title={`View ${c.name}'s itineraries`}
+                  >
+                    <div className="client-avatar">{initials}</div>
+                    <div className="client-info">
+                      <strong>{c.name}</strong>
+                      <span>{c.trips.length} saved itineraries</span>
+                    </div>
+                  </button>
+
+                  {isConfirming ? (
+                    <div className="client-delete-confirm">
+                      <button 
+                        className="client-confirm-yes" 
+                        disabled={isDeletingClient}
+                        onClick={() => handleDeleteClient(c)}
+                      >
+                        {isDeletingClient ? "..." : "Delete"}
+                      </button>
+                      <button 
+                        className="client-confirm-no" 
+                        disabled={isDeletingClient}
+                        onClick={() => setShowClientDeleteConfirm(null)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      className="client-delete-btn" 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setShowClientDeleteConfirm(c.id); 
+                      }}
+                      title="Delete client record"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               );
             })
           ) : (
