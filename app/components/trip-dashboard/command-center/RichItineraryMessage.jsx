@@ -4,22 +4,22 @@ import { buildRichItinerarySections } from "../../../lib/trip-dashboard/richItin
 function StopShell({ stop, selectedPlaceId, onPlaceSelect }) {
   const isSelected = stop.isSelectable && stop.placeId === selectedPlaceId;
   const rowBase =
-    "grid gap-2.5 items-start w-full border border-border rounded-sm bg-white text-text-primary p-2.5 text-left";
-  const rowGrid = "grid-cols-[74px_54px_minmax(0,1fr)]";
+    "grid gap-4 items-start w-full border border-border/10 rounded-xl bg-surface-elevated text-text-primary p-3.5 text-left transition-all duration-200 shadow-sm";
+  const rowGrid = "grid-cols-[74px_80px_minmax(0,1fr)]";
   const rowSelectable = stop.isSelectable
-    ? "cursor-pointer transition-[border-color,box-shadow,transform] duration-[180ms] ease-linear hover:-translate-y-px hover:border-secondary/70 hover:shadow-[0_10px_20px_rgba(34,56,67,0.08)] focus-visible:outline-2 focus-visible:outline-transparent focus-visible:outline-offset-2 focus-visible:border-secondary focus-visible:shadow-[0_0_0_3px_rgba(215,122,97,0.24),0_10px_20px_rgba(34,56,67,0.08)]"
-    : "bg-white/[0.72]";
-  const rowSelected = isSelected ? "border-secondary/70 shadow-[0_10px_20px_rgba(34,56,67,0.08)] -translate-y-px" : "";
+    ? "cursor-pointer hover:border-secondary/40 hover:shadow-md active:scale-[0.99]"
+    : "opacity-90";
+  const rowSelected = isSelected ? "border-secondary/60 ring-2 ring-secondary/10 shadow-md" : "";
 
   const className = `${rowBase} ${rowGrid} ${rowSelectable} ${rowSelected}`;
 
   const content = (
     <>
-      <span className="text-text-soft text-[11px] font-extrabold leading-[1.35]">{stop.timeLabel}</span>
+      <span className="text-text-soft text-[11px] font-bold leading-[1.35] pt-1">{stop.timeLabel}</span>
       {stop.photoUrl ? (
-        <img className="w-[54px] h-[54px] rounded-[10px] object-cover" src={stop.photoUrl} alt={`${stop.placeName} itinerary stop`} />
+        <img className="w-[80px] h-[80px] rounded-lg object-cover shadow-sm" src={stop.photoUrl} alt={stop.placeName} />
       ) : (
-        <span className="w-[54px] h-[54px] rounded-[10px] inline-flex items-center justify-center bg-background text-text-primary text-lg font-extrabold" aria-hidden="true">
+        <span className="w-[80px] h-[80px] rounded-lg inline-flex items-center justify-center bg-background text-text-soft text-xl font-bold border border-border/10" aria-hidden="true">
           {stop.placeName.slice(0, 1).toUpperCase()}
         </span>
       )}
@@ -72,20 +72,23 @@ export default function RichItineraryMessage({
   );
 
   return (
-    <article className="grid gap-4 min-w-[min(100%,280px)]" aria-label="Generated itinerary">
-      <header className="grid gap-1.5">
-        <span className="text-text-soft text-[10px] font-extrabold tracking-[0.12em] uppercase">Generated itinerary</span>
-        <h2 className="m-0 text-text-primary text-lg leading-[1.2]">{sections.title}</h2>
-        {sections.summary ? <p className="m-0 text-text-soft text-[13px] leading-[1.45]">{sections.summary}</p> : null}
+    <article className="grid gap-6 min-w-[min(100%,340px)] bg-surface-elevated p-5 rounded-2xl border border-border/10 shadow-sm" aria-label="Generated itinerary">
+      <header className="grid gap-2 p-1">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(215,122,97,0.6)]" />
+          <span className="text-text-soft text-[10px] font-black tracking-widest uppercase">Draft Itinerary</span>
+        </div>
+        <h2 className="m-0 text-text-primary text-2xl font-serif leading-[1.1] tracking-tight">{sections.title}</h2>
+        {sections.summary ? <p className="m-0 text-text-soft text-[14px] leading-relaxed font-medium line-clamp-2 hover:line-clamp-none transition-all duration-300">{sections.summary}</p> : null}
       </header>
 
       <div className="grid gap-3.5">
         {sections.days.map((day) => (
-          <section className="grid gap-2" key={day.id}>
-            <h3 className="flex items-baseline gap-2 m-0 text-text-primary text-[13px] leading-[1.25]">
-              <span>{day.label}</span>
+          <section className="grid gap-3" key={day.id}>
+            <h3 className="flex items-center gap-2 m-0 text-text-primary text-[14px] font-bold py-1 border-b border-border/10">
+              <span className="text-secondary tracking-tight">Day {day.dayNumber}</span>
               {day.title ? (
-                <small className="min-w-0 text-text-soft text-xs font-semibold overflow-hidden text-ellipsis whitespace-nowrap">{day.title}</small>
+                <span className="text-text-soft font-normal truncate">— {day.title}</span>
               ) : null}
             </h3>
             <div className="grid gap-2">

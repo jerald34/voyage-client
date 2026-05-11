@@ -136,16 +136,16 @@ export default function ChatMessage({
           <span className="text-text-soft">{isUser ? "You" : "Agent"}</span>
         </div>
         <div
-          className={`px-4 py-3 rounded-md text-sm leading-relaxed break-words w-fit max-w-full ${
+          className={`px-5 py-3.5 rounded-[20px] text-sm leading-relaxed break-words w-fit max-w-full shadow-lg ${
             isUser
-              ? "bg-secondary text-white rounded-br-[4px]"
-              : "bg-surface-elevated text-text-primary border border-border/15 rounded-bl-[4px]"
+              ? "bg-[rgba(215,122,97,0.4)] backdrop-blur-md text-text-primary border border-border/20 rounded-br-[4px]"
+              : "bg-[rgba(255,255,255,0.05)] backdrop-blur-md text-text-primary border border-border/10 rounded-bl-[4px]"
           }`}
         >
           {isUser ? (
-            <p>{message.content}</p>
-          ) : shouldRenderRichItinerary ? (
-            <div className="flex flex-col gap-3">
+            <p className="m-0 font-medium">{message.content}</p>
+          ) : renderAsItinerary && itinerary ? (
+            <div className="flex flex-col gap-4">
               <RichItineraryMessage
                 itinerary={itinerary}
                 placeEntities={placeEntities}
@@ -153,7 +153,7 @@ export default function ChatMessage({
                 onPlaceSelect={onPlaceSelect}
               />
               {String(message?.content ?? "").trim() ? (
-                <div className="pt-2 border-t border-border/15">
+                <div className="pt-3 border-t border-white/10">
                   <MarkdownContent
                     content={message.content}
                     placeEntities={placeEntities}

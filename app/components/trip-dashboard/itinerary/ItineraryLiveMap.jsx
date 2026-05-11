@@ -187,10 +187,10 @@ function FitBounds({ points }) {
     points.forEach((point) => bounds.extend(point));
     
     map.fitBounds(bounds, {
-      top: 36,
-      right: 36,
-      bottom: 36,
-      left: 36,
+      top: 60,
+      right: 60,
+      bottom: 60,
+      left: 560, // 520px sidebar + 40px padding
     });
   }, [map, points]);
 
@@ -206,6 +206,7 @@ function FocusActiveStop({ points, activeIndex }) {
     if (!activePoint) return;
     
     map.panTo(activePoint);
+    map.panBy(-260, 0); // Offset for sidebar
     const currentZoom = map.getZoom();
     if (currentZoom < 14) {
       map.setZoom(14);
@@ -234,6 +235,7 @@ function FocusSelectedPlace({ selectedPlace }) {
   useEffect(() => {
     if (!map || !selectedPlace) return;
     map.panTo({ lat: selectedPlace.lat, lng: selectedPlace.lng });
+    map.panBy(-260, 0); // Offset for sidebar
     const currentZoom = map.getZoom();
     if (!currentZoom || currentZoom < 15) {
       map.setZoom(15);
@@ -285,6 +287,34 @@ function PlaceDetailPanel({ place, onClose }) {
   );
 }
 
+function MapHandler({ selectedPlaceId, viewportPoints, setSelectedPoint }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!selectedPlaceId) {
+      setSelectedPoint(null);
+      return;
+    }
+
+    const point = viewportPoints.find((p) => p.id === selectedPlaceId);
+    if (point) {
+      setSelectedPoint(point);
+      if (map) {
+        map.panTo({ lat: point.lat, lng: point.lng });
+        map.panBy(-260, 0); // Offset for sidebar
+        
+        // Also ensure we are zoomed in enough to see details
+        const currentZoom = map.getZoom();
+        if (!currentZoom || currentZoom < 14) {
+          map.setZoom(14);
+        }
+      }
+    }
+  }, [selectedPlaceId, viewportPoints, map, setSelectedPoint]);
+
+  return null;
+}
+
 export default function ItineraryLiveMap({
   items = [],
   liveMarkers = [],
@@ -294,8 +324,10 @@ export default function ItineraryLiveMap({
   selectedPlaceId = "",
   selectedPlace = null,
   onSelectPlace,
+  theme = "light",
 }) {
   const [selectedPoint, setSelectedPoint] = useState(null);
+  const isDark = theme === "dark";
 
   const points = useMemo(() => items.map((item, index) => mapItemToPoint(item, index)).filter(Boolean), [items]);
   const liveMarkerPoints = useMemo(
@@ -327,11 +359,6 @@ export default function ItineraryLiveMap({
     });
   }, [selectedPlace]);
 
-  useEffect(() => {
-    if (!selectedPlaceId) {
-      setSelectedPoint(null);
-    }
-  }, [selectedPlaceId]);
 
   const handleMarkerClick = useCallback((point) => {
     setSelectedPoint(point);
@@ -339,16 +366,26 @@ export default function ItineraryLiveMap({
   }, [onSelectPlace]);
 
   return (
-    <div className="absolute inset-0 bg-[#f8fafc]">
+    <div className={`absolute inset-0 ${isDark ? "bg-[#111827]" : "bg-[#f8fafc]"}`}>
       <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
         <Map
           defaultCenter={center}
           defaultZoom={center.lat !== 0 ? 13 : 2}
-          mapId={MAP_ID}
+          mapId={isDark ? "dark_map_id_placeholder" : MAP_ID}
+          colorScheme={isDark ? "DARK" : "LIGHT"}
           style={{ width: "100%", height: "100%" }}
           disableDefaultUI={false}
           gestureHandling="greedy"
+          mapTypeControlOptions={{ position: 3 }}
+          fullscreenControlOptions={{ position: 3 }}
+          streetViewControlOptions={{ position: 9 }}
+          zoomControlOptions={{ position: 9 }}
         >
+          <MapHandler
+            selectedPlaceId={selectedPlaceId}
+            viewportPoints={viewportPoints}
+            setSelectedPoint={setSelectedPoint}
+          />
           {viewportPoints.length > 0 && <FitBounds points={viewportPoints} />}
           <FocusActiveStop points={points} activeIndex={activeIndex} />
           <FocusLiveMarker liveMarkers={liveMarkerPoints} />

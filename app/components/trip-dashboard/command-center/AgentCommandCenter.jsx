@@ -42,7 +42,6 @@ export default function AgentCommandCenter({
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
-
   const displayedMessages = useMemo(() => {
     if (!Array.isArray(messages) || messages.length === 0) {
       return EMPTY_ARRAY;
@@ -83,30 +82,6 @@ export default function AgentCommandCenter({
     return String(message?.itineraryId ?? "") === itineraryId || String(message?.metadata?.itineraryId ?? "") === itineraryId;
   }
 
-  // While the agent is actively streaming, render an in-progress rich itinerary bubble so the user
-  // sees days and items light up card-by-card instead of waiting for run completion. Suppress it once
-  // a completed assistant message already shows the same itinerary (post-completion takeover) to
-  // avoid a double-render flicker.
-  const itineraryHasContent = useMemo(() => {
-    if (!itinerary?.id) return false;
-    const days = Array.isArray(itinerary.days) ? itinerary.days : [];
-    const hasItems = days.some((day) => Array.isArray(day?.items) && day.items.length > 0);
-    const hasTitle = typeof itinerary.title === "string" && itinerary.title.trim().length > 0;
-    return hasItems || hasTitle || days.length > 0;
-  }, [itinerary]);
-
-  const isItineraryAlreadyShownByCompletedMessage = useMemo(() => {
-    if (!itineraryId) return false;
-    return displayedMessages.some((message) => shouldRenderMessageAsItinerary(message));
-    // shouldRenderMessageAsItinerary is stable for this dependency window; itineraryId already triggers re-eval.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayedMessages, itineraryId]);
-
-  const showInProgressItineraryBubble =
-    isStreaming && !!itinerary?.id && itineraryHasContent && !isItineraryAlreadyShownByCompletedMessage;
-
-
-
   const prevMessageCountRef = useRef(messages?.length ?? 0);
 
   useEffect(() => {
@@ -146,7 +121,7 @@ export default function AgentCommandCenter({
   }
 
   return (
-    <div className="glass-panel backdrop-blur-lg p-4 flex flex-col min-h-0 h-full shadow-soft">
+    <div className="glass-panel backdrop-blur-[24px] p-4 flex flex-col min-h-0 h-full shadow-strong transition-all duration-500 ease-in-out">
 
       {/* chat log */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-5 pr-2 mb-5">
@@ -187,8 +162,7 @@ export default function AgentCommandCenter({
               </svg>
             </div>
             <div className="flex flex-col gap-1.5 max-w-[85%]">
-              {/* thinking bubble */}
-              <div className="px-4 py-3 rounded-md text-sm leading-relaxed relative bg-surface border border-dashed border-border flex flex-col gap-2.5 w-full">
+              <div className="px-4 py-3 rounded-md text-sm leading-relaxed relative bg-[rgba(255,255,255,0.05)] backdrop-blur-md border border-white/10 flex flex-col gap-2.5 w-full">
                 <div className="flex items-center gap-2 text-xs font-bold text-text-primary">
                   <span className="w-1.5 h-1.5 bg-secondary rounded-full animate-pulse flex-shrink-0" />
                   Agent working
@@ -210,34 +184,6 @@ export default function AgentCommandCenter({
                     ))}
                   </div>
                 )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showInProgressItineraryBubble && (
-          <div className="flex gap-3 max-w-full">
-            {/* assistant avatar */}
-            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[11px] font-extrabold mt-1 bg-primary text-white" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <path d="m16 10-4 4-4-4" />
-              </svg>
-            </div>
-            <div className="flex flex-col gap-1.5 max-w-[85%]">
-              <div className="flex items-center gap-2 text-[11px] font-bold text-text-soft px-1">
-                <span className="sender">Voyage Agent</span>
-                <span className="time">Agent</span>
-              </div>
-              <div className="px-4 py-3 rounded-md text-sm leading-relaxed relative bg-background border border-border rounded-bl-[4px]">
-                <div className="grid gap-3.5">
-                  <RichItineraryMessage
-                    itinerary={itinerary}
-                    placeEntities={placeEntities}
-                    selectedPlaceId={selectedPlaceId}
-                    onPlaceSelect={onPlaceSelect}
-                  />
-                </div>
               </div>
             </div>
           </div>

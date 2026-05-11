@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTheme } from "../theme/ThemeProvider";
 import { useAuth } from "../../hooks/useAuth.js";
 import { useAgentRunStream } from "../../hooks/useAgentRunStream.js";
 import { useTripPlanning } from "../../hooks/useTripPlanning.js";
@@ -16,10 +17,12 @@ import {
   getApprovalBlockers,
   getUrgentDepartures,
 } from "../../lib/agency-dashboard/selectors.js";
-import { buildPlaceEntities } from "../../lib/trip-dashboard/placeEntities.js";
+import { buildPlaceEntities, getItineraryPlaceEntityId } from "../../lib/trip-dashboard/placeEntities.js";
 
+import dynamic from "next/dynamic";
 import AgentCommandCenter from "./command-center/AgentCommandCenter.jsx";
 import ItineraryDraftPanel from "./itinerary/ItineraryDraftPanel.jsx";
+const ItineraryLiveMap = dynamic(() => import("./itinerary/ItineraryLiveMap.jsx"), { ssr: false });
 import ClientItineraryPage from "./pages/ClientItineraryPage.jsx";
 import ApproveItineraryModal from "./modals/ApproveItineraryModal.jsx";
 import DashboardHeader from "./layout/DashboardHeader.jsx";
@@ -58,6 +61,7 @@ const getRunStatusLabel = (runStatus, streamError) => {
 };
 
 export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp = [], onContinue, onOpenTrip, onNewItinerary }) {
+  const { theme } = useTheme();
   const { logout } = useAuth();
   const [user, setUser] = useState(userProp || null);
   const agencyId = user?.memberships?.[0]?.agencyId ?? null;
@@ -545,38 +549,52 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
 
         <main className="flex-1 overflow-y-auto p-2 flex flex-col gap-2">
           {activeTab === "command-center" ? (
-            <section className="flex flex-col flex-1 min-h-0">
-              <div className="grid grid-cols-[minmax(460px,0.75fr)_minmax(0,1.25fr)] gap-2 flex-1 min-h-0 max-[1100px]:grid-cols-1 max-[1100px]:grid-rows-[minmax(500px,auto)]">
-                <AgentCommandCenter
-                  messages={activeTripState?.messages ?? []}
-                  isStreaming={isVisible ? isStreaming : false}
-                  assistantMessage={isVisible ? assistantMessage : ""}
-                  toolCalls={isVisible ? toolCalls : []}
-                  activeToolLabel={isVisible ? activeToolLabel : null}
-                  dispatchAgentMessage={(prompt) => dispatchMessage(prompt, startStream)}
-                  composerInput={composerInput}
-                  setComposerInput={setComposerInput}
-                  isSending={isSending}
-                  agentError={agentError}
-                  user={user}
-                  itinerary={activeTripState?.itinerary ?? null}
-                  placeEntities={placeEntities}
-                  selectedPlaceId={selectedPlaceId}
-                  onPlaceSelect={setSelectedPlaceId}
-                />
-                <ItineraryDraftPanel
-                  itinerary={activeTripState?.itinerary ?? null}
-                  draftDays={Array.isArray(activeTripState?.itinerary?.days) ? activeTripState.itinerary.days : []}
-                  draftVersion={activeTripState?.itinerary?.version ? `Draft v${activeTripState.itinerary.version}` : "Draft unavailable"}
-                  tripSummary={activeTripState?.itinerary?.trip ?? null}
-                  mapMarkers={visibleMapMarkers}
+            <section className="relative flex flex-1 min-h-0 overflow-hidden rounded-[24px] border border-border shadow-inner">
+              {/* Immersive Map Background */}
+              <div className="absolute inset-0 z-0 opacity-90 transition-opacity duration-700 hover:opacity-100">
+                <ItineraryLiveMap
+                  theme={theme}
+                  items={activeTripState?.itinerary?.days?.reduce((acc, day) => {
+                    (day?.items || []).forEach((item, idx) => acc.push({
+                      ...item,
+                      __dayNumber: day?.dayNumber,
+                      __dayTitle: day?.title,
+                      __itemIndex: idx,
+                      __placeEntityId: getItineraryPlaceEntityId(item, day, idx),
+                    }));
+                    return acc;
+                  }, []) ?? []}
+                  liveMarkers={visibleMapMarkers}
                   routeEstimates={visibleRouteEstimates}
                   placeEntities={placeEntities}
                   selectedPlaceId={selectedPlaceId}
-                  onPlaceSelect={setSelectedPlaceId}
-                  onContinue={onContinue}
-                  dispatchAgentMessage={(prompt) => dispatchMessage(prompt, startStream)}
+                  onSelectPlace={setSelectedPlaceId}
                 />
+              </div>
+
+              {/* Floating Glass Panels Layer */}
+              <div className="relative z-10 flex gap-6 p-2 w-full h-full pointer-events-none overflow-hidden">
+                <div className="w-[520px] h-full pointer-events-auto transition-all duration-500 ease-in-out">
+                  <AgentCommandCenter
+                    messages={activeTripState?.messages ?? []}
+                    isStreaming={isVisible ? isStreaming : false}
+                    assistantMessage={isVisible ? assistantMessage : ""}
+                    toolCalls={isVisible ? toolCalls : []}
+                    activeToolLabel={isVisible ? activeToolLabel : null}
+                    dispatchAgentMessage={(prompt) => dispatchMessage(prompt, startStream)}
+                    composerInput={composerInput}
+                    setComposerInput={setComposerInput}
+                    isSending={isSending}
+                    agentError={agentError}
+                    user={user}
+                    itinerary={activeTripState?.itinerary ?? null}
+                    placeEntities={placeEntities}
+                    selectedPlaceId={selectedPlaceId}
+                    onPlaceSelect={setSelectedPlaceId}
+                  />
+                </div>
+                
+                {/* ItineraryDraftPanel removed as requested - the itinerary is now focused in the command center or itineraries tab */}
               </div>
             </section>
           ) : activeTab === "itineraries" ? (
