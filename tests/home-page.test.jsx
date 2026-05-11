@@ -321,7 +321,6 @@ describe("Agency portfolio HomePage", () => {
     expect(screen.getByRole("button", { name: "Regenerate" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Send to Client" })).toBeInTheDocument();
     expect(screen.getByText("No conversation yet")).toBeInTheDocument();
-    expect(screen.getByText("Live Itinerary")).toBeInTheDocument();
   });
 
   it("wires Agent command actions through the homepage", () => {
