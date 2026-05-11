@@ -55,6 +55,7 @@ const mocks = vi.hoisted(() => ({
       days: [],
     },
   })),
+  listAgencyTripsMock: vi.fn(async () => ({ trips: [] })),
   approveAgentThreadItineraryMock: vi.fn(async (_agencyId, threadId, payload) => ({
     thread: {
       id: threadId,
@@ -143,6 +144,8 @@ function resetApiMocks() {
       days: [],
     },
   }));
+  mocks.listAgencyTripsMock.mockReset();
+  mocks.listAgencyTripsMock.mockImplementation(async () => ({ trips: [] }));
   mocks.approveAgentThreadItineraryMock.mockReset();
   mocks.approveAgentThreadItineraryMock.mockImplementation(async (_agencyId, threadId, payload) => ({
     thread: {
@@ -188,6 +191,7 @@ vi.mock("../app/lib/api.js", () => ({
   deleteAgentThread: (...args) => mocks.deleteAgentThreadMock(...args),
   fetchAgentThread: (...args) => mocks.fetchAgentThreadMock(...args),
   fetchItineraryDraft: (...args) => mocks.fetchItineraryDraftMock(...args),
+  listAgencyTrips: (...args) => mocks.listAgencyTripsMock(...args),
   listAgentThreads: (...args) => mocks.listAgentThreadsMock(...args),
   sendMessage: (...args) => mocks.sendMessageMock(...args),
 }));

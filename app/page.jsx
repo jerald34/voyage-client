@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import prototypeData from "./data/prototype/trip-dashboard.js";
 import { usePrototypeState } from "./hooks/usePrototypeState.js";
 import { useTripDashboard } from "./hooks/useTripDashboard.js";
+import { useAuth } from "./hooks/useAuth.js";
 import { fetchApi } from "./lib/api";
 
 import LandingPage from "./components/landing/LandingPage.jsx";
@@ -13,13 +14,16 @@ import AgentKickoffScreen from "./components/agent/AgentKickoffScreen.jsx";
 import WorkspaceScreen from "./components/workspace/WorkspaceScreen.jsx";
 import ReviewScreen from "./components/review/ReviewScreen.jsx";
 import ShareScreen from "./components/share/ShareScreen.jsx";
+import AgencyStatusScreen from "./components/agency-status/AgencyStatusScreen.jsx";
 
 function HomePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { logout } = useAuth();
   const authenticatedParam = searchParams.get("authenticated");
   const [shouldBypassLanding, setShouldBypassLanding] = useState(false);
   const [user, setUser] = useState(null);
+  const [agencyStatus, setAgencyStatus] = useState(null); // null | { status, name, rejectionReason, suspensionReason }
   const {
     activeScreen,
     setActiveScreen,
@@ -45,28 +49,38 @@ function HomePageInner() {
   useEffect(() => {
     if (authenticatedParam !== "1") return;
 
-    // Always try to fetch fresh user data (includes memberships).
-    // Fall back to cached data if the fetch fails.
     let cancelled = false;
     fetchApi("/auth/me")
       .then((data) => {
         if (cancelled) return;
-        
-        // Save user regardless of membership status so they are at least authenticated
+
         localStorage.setItem("voyage-user", JSON.stringify(data.user));
         setUser(data.user);
-        setShouldBypassLanding(true);
 
         const hasMembership = Array.isArray(data.user?.memberships) && data.user.memberships.length > 0;
         if (!hasMembership) {
-          console.warn("User has no agency memberships. Some dashboard features may be limited.", data.user);
+          // No agency — redirect to registration wizard step 2
+          router.push("/login?step=agency");
+          return;
         }
+
+        const membership = data.user.memberships[0];
+        const agency = membership.agency;
+
+        if (agency && agency.status !== "VERIFIED") {
+          // Agency not yet verified — show status screen
+          setAgencyStatus(agency);
+          setShouldBypassLanding(true);
+          return;
+        }
+
+        // Agency is verified — proceed to dashboard
+        setShouldBypassLanding(true);
       })
       .catch(() => {
-        // Fetch failed — try to use cached user as fallback.
         const storedUser = typeof window !== "undefined" ? localStorage.getItem("voyage-user") : null;
         if (!cancelled && storedUser) {
-          try { 
+          try {
             const parsed = JSON.parse(storedUser);
             setUser(parsed);
             setShouldBypassLanding(true);
@@ -75,13 +89,18 @@ function HomePageInner() {
       });
 
     return () => { cancelled = true; };
-  }, [authenticatedParam]);
+  }, [authenticatedParam, router]);
 
   useEffect(() => {
     if (shouldBypassLanding && activeScreen === "landing") {
       setActiveScreen("trip-brief");
     }
   }, [activeScreen, setActiveScreen, shouldBypassLanding]);
+
+  // Show agency status screen for non-verified agencies
+  if (agencyStatus && agencyStatus.status !== "VERIFIED") {
+    return <AgencyStatusScreen agency={agencyStatus} user={user} onLogout={logout} />;
+  }
 
   const currentScreen = activeScreen === "landing" ? "welcome" : activeScreen;
   const currentWorkspaceTab =

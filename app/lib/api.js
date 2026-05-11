@@ -71,6 +71,124 @@ export async function approveAgentThreadItinerary(agencyId, threadId, payload) {
   });
 }
 
+export async function listAgencyTrips(agencyId) {
+  return fetchApi(`/agencies/${agencyId}/itineraries`);
+}
+
+export async function deleteAgencyTrip(agencyId, tripId) {
+  return fetchApi(`/agencies/${agencyId}/itineraries/trips/${tripId}`, {
+    method: 'DELETE'
+  });
+}
+
 export async function fetchItineraryDraft(agencyId, itineraryId) {
   return fetchApi(`/agencies/${agencyId}/itineraries/${itineraryId}`);
+}
+
+// Admin API
+
+export async function fetchPendingAgencies() {
+  return fetchApi("/admin/agencies/pending");
+}
+
+export async function fetchAllAgencies(status) {
+  const params = status ? `?status=${encodeURIComponent(status)}` : "";
+  return fetchApi(`/admin/agencies${params}`);
+}
+
+export async function fetchPendingCount() {
+  return fetchApi("/admin/agencies/pending-count");
+}
+
+export async function fetchAgencyDetail(agencyId) {
+  return fetchApi(`/admin/agencies/${agencyId}`);
+}
+
+export async function adminApproveAgency(agencyId) {
+  return fetchApi(`/admin/agencies/${agencyId}/approve`, { method: "POST" });
+}
+
+export async function adminRejectAgency(agencyId, reason) {
+  return fetchApi(`/admin/agencies/${agencyId}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export async function adminSuspendAgency(agencyId, reason) {
+  return fetchApi(`/admin/agencies/${agencyId}/suspend`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export async function adminUnsuspendAgency(agencyId) {
+  return fetchApi(`/admin/agencies/${agencyId}/unsuspend`, { method: "POST" });
+}
+
+// Share API
+
+export async function createItineraryShare(agencyId, itineraryId, payload = {}) {
+  return fetchApi(`/agencies/${agencyId}/shares/${itineraryId}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function listTripShares(agencyId, tripId) {
+  const params = tripId ? `?tripId=${encodeURIComponent(tripId)}` : "";
+  return fetchApi(`/agencies/${agencyId}/shares${params}`);
+}
+
+export async function revokeShare(agencyId, shareId) {
+  return fetchApi(`/agencies/${agencyId}/shares/${shareId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function listShareComments(agencyId, shareId) {
+  return fetchApi(`/agencies/${agencyId}/shares/${shareId}/comments`);
+}
+
+export async function replyToShareComment(agencyId, commentId, content) {
+  return fetchApi(`/agencies/${agencyId}/shares/comments/${commentId}/reply`, {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
+}
+
+export async function getUnreadCommentCount(agencyId) {
+  return fetchApi(`/agencies/${agencyId}/shares/unread-count`);
+}
+
+export async function fetchPublicItinerary(token) {
+  const url = `${API_URL}/shared/${token}`;
+  const response = await fetch(url, {
+    headers: { "Content-Type": "application/json" },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.error?.message || "Itinerary not available");
+    error.code = data.error?.code || "UNKNOWN_ERROR";
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+
+export async function postPublicComment(token, payload) {
+  const url = `${API_URL}/shared/${token}/comments`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.error?.message || "Failed to post comment");
+    error.code = data.error?.code || "UNKNOWN_ERROR";
+    error.status = response.status;
+    throw error;
+  }
+  return data;
 }

@@ -1,0 +1,420 @@
+.admin-agencies-page {
+  padding: 32px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.admin-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.admin-page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--voyage-text);
+  margin: 0;
+}
+
+.admin-view-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--voyage-background);
+  border-radius: var(--voyage-radius-pill);
+  padding: 3px;
+}
+
+.admin-view-btn {
+  background: none;
+  border: none;
+  padding: 8px 18px;
+  border-radius: var(--voyage-radius-pill);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--voyage-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-view-btn.active {
+  background: var(--voyage-surface);
+  color: var(--voyage-text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* Loading / Error / Empty states */
+
+.admin-loading,
+.admin-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--voyage-text-muted);
+  font-size: 0.95rem;
+}
+
+.admin-error {
+  text-align: center;
+  padding: 14px 18px;
+  color: #d44;
+  font-size: 0.9rem;
+  background: rgba(212, 68, 68, 0.06);
+  border-radius: var(--voyage-radius-sm);
+}
+
+/* Review Queue */
+
+.admin-review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-review-card {
+  background: var(--voyage-surface);
+  border: 1px solid var(--voyage-border);
+  border-radius: var(--voyage-radius-md);
+  padding: 20px 24px;
+}
+
+.admin-review-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.admin-review-card-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--voyage-text);
+  margin: 0;
+}
+
+.admin-review-card-date {
+  font-size: 0.8rem;
+  color: var(--voyage-text-soft);
+}
+
+.admin-review-card-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 0.85rem;
+  color: var(--voyage-text-muted);
+  margin-bottom: 16px;
+}
+
+.admin-review-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Buttons */
+
+.admin-btn-sm {
+  padding: 8px 20px !important;
+  min-height: 38px !important;
+  font-size: 0.85rem !important;
+}
+
+.admin-btn-approve {
+  background: #2d9e6e !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.admin-btn-approve:hover:not(:disabled) {
+  background: #258a5f !important;
+}
+
+.admin-btn-reject {
+  background: #d44 !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.admin-btn-reject:hover:not(:disabled) {
+  background: #b33 !important;
+}
+
+/* Reject form */
+
+.admin-reject-form,
+.admin-reason-inline {
+  margin-top: 12px;
+}
+
+.admin-reject-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--voyage-border);
+  border-radius: var(--voyage-radius-sm);
+  font-size: 0.88rem;
+  font-family: inherit;
+  resize: vertical;
+  background: var(--voyage-background);
+  color: var(--voyage-text);
+}
+
+.admin-reject-textarea:focus {
+  outline: none;
+  border-color: var(--voyage-secondary);
+}
+
+.admin-reject-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  justify-content: flex-end;
+}
+
+/* Filter bar */
+
+.admin-filter-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.admin-filter-btn {
+  background: none;
+  border: 1px solid var(--voyage-border);
+  padding: 6px 16px;
+  border-radius: var(--voyage-radius-pill);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--voyage-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-filter-btn.active {
+  background: var(--voyage-primary);
+  color: #fff;
+  border-color: var(--voyage-primary);
+}
+
+/* Table */
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.admin-table th {
+  text-align: left;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--voyage-text-soft);
+  border-bottom: 1px solid var(--voyage-border);
+}
+
+.admin-table td {
+  padding: 14px;
+  border-bottom: 1px solid var(--voyage-border);
+  color: var(--voyage-text);
+}
+
+.admin-table-row {
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.admin-table-row:hover {
+  background: rgba(34, 56, 67, 0.03);
+}
+
+.admin-table-name {
+  font-weight: 600;
+}
+
+/* Status badge */
+
+.admin-status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--voyage-radius-pill);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.badge-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.badge-verified {
+  background: #d4edda;
+  color: #155724;
+}
+
+.badge-rejected {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.badge-suspended {
+  background: #fde2cc;
+  color: #8a4600;
+}
+
+/* Detail view */
+
+.admin-detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--voyage-text-muted);
+  font-size: 0.88rem;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 20px;
+}
+
+.admin-detail-back:hover {
+  color: var(--voyage-primary);
+}
+
+.admin-detail-card {
+  background: var(--voyage-surface);
+  border: 1px solid var(--voyage-border);
+  border-radius: var(--voyage-radius-md);
+  padding: 28px;
+}
+
+.admin-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.admin-detail-header h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--voyage-text);
+  margin: 0;
+}
+
+.admin-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-detail-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--voyage-text-soft);
+}
+
+.admin-detail-field > span:last-child {
+  font-size: 0.92rem;
+  color: var(--voyage-text);
+}
+
+.admin-detail-reason {
+  background: rgba(212, 68, 68, 0.06);
+  border: 1px solid rgba(212, 68, 68, 0.15);
+  border-radius: var(--voyage-radius-sm);
+  padding: 12px 16px;
+  font-size: 0.88rem;
+  color: var(--voyage-text);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.admin-detail-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--voyage-border);
+}
+
+/* Audit trail */
+
+.admin-audit-trail {
+  margin-top: 24px;
+}
+
+.admin-audit-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--voyage-text);
+  margin: 0 0 16px;
+}
+
+.admin-audit-event {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--voyage-border);
+}
+
+.admin-audit-event:last-child {
+  border-bottom: none;
+}
+
+.admin-audit-action {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--voyage-text);
+  text-transform: capitalize;
+}
+
+.admin-audit-meta {
+  font-size: 0.8rem;
+  color: var(--voyage-text-soft);
+}
+
+.admin-audit-reason {
+  font-size: 0.85rem;
+  color: var(--voyage-text-muted);
+  font-style: italic;
+  margin-top: 2px;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+  .admin-agencies-page {
+    padding: 20px 16px;
+  }
+
+  .admin-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-table {
+    font-size: 0.82rem;
+  }
+}
