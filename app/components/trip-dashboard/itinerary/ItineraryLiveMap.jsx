@@ -315,6 +315,7 @@ function MapHandler({ selectedPlaceId, viewportPoints, setSelectedPoint }) {
   return null;
 }
 
+// Triggering rebuild to clear stale map hook state
 export default function ItineraryLiveMap({
   items = [],
   liveMarkers = [],

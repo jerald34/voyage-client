@@ -79,7 +79,11 @@ export default function RichItineraryMessage({
           <span className="text-text-soft text-[10px] font-black tracking-widest uppercase">Draft Itinerary</span>
         </div>
         <h2 className="m-0 text-text-primary text-2xl font-serif leading-[1.1] tracking-tight">{sections.title}</h2>
-        {sections.summary ? <p className="m-0 text-text-soft text-[14px] leading-relaxed font-medium line-clamp-2 hover:line-clamp-none transition-all duration-300">{sections.summary}</p> : null}
+        {sections.summary ? (
+          <p className="m-0 text-text-soft text-[14px] leading-relaxed font-medium line-clamp-2 hover:line-clamp-none transition-all duration-300">
+            {sections.summary}
+          </p>
+        ) : null}
       </header>
 
       <div className="grid gap-3.5">
@@ -88,7 +92,7 @@ export default function RichItineraryMessage({
             <h3 className="flex items-center gap-2 m-0 text-text-primary text-[14px] font-bold py-1 border-b border-border/10">
               <span className="text-secondary tracking-tight">Day {day.dayNumber}</span>
               {day.title ? (
-                <span className="text-text-soft font-normal truncate">— {day.title}</span>
+                <span className="text-text-soft font-normal truncate"> — {day.title}</span>
               ) : null}
             </h3>
             <div className="grid gap-2">
