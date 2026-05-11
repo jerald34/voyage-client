@@ -124,13 +124,15 @@ function HomePageInner() {
     );
   }
 
+  if (currentScreen === "welcome") {
+    return <LandingPage onLogin={() => router.push("/login")} onContinue={() => router.push("/login")} />;
+  }
+
   return (
     <main className="w-full max-w-[1320px] mx-auto px-5 pt-7 pb-[72px] min-h-screen">
       <div className="system-grain" aria-hidden="true" />
 
       <section className="[animation:fade-in_0.55s_ease]">
-        {currentScreen === "welcome" && <LandingPage onLogin={() => router.push("/login")} onContinue={() => router.push("/login")} />}
-
         {currentScreen === "agent-kickoff" && (
           <AgentKickoffScreen onOpenWorkspace={() => setActiveScreen("workspace")} tripBrief={tripBrief} />
         )}

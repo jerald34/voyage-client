@@ -110,7 +110,7 @@ const agencyBenefits = [
 
 export default function LandingPage({ onLogin, onContinue }) {
   return (
-    <div className="flex flex-col min-h-screen font-sans text-text-primary bg-background">
+    <div className="flex flex-col min-h-screen font-sans text-text-primary bg-background overflow-x-hidden">
 
       {/* ── Sticky Header ─────────────────────────────────────── */}
       <header className="sticky top-4 z-50 mx-auto w-full max-w-[1220px] px-4">
@@ -214,63 +214,52 @@ export default function LandingPage({ onLogin, onContinue }) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
           {/* Large Left — AI Agent Command Center */}
-          <div className="md:col-span-2 md:row-span-2 group relative overflow-hidden bg-surface rounded-lg shadow-soft border border-border/[0.08] hover:-translate-y-1 transition-transform duration-200">
-            {/* Placeholder visual — gradient representing agent chat + map */}
-            <div className="relative w-full h-full min-h-[340px] md:min-h-[480px]">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.06] via-secondary/20 to-accent/30 rounded-lg" />
-              {/* Fake chat bubbles */}
-              <div className="absolute top-8 left-8 right-8 flex flex-col gap-3">
-                <div className="w-3/4 h-10 rounded-md bg-surface-elevated/80 border border-border/[0.06]" />
-                <div className="w-1/2 h-10 rounded-md bg-secondary/[0.12] border border-secondary/[0.08] self-end" />
-                <div className="w-2/3 h-10 rounded-md bg-surface-elevated/80 border border-border/[0.06]" />
-              </div>
-              {/* Map hint */}
-              <div className="absolute bottom-0 right-0 w-1/2 h-1/2 rounded-tl-lg bg-gradient-to-tl from-accent/20 via-secondary/[0.08] to-transparent" />
-              {/* Description overlay */}
-              <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 bg-gradient-to-t from-surface via-surface/90 to-transparent">
-                <span className="text-secondary uppercase tracking-[0.18em] text-xs font-extrabold">
-                  Flagship Feature
-                </span>
-                <h3 className="font-serif text-2xl md:text-3xl text-text-primary mt-2 mb-2">
-                  AI Agent Command Center
-                </h3>
-                <p className="text-text-muted text-sm max-w-[48ch] leading-relaxed">
-                  Chat with your AI co-pilot, watch the itinerary build in real time, and see every stop plotted on the map — all in one split-screen workspace.
-                </p>
-              </div>
+          <div className="md:col-span-2 md:row-span-2 group overflow-hidden bg-surface rounded-lg shadow-soft border border-border/[0.08] flex flex-col hover:-translate-y-1 transition-transform duration-200">
+            {/* Visual preview area — grows to fill available space */}
+            <div className="flex-1 bg-gradient-to-br from-primary/[0.06] via-secondary/20 to-accent/30 p-8 flex flex-col gap-3 min-h-[200px]">
+              <div className="w-3/4 h-10 rounded-md bg-surface/80 border border-border/[0.06]" />
+              <div className="w-1/2 h-10 rounded-md bg-secondary/[0.14] border border-secondary/[0.08] self-end" />
+              <div className="w-2/3 h-10 rounded-md bg-surface/80 border border-border/[0.06]" />
+            </div>
+            {/* Description — in normal flow at the bottom */}
+            <div className="p-6 md:p-8 bg-surface border-t border-border/[0.06]">
+              <span className="text-secondary uppercase tracking-[0.18em] text-xs font-extrabold">
+                Flagship Feature
+              </span>
+              <h3 className="font-serif text-2xl md:text-3xl text-text-primary mt-2 mb-2">
+                AI Agent Command Center
+              </h3>
+              <p className="text-text-muted text-sm leading-relaxed">
+                Chat with your AI co-pilot, watch the itinerary build in real time, and see every stop plotted on the map — all in one split-screen workspace.
+              </p>
             </div>
           </div>
 
           {/* Top Right — Client-Ready in Seconds */}
-          <div className="group relative overflow-hidden bg-surface rounded-lg shadow-soft border border-border/[0.08] hover:-translate-y-1 transition-transform duration-200">
-            <div className="relative min-h-[220px] md:min-h-0 md:h-full">
-              {/* Accent gradient tint */}
-              <div className="absolute inset-0 bg-gradient-to-br from-accent/[0.15] to-secondary/[0.06] rounded-lg" />
-              <div className="relative p-6 flex flex-col justify-end h-full min-h-[220px]">
-                <IconZap className="w-8 h-8 text-secondary mb-3" />
-                <h3 className="font-serif text-xl text-text-primary mb-1.5">
-                  Client-Ready in Seconds
-                </h3>
-                <p className="text-text-muted text-sm leading-relaxed">
-                  Generate polished, branded PDF itineraries that look hand-crafted in a fraction of the time.
-                </p>
-              </div>
+          <div className="group relative overflow-hidden bg-surface rounded-lg shadow-soft border border-border/[0.08] p-6 flex flex-col justify-end min-h-[220px] hover:-translate-y-1 transition-transform duration-200">
+            <div className="absolute inset-0 bg-gradient-to-br from-accent/[0.15] to-secondary/[0.06]" />
+            <div className="relative">
+              <IconZap className="w-8 h-8 text-secondary mb-3" />
+              <h3 className="font-serif text-xl text-text-primary mb-1.5">
+                Client-Ready in Seconds
+              </h3>
+              <p className="text-text-muted text-sm leading-relaxed">
+                Generate polished, branded PDF itineraries that look hand-crafted in a fraction of the time.
+              </p>
             </div>
           </div>
 
           {/* Bottom Right — Centralized Client Directory */}
-          <div className="group relative overflow-hidden bg-surface rounded-lg shadow-soft border border-border/[0.08] hover:-translate-y-1 transition-transform duration-200">
-            <div className="relative min-h-[220px] md:min-h-0 md:h-full">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.04] to-accent/[0.08] rounded-lg" />
-              <div className="relative p-6 flex flex-col justify-end h-full min-h-[220px]">
-                <IconUsers className="w-8 h-8 text-secondary mb-3" />
-                <h3 className="font-serif text-xl text-text-primary mb-1.5">
-                  Centralized Client Directory
-                </h3>
-                <p className="text-text-muted text-sm leading-relaxed">
-                  Every client, trip history, and preference in one searchable directory for your entire team.
-                </p>
-              </div>
+          <div className="group relative overflow-hidden bg-surface rounded-lg shadow-soft border border-border/[0.08] p-6 flex flex-col justify-end min-h-[220px] hover:-translate-y-1 transition-transform duration-200">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.04] to-accent/[0.08]" />
+            <div className="relative">
+              <IconUsers className="w-8 h-8 text-secondary mb-3" />
+              <h3 className="font-serif text-xl text-text-primary mb-1.5">
+                Centralized Client Directory
+              </h3>
+              <p className="text-text-muted text-sm leading-relaxed">
+                Every client, trip history, and preference in one searchable directory for your entire team.
+              </p>
             </div>
           </div>
 
