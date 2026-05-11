@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import "./AgentCommandCenter.css";
 import ClientSwitcher from "./ClientSwitcher.jsx";
 import ChatMessage from "./ChatMessage.jsx";
 import ChatInput from "./ChatInput.jsx";
@@ -147,13 +146,13 @@ export default function AgentCommandCenter({
   }
 
   return (
-    <div className="agent-command-center">
+    <div className="bg-surface rounded-md border border-border p-4 flex flex-col min-h-0 h-full shadow-soft backdrop-blur-[8px]">
 
-
-      <div className="chat-log">
+      {/* chat log */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-5 pr-2 mb-5">
         {displayedMessages.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon" aria-hidden="true">
+          <div className="grid gap-2.5 place-items-center min-h-[220px] text-center text-text-muted">
+            <div className="w-12 h-12 rounded-[16px] bg-background flex items-center justify-center text-text-soft mb-2" aria-hidden="true">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
@@ -179,32 +178,34 @@ export default function AgentCommandCenter({
         )}
 
         {isStreaming && (
-          <div className="chat-row assistant">
-            <div className="avatar assistant-avatar" aria-hidden="true">
+          <div className="flex gap-3 max-w-full">
+            {/* assistant avatar */}
+            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[11px] font-extrabold mt-1 bg-primary text-white" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <path d="m16 10-4 4-4-4" />
               </svg>
             </div>
-            <div className="message-content">
-              <div className="bubble thinking-bubble">
-                <div className="thinking-header">
-                  <span className="thinking-dot" />
+            <div className="flex flex-col gap-1.5 max-w-[85%]">
+              {/* thinking bubble */}
+              <div className="px-4 py-3 rounded-md text-sm leading-relaxed relative bg-surface border border-dashed border-border flex flex-col gap-2.5 w-full">
+                <div className="flex items-center gap-2 text-xs font-bold text-text-primary">
+                  <span className="w-1.5 h-1.5 bg-secondary rounded-full animate-pulse flex-shrink-0" />
                   Agent working
                 </div>
                 {activeToolLabel && (
-                  <div className="system-banner" role="status" aria-live="polite">
-                    <span className="system-banner-label">SYS</span>
-                    <span className="system-banner-text">{activeToolLabel}</span>
+                  <div className="flex items-center gap-2 px-3 py-2 bg-primary rounded-[10px] text-white" role="status" aria-live="polite">
+                    <span className="text-[9px] font-black px-1 py-0.5 bg-white/20 rounded">SYS</span>
+                    <span className="text-xs font-semibold">{activeToolLabel}</span>
                   </div>
                 )}
                 {activeToolCalls.length > 0 && (
-                  <div className="tool-stepper">
+                  <div className="flex flex-col gap-2">
                     {activeToolCalls.map((name, idx) => (
-                      <div key={name} className="step">
-                        <div className="step-icon">{idx + 1}</div>
-                        <div className="step-text"><strong>{name}</strong></div>
-                        {idx < activeToolCalls.length - 1 && <div className="step-connector">{"->"}</div>}
+                      <div key={name} className="flex items-center gap-2.5 text-xs">
+                        <div className="w-[18px] h-[18px] rounded-[6px] bg-border flex items-center justify-center text-[10px] font-extrabold text-text-primary">{idx + 1}</div>
+                        <div className="text-text-primary"><strong>{name}</strong></div>
+                        {idx < activeToolCalls.length - 1 && <div className="text-text-soft font-extrabold">{"->"}</div>}
                       </div>
                     ))}
                   </div>
@@ -215,20 +216,21 @@ export default function AgentCommandCenter({
         )}
 
         {showInProgressItineraryBubble && (
-          <div className="chat-row assistant">
-            <div className="avatar assistant-avatar" aria-hidden="true">
+          <div className="flex gap-3 max-w-full">
+            {/* assistant avatar */}
+            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[11px] font-extrabold mt-1 bg-primary text-white" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <path d="m16 10-4 4-4-4" />
               </svg>
             </div>
-            <div className="message-content">
-              <div className="message-meta">
+            <div className="flex flex-col gap-1.5 max-w-[85%]">
+              <div className="flex items-center gap-2 text-[11px] font-bold text-text-soft px-1">
                 <span className="sender">Voyage Agent</span>
                 <span className="time">Agent</span>
               </div>
-              <div className="bubble assistant-bubble">
-                <div className="itinerary-message-stack">
+              <div className="px-4 py-3 rounded-md text-sm leading-relaxed relative bg-background border border-border rounded-bl-[4px]">
+                <div className="grid gap-3.5">
                   <RichItineraryMessage
                     itinerary={itinerary}
                     placeEntities={placeEntities}

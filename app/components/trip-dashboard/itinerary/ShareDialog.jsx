@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import { createItineraryShare, listTripShares, revokeShare } from "../../../lib/api.js";
-import "./ShareDialog.css";
 
 function formatShareDate(dateStr) {
   if (!dateStr) return "—";
@@ -22,6 +21,21 @@ function getShareStatus(share) {
   if (share.revokedAt) return "Revoked";
   if (share.expiresAt && new Date(share.expiresAt) < new Date()) return "Expired";
   return "Active";
+}
+
+/* ── Spinner component ─────────────────────────────────────── */
+function Spinner({ size = "md" }) {
+  const sizeClasses = {
+    lg: "w-[15px] h-[15px] border-2 border-white/40 border-t-white",
+    md: "w-[13px] h-[13px] border-2 border-primary/20 border-t-primary",
+    sm: "w-[11px] h-[11px] border border-primary/20 border-t-primary",
+  };
+  return (
+    <span
+      className={`inline-block rounded-full animate-spin shrink-0 ${sizeClasses[size]}`}
+      style={{ borderTopColor: "currentColor" }}
+    />
+  );
 }
 
 export default function ShareDialog({
@@ -203,27 +217,49 @@ export default function ShareDialog({
   if (!isOpen) return null;
 
   return (
+    /* ── Backdrop ──────────────────────────────────────────── */
     <div
-      className="share-dialog-backdrop"
+      className="fixed inset-0 z-50 grid place-items-center p-5 bg-black/40 backdrop-blur-sm sm:items-center items-end"
       role="presentation"
       onMouseDown={onClose}
     >
+      {/* ── Modal shell ─────────────────────────────────────── */}
       <div
-        className="share-dialog-shell"
+        className="
+          w-full max-w-[520px] max-h-[min(90vh,780px)]
+          flex flex-col
+          bg-surface-elevated
+          border border-border/20
+          rounded-lg shadow-strong
+          overflow-hidden
+          sm:rounded-lg rounded-t-lg rounded-b-none
+          sm:max-h-[min(90vh,780px)] max-h-[92vh]
+        "
         role="dialog"
         aria-modal="true"
         aria-label={`Share itinerary: ${tripTitle}`}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <header className="share-dialog-header">
-          <div className="share-dialog-header-text">
-            <p className="share-eyebrow">Share Itinerary</p>
-            <h2 className="share-dialog-title">{tripTitle || "Itinerary"}</h2>
+        {/* ── Header ──────────────────────────────────────── */}
+        <header className="flex items-start justify-between gap-4 px-6 py-5 border-b border-border/12 shrink-0">
+          <div className="min-w-0">
+            <p className="m-0 mb-1 text-[11px] font-extrabold tracking-[0.08em] uppercase text-secondary">
+              Share Itinerary
+            </p>
+            <h2 className="m-0 font-serif text-xl leading-snug text-text-primary truncate max-w-[360px] sm:max-w-[360px] max-w-[240px]">
+              {tripTitle || "Itinerary"}
+            </h2>
           </div>
           <button
             type="button"
-            className="share-close-btn"
+            className="
+              shrink-0 w-[34px] h-[34px] grid place-items-center
+              rounded-[10px] border border-border/20
+              bg-surface text-text-muted
+              cursor-pointer
+              hover:bg-surface-elevated hover:border-border/30
+              transition-colors duration-150
+            "
             onClick={onClose}
             aria-label="Close dialog"
           >
@@ -234,57 +270,133 @@ export default function ShareDialog({
           </button>
         </header>
 
-        <div className="share-dialog-body">
-          {/* Create / Result Panel */}
+        {/* ── Scrollable body ──────────────────────────────── */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-5 flex flex-col gap-0">
+
+          {/* ── Create / Result panel ───────────────────── */}
           {dialogState === "create" ? (
-            <section className="share-create-section">
-              <h3 className="share-section-label">Generate Share Link</h3>
-              <div className="share-fields">
-                <div className="share-field">
-                  <label htmlFor="share-client-name">Client Name <span className="optional-tag">optional</span></label>
+            <section className="mb-1">
+              <h3 className="m-0 mb-3.5 text-[13px] font-bold tracking-[0.01em] text-text-primary">
+                Generate Share Link
+              </h3>
+
+              {/* Fields */}
+              <div className="flex flex-col gap-3 mb-4">
+                {/* Client Name */}
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="share-client-name"
+                    className="text-[12px] font-bold text-text-muted flex items-center gap-1.5"
+                  >
+                    Client Name
+                    <span className="text-[10px] font-semibold text-text-soft lowercase tracking-normal">
+                      optional
+                    </span>
+                  </label>
                   <input
                     id="share-client-name"
                     type="text"
                     placeholder="e.g. Smith Family"
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
+                    className="
+                      w-full px-3.5 py-2.5
+                      rounded-md border border-border/30
+                      bg-surface text-[14px] text-text-primary
+                      placeholder:text-border
+                      focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/14 focus:bg-surface-elevated
+                      transition-[border-color,box-shadow] duration-150
+                      box-border
+                    "
                   />
                 </div>
-                <div className="share-field">
-                  <label htmlFor="share-client-email">Client Email <span className="optional-tag">optional</span></label>
+
+                {/* Client Email */}
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="share-client-email"
+                    className="text-[12px] font-bold text-text-muted flex items-center gap-1.5"
+                  >
+                    Client Email
+                    <span className="text-[10px] font-semibold text-text-soft lowercase tracking-normal">
+                      optional
+                    </span>
+                  </label>
                   <input
                     id="share-client-email"
                     type="email"
                     placeholder="e.g. client@email.com"
                     value={clientEmail}
                     onChange={(e) => setClientEmail(e.target.value)}
+                    className="
+                      w-full px-3.5 py-2.5
+                      rounded-md border border-border/30
+                      bg-surface text-[14px] text-text-primary
+                      placeholder:text-border
+                      focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/14 focus:bg-surface-elevated
+                      transition-[border-color,box-shadow] duration-150
+                      box-border
+                    "
                   />
                 </div>
-                <div className="share-field">
-                  <label htmlFor="share-expires">Expiration Date <span className="optional-tag">optional</span></label>
+
+                {/* Expiration Date */}
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="share-expires"
+                    className="text-[12px] font-bold text-text-muted flex items-center gap-1.5"
+                  >
+                    Expiration Date
+                    <span className="text-[10px] font-semibold text-text-soft lowercase tracking-normal">
+                      optional
+                    </span>
+                  </label>
                   <input
                     id="share-expires"
                     type="date"
                     value={expiresAt}
                     min={new Date().toISOString().split("T")[0]}
                     onChange={(e) => setExpiresAt(e.target.value)}
+                    className="
+                      w-full px-3.5 py-2.5
+                      rounded-md border border-border/30
+                      bg-surface text-[14px] text-text-primary
+                      placeholder:text-border
+                      focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/14 focus:bg-surface-elevated
+                      transition-[border-color,box-shadow] duration-150
+                      box-border
+                    "
                   />
                 </div>
               </div>
 
+              {/* Error */}
               {generateError && (
-                <p className="share-error-msg">{generateError}</p>
+                <p className="m-0 mb-3 px-3.5 py-2.5 rounded-sm bg-status-danger/8 border border-status-danger/30 text-status-danger text-[13px] leading-relaxed">
+                  {generateError}
+                </p>
               )}
 
+              {/* Generate button */}
               <button
                 type="button"
-                className="share-generate-btn"
+                className="
+                  w-full inline-flex items-center justify-center gap-2
+                  px-5 py-3
+                  border-0 rounded-md
+                  bg-primary text-white text-[14px] font-bold
+                  shadow-[0_8px_20px_rgba(34,56,67,0.22)]
+                  cursor-pointer
+                  hover:not-disabled:-translate-y-px hover:not-disabled:shadow-[0_12px_24px_rgba(34,56,67,0.28)]
+                  disabled:opacity-60 disabled:cursor-not-allowed
+                  transition-[transform,box-shadow] duration-150
+                "
                 onClick={handleGenerate}
                 disabled={isGenerating}
               >
                 {isGenerating ? (
                   <>
-                    <span className="share-spinner" />
+                    <Spinner size="lg" />
                     Generating…
                   </>
                 ) : (
@@ -299,15 +411,38 @@ export default function ShareDialog({
               </button>
             </section>
           ) : (
-            <section className="share-result-section">
-              <h3 className="share-section-label">Share Link Ready</h3>
+            <section className="mb-1">
+              <h3 className="m-0 mb-3.5 text-[13px] font-bold tracking-[0.01em] text-text-primary">
+                Share Link Ready
+              </h3>
 
               {/* URL row */}
-              <div className="share-url-row">
-                <span className="share-url-text" title={shareUrl}>{shareUrl}</span>
+              <div className="
+                flex items-center gap-2.5
+                px-3.5 py-2.5 mb-[18px]
+                rounded-md bg-background border border-border/30
+                sm:flex-row flex-col sm:items-center items-stretch
+              ">
+                <span
+                  className="flex-1 min-w-0 text-[12.5px] text-text-muted whitespace-nowrap overflow-hidden text-ellipsis font-mono"
+                  title={shareUrl}
+                >
+                  {shareUrl}
+                </span>
                 <button
                   type="button"
-                  className={`share-copy-btn ${copySuccess ? "copied" : ""}`}
+                  className={`
+                    shrink-0 inline-flex items-center gap-1.5
+                    px-3 py-1.5
+                    rounded-[10px] border text-[12px] font-bold
+                    cursor-pointer whitespace-nowrap
+                    transition-[background,border-color,color] duration-150
+                    sm:justify-start justify-center
+                    ${copySuccess
+                      ? "bg-status-success/10 border-status-success/40 text-status-success"
+                      : "bg-surface-elevated border-border/30 text-text-muted hover:bg-surface hover:border-border/50"
+                    }
+                  `}
                   onClick={handleCopyUrl}
                   aria-label="Copy link"
                 >
@@ -316,7 +451,7 @@ export default function ShareDialog({
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
-                      Copied
+                      Copied!
                     </>
                   ) : (
                     <>
@@ -330,9 +465,10 @@ export default function ShareDialog({
                 </button>
               </div>
 
-              {/* QR Code */}
-              <div className="share-qr-area">
-                <div className="share-qr-code">
+              {/* QR Code area */}
+              <div className="flex flex-col items-center gap-3.5 mb-4">
+                {/* Visible SVG QR */}
+                <div className="p-4 rounded-md bg-white border border-border/20 shadow-soft inline-block leading-none">
                   <QRCodeSVG
                     value={shareUrl}
                     size={160}
@@ -341,8 +477,12 @@ export default function ShareDialog({
                     level="M"
                   />
                 </div>
+
                 {/* Hidden canvas for PNG download */}
-                <div ref={qrCanvasRef} className="share-qr-canvas-hidden">
+                <div
+                  ref={qrCanvasRef}
+                  className="absolute opacity-0 pointer-events-none -left-[9999px] -top-[9999px]"
+                >
                   <QRCodeCanvas
                     value={shareUrl}
                     size={400}
@@ -351,9 +491,19 @@ export default function ShareDialog({
                     level="M"
                   />
                 </div>
+
+                {/* Download button */}
                 <button
                   type="button"
-                  className="share-download-qr-btn"
+                  className="
+                    inline-flex items-center gap-2
+                    px-[18px] py-2.5
+                    rounded-md border border-border/30
+                    bg-surface-elevated text-primary text-[13px] font-bold
+                    cursor-pointer
+                    hover:bg-background hover:border-border/50 hover:-translate-y-px
+                    transition-[background,border-color,transform] duration-150
+                  "
                   onClick={handleDownloadQR}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -365,9 +515,18 @@ export default function ShareDialog({
                 </button>
               </div>
 
+              {/* Back button */}
               <button
                 type="button"
-                className="share-back-btn"
+                className="
+                  block mx-auto px-3 py-1.5
+                  border-0 bg-transparent
+                  text-text-soft text-[13px] font-semibold
+                  underline underline-offset-[3px]
+                  cursor-pointer
+                  hover:text-primary
+                  transition-colors duration-150
+                "
                 onClick={() => {
                   setDialogState("create");
                   setGeneratedShare(null);
@@ -381,24 +540,30 @@ export default function ShareDialog({
             </section>
           )}
 
-          {/* Divider */}
-          <div className="share-divider" />
+          {/* ── Divider ─────────────────────────────────── */}
+          <div className="h-px bg-border/12 my-5 shrink-0" />
 
-          {/* Existing shares */}
-          <section className="share-existing-section">
-            <h3 className="share-section-label">Existing Share Links</h3>
+          {/* ── Existing shares ──────────────────────────── */}
+          <section>
+            <h3 className="m-0 mb-3.5 text-[13px] font-bold tracking-[0.01em] text-text-primary">
+              Existing Share Links
+            </h3>
 
             {isLoadingShares ? (
-              <div className="share-shares-loading">
-                <span className="share-spinner share-spinner--sm" />
+              <div className="flex items-center gap-2 text-[13px] text-text-soft py-2">
+                <Spinner size="md" />
                 Loading…
               </div>
             ) : sharesError ? (
-              <p className="share-error-msg">{sharesError}</p>
+              <p className="m-0 mb-3 px-3.5 py-2.5 rounded-sm bg-status-danger/8 border border-status-danger/30 text-status-danger text-[13px] leading-relaxed">
+                {sharesError}
+              </p>
             ) : existingShares.length === 0 ? (
-              <p className="share-no-shares">No share links created yet.</p>
+              <p className="m-0 text-[13px] text-text-soft py-1">
+                No share links created yet.
+              </p>
             ) : (
-              <ul className="share-list">
+              <ul className="list-none m-0 p-0 flex flex-col gap-2">
                 {existingShares.map((share) => {
                   const status = getShareStatus(share);
                   const isActive = status === "Active";
@@ -409,21 +574,36 @@ export default function ShareDialog({
                     : share.id?.slice(0, 12) ?? "—";
 
                   return (
-                    <li key={share.id} className="share-list-item">
-                      <div className="share-item-meta">
-                        <span className="share-token-label" title={share.token}>
+                    <li
+                      key={share.id}
+                      className="
+                        flex items-start justify-between gap-3
+                        px-3.5 py-3
+                        rounded-[14px]
+                        bg-background border border-border/20
+                        hover:bg-border/8
+                        transition-colors duration-150
+                        sm:flex-row flex-col sm:gap-3 gap-2.5
+                      "
+                    >
+                      {/* Meta */}
+                      <div className="flex flex-col gap-[3px] min-w-0">
+                        <span
+                          className="font-mono text-[12px] font-semibold text-primary whitespace-nowrap overflow-hidden text-ellipsis max-w-[180px]"
+                          title={share.token}
+                        >
                           {truncatedToken}
                         </span>
-                        <span className="share-item-date">
+                        <span className="text-[11.5px] text-text-soft">
                           Created {formatShareDate(share.createdAt)}
                         </span>
                         {share.expiresAt && (
-                          <span className="share-item-date">
+                          <span className="text-[11.5px] text-text-soft">
                             Expires {formatShareDate(share.expiresAt)}
                           </span>
                         )}
                         {typeof share.viewCount === "number" && (
-                          <span className="share-view-count">
+                          <span className="inline-flex items-center gap-1 text-[11.5px] text-text-soft">
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                               <circle cx="12" cy="12" r="3" />
@@ -432,15 +612,41 @@ export default function ShareDialog({
                           </span>
                         )}
                       </div>
-                      <div className="share-item-right">
-                        <span className={`share-status-chip share-status-chip--${status.toLowerCase()}`}>
-                          {status}
-                        </span>
+
+                      {/* Right actions */}
+                      <div className="flex items-center gap-2 shrink-0 sm:flex-wrap flex-wrap">
+                        {/* Status chip */}
+                        {status === "Active" && (
+                          <span className="inline-flex items-center px-2.5 py-[3px] rounded-pill text-[11px] font-extrabold tracking-[0.04em] uppercase bg-status-success/10 text-status-success border border-status-success/30">
+                            Active
+                          </span>
+                        )}
+                        {status === "Expired" && (
+                          <span className="inline-flex items-center px-2.5 py-[3px] rounded-pill text-[11px] font-extrabold tracking-[0.04em] uppercase bg-status-warning/10 text-status-warning border border-status-warning/30">
+                            Expired
+                          </span>
+                        )}
+                        {status === "Revoked" && (
+                          <span className="inline-flex items-center px-2.5 py-[3px] rounded-pill text-[11px] font-extrabold tracking-[0.04em] uppercase bg-status-danger/8 text-status-danger border border-status-danger/30">
+                            Revoked
+                          </span>
+                        )}
+
                         {isActive && (
                           <>
+                            {/* Copy link icon button */}
                             <button
                               type="button"
-                              className={`share-copy-link-btn ${copyLinkSuccess === share.token ? "copied" : ""}`}
+                              className={`
+                                shrink-0 w-8 h-8 flex items-center justify-center
+                                rounded-[8px] border cursor-pointer
+                                transition-[background,border-color,color] duration-150
+                                sm:w-8 sm:h-8 w-full h-auto py-1.5
+                                ${copyLinkSuccess === share.token
+                                  ? "bg-status-success/10 border-status-success/40 text-status-success"
+                                  : "bg-surface-elevated border-border/30 text-primary hover:bg-surface hover:border-border/50"
+                                }
+                              `}
                               onClick={() => handleCopyShareLink(share.token)}
                               aria-label="Copy share link"
                               title="Copy share link"
@@ -456,17 +662,27 @@ export default function ShareDialog({
                                 </svg>
                               )}
                             </button>
+
+                            {/* Regenerate button */}
                             <button
                               type="button"
-                              className="share-regenerate-btn"
+                              className="
+                                shrink-0 inline-flex items-center gap-1.5
+                                px-3 py-[5px]
+                                rounded-[8px] border border-border/30
+                                bg-surface-elevated text-primary text-[11.5px] font-bold
+                                cursor-pointer
+                                hover:not-disabled:bg-surface hover:not-disabled:border-border/50
+                                disabled:opacity-60 disabled:cursor-not-allowed
+                                transition-[background,border-color] duration-150
+                                sm:w-auto w-full justify-center
+                              "
                               disabled={regeneratingId === share.id}
                               onClick={() => handleRegenerate(share.id)}
                               title="Generate a new share link and revoke this one"
                             >
                               {regeneratingId === share.id ? (
-                                <>
-                                  <span className="share-spinner share-spinner--xs" />
-                                </>
+                                <Spinner size="sm" />
                               ) : (
                                 <>
                                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -479,13 +695,24 @@ export default function ShareDialog({
                             </button>
                           </>
                         )}
+
+                        {/* Revoke / Confirm */}
                         {isActive && (
                           isConfirming ? (
-                            <div className="share-revoke-confirm">
-                              <span>Revoke?</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[12px] font-semibold text-text-muted whitespace-nowrap">
+                                Revoke?
+                              </span>
                               <button
                                 type="button"
-                                className="share-revoke-yes"
+                                className="
+                                  px-2.5 py-1
+                                  rounded-[7px] border-0
+                                  bg-status-danger text-white text-[11.5px] font-bold
+                                  cursor-pointer
+                                  disabled:opacity-60 disabled:cursor-not-allowed
+                                  transition-opacity duration-150
+                                "
                                 disabled={isRevoking}
                                 onClick={() => handleRevoke(share.id)}
                               >
@@ -493,7 +720,14 @@ export default function ShareDialog({
                               </button>
                               <button
                                 type="button"
-                                className="share-revoke-no"
+                                className="
+                                  px-2.5 py-1
+                                  rounded-[7px] border border-border/30
+                                  bg-surface-elevated text-text-muted text-[11.5px] font-bold
+                                  cursor-pointer
+                                  hover:bg-surface
+                                  transition-colors duration-150
+                                "
                                 onClick={() => setConfirmRevokeId(null)}
                               >
                                 No
@@ -502,7 +736,15 @@ export default function ShareDialog({
                           ) : (
                             <button
                               type="button"
-                              className="share-revoke-btn"
+                              className="
+                                px-3 py-[5px]
+                                rounded-[8px] border border-status-danger/40
+                                bg-surface-elevated text-status-danger text-[11.5px] font-bold
+                                cursor-pointer
+                                hover:bg-status-danger/8 hover:border-status-danger/60
+                                transition-[background,border-color] duration-150
+                                sm:w-auto w-full
+                              "
                               onClick={() => setConfirmRevokeId(share.id)}
                             >
                               Revoke

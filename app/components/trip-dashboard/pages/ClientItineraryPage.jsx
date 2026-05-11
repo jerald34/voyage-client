@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import "./ClientItineraryPage.css";
 import dynamic from "next/dynamic";
 import {
   fetchItineraryDraft,
@@ -176,81 +175,108 @@ function CommentsPanel({ agencyId, tripId, onClose }) {
   const totalCount = comments.length;
 
   return (
-    <div className="comments-panel">
-      <div className="comments-panel-header">
-        <div className="comments-panel-title">
+    <div className="flex flex-col border border-border rounded-md bg-white overflow-hidden flex-shrink-0 max-h-[480px]">
+      {/* Header */}
+      <div className="flex items-center justify-between px-[18px] py-3.5 border-b border-border bg-background flex-shrink-0">
+        <div className="flex items-center gap-2 text-sm font-extrabold text-text-primary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
           <span>Client Comments</span>
-          {totalCount > 0 && <span className="comments-count-chip">{totalCount}</span>}
+          {totalCount > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-pill bg-secondary text-white text-[0.7rem] font-extrabold">
+              {totalCount}
+            </span>
+          )}
         </div>
-        <button className="comments-panel-close" onClick={onClose} aria-label="Close comments">
+        <button
+          className="w-7 h-7 rounded-lg border-none bg-transparent text-text-soft cursor-pointer flex items-center justify-center transition-all duration-150 hover:bg-border/[0.08] hover:text-text-primary flex-shrink-0"
+          onClick={onClose}
+          aria-label="Close comments"
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
       </div>
 
-      <div className="comments-panel-body">
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5">
         {isLoading && (
-          <div className="comments-loading">
-            <div className="loading-spinner" />
+          <div className="flex items-center gap-2.5 p-5 text-text-soft text-[0.9rem]">
+            <div className="w-5 h-5 border-2 border-border border-t-secondary rounded-full animate-spin flex-shrink-0" />
             <span>Loading comments...</span>
           </div>
         )}
         {!isLoading && loadError && (
-          <div className="comments-error">Unable to load comments. Please try again.</div>
+          <div className="p-5 text-center text-[#b91c1c] text-[0.85rem] font-semibold">
+            Unable to load comments. Please try again.
+          </div>
         )}
         {!isLoading && !loadError && grouped.length === 0 && (
-          <div className="comments-empty">
+          <div className="flex flex-col items-center gap-3 py-8 px-5 text-text-soft text-center">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
-            <p>No comments yet from this client.</p>
+            <p className="text-[0.9rem] m-0 leading-relaxed">No comments yet from this client.</p>
           </div>
         )}
         {!isLoading && !loadError && grouped.map(({ key, label, comments: groupComments }) => (
-          <div key={key} className="comment-group">
-            <div className="comment-group-label">{label}</div>
+          <div key={key} className="flex flex-col gap-3">
+            {/* Group label */}
+            <div className="text-[0.75rem] font-extrabold uppercase tracking-[0.06em] text-text-soft pb-1.5 border-b border-border">
+              {label}
+            </div>
             {groupComments.map((comment) => (
-              <div key={comment.id} className="comment-card">
-                <div className="comment-card-top">
-                  <div className="comment-author-row">
-                    <div className="comment-author-avatar">
+              <div
+                key={comment.id}
+                className="border border-border rounded-sm bg-white px-4 py-3.5 flex flex-col gap-2.5 transition-shadow duration-200 hover:shadow-[0_4px_12px_rgba(34,56,67,0.06)]"
+              >
+                <div className="flex flex-col gap-2">
+                  {/* Author row */}
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-[0.75rem] font-extrabold flex-shrink-0">
                       {String(comment.authorName || "?")[0].toUpperCase()}
                     </div>
-                    <div className="comment-author-info">
-                      <span className="comment-author-name">{comment.authorName || "Client"}</span>
-                      <span className="comment-timestamp">{formatCommentTime(comment.createdAt)}</span>
+                    <div className="flex flex-col gap-px flex-1 min-w-0">
+                      <span className="text-[0.85rem] font-bold text-text-primary whitespace-nowrap overflow-hidden text-ellipsis">
+                        {comment.authorName || "Client"}
+                      </span>
+                      <span className="text-[0.73rem] text-text-soft">{formatCommentTime(comment.createdAt)}</span>
                     </div>
-                    <span className={`comment-status-badge ${comment.status === "ADDRESSED" ? "addressed" : comment.status === "SEEN" ? "seen" : "pending"}`}>
+                    <span className={`inline-flex items-center px-2 py-[3px] rounded-[6px] text-[0.65rem] font-extrabold tracking-[0.04em] uppercase flex-shrink-0 ${
+                      comment.status === "ADDRESSED"
+                        ? "bg-[#f0fdf4] text-[#166534] border border-[#dcfce7]"
+                        : comment.status === "SEEN"
+                        ? "bg-[#eff6ff] text-[#1d4ed8] border border-[#bfdbfe]"
+                        : "bg-[#fef9c3] text-[#854d0e] border border-[#fef08a]"
+                    }`}>
                       {comment.status === "ADDRESSED" ? "Addressed" : comment.status === "SEEN" ? "Seen" : "Pending"}
                     </span>
                   </div>
-                  <p className="comment-text">{comment.content}</p>
+                  <p className="text-[0.88rem] text-text-primary leading-[1.55] m-0">{comment.content}</p>
                 </div>
 
                 {comment.agencyReply && (
-                  <div className="comment-reply-bubble">
-                    <div className="comment-reply-label">
+                  <div className="bg-background rounded-[10px] px-3.5 py-2.5 flex flex-col gap-1 border-l-[3px] border-secondary">
+                    <div className="flex items-center gap-[5px] text-[0.72rem] font-extrabold uppercase tracking-[0.04em] text-secondary">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="9 17 4 12 9 7" /><path d="M20 18v-2a4 4 0 0 0-4-4H4" />
                       </svg>
                       Your reply
                     </div>
-                    <p className="comment-reply-text">{comment.agencyReply}</p>
+                    <p className="text-[0.85rem] text-text-primary leading-[1.5] m-0">{comment.agencyReply}</p>
                     {comment.agencyRepliedAt && (
-                      <span className="comment-reply-time">{formatCommentTime(comment.agencyRepliedAt)}</span>
+                      <span className="text-[0.72rem] text-text-soft mt-0.5">{formatCommentTime(comment.agencyRepliedAt)}</span>
                     )}
                   </div>
                 )}
 
                 {!comment.agencyReply && (
-                  <div className="comment-actions">
+                  <div className="flex flex-col">
                     {replyingTo !== comment.id ? (
                       <button
-                        className="reply-toggle-btn"
+                        className="inline-flex items-center gap-[5px] px-2.5 py-[5px] rounded-lg border border-border bg-white text-text-soft text-[0.78rem] font-bold cursor-pointer transition-all duration-150 self-start hover:bg-background hover:text-text-primary hover:border-primary"
                         onClick={() => setReplyingTo(comment.id)}
                       >
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -259,9 +285,9 @@ function CommentsPanel({ agencyId, tripId, onClose }) {
                         Reply
                       </button>
                     ) : (
-                      <div className="reply-input-area">
+                      <div className="flex flex-col gap-2">
                         <textarea
-                          className="reply-textarea"
+                          className="w-full px-3 py-2.5 rounded-[10px] border border-border bg-background text-[0.85rem] font-[inherit] text-text-primary resize-none leading-relaxed transition-all duration-200 box-border focus:outline-none focus:border-secondary focus:bg-white focus:shadow-[0_0_0_3px_rgba(215,122,97,0.1)]"
                           placeholder="Write a reply..."
                           value={replyTexts[comment.id] || ""}
                           onChange={(e) => handleReplyChange(comment.id, e.target.value)}
@@ -275,17 +301,17 @@ function CommentsPanel({ agencyId, tripId, onClose }) {
                           }}
                         />
                         {replyErrors[comment.id] && (
-                          <span className="reply-error">{replyErrors[comment.id]}</span>
+                          <span className="text-[0.78rem] text-[#dc2626] font-semibold">{replyErrors[comment.id]}</span>
                         )}
-                        <div className="reply-input-actions">
+                        <div className="flex items-center gap-2 justify-end">
                           <button
-                            className="reply-cancel-btn"
+                            className="px-3 py-1.5 rounded-lg border border-border bg-white text-text-soft text-[0.8rem] font-bold cursor-pointer transition-all duration-150 hover:bg-background hover:text-text-primary"
                             onClick={() => { setReplyingTo(null); setReplyErrors((p) => ({ ...p, [comment.id]: null })); }}
                           >
                             Cancel
                           </button>
                           <button
-                            className="reply-submit-btn"
+                            className="px-4 py-1.5 rounded-lg border-none bg-secondary text-white text-[0.8rem] font-bold cursor-pointer transition-all duration-150 hover:enabled:bg-[#c4674e] disabled:opacity-45 disabled:cursor-not-allowed"
                             disabled={submitting === comment.id || !(replyTexts[comment.id] || "").trim()}
                             onClick={() => handleReplySubmit(comment.id)}
                           >
@@ -526,37 +552,69 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
     }
   };
 
+  // Status chip helper — shared between trip cards and itinerary header
+  function StatusChip({ trip, size = "sm" }) {
+    const label = getSavedStatusLabel(trip);
+    const cls = getSavedStatusClass(label);
+    const sizeClasses = size === "sm"
+      ? "text-[0.65rem] px-2 py-1"
+      : "text-[0.65rem] px-2 py-1";
+    const colorClasses = cls === "approved"
+      ? "bg-[#f0fdf4] text-[#166534] border-[#dcfce7]"
+      : "bg-border/[0.06] text-text-primary border-border/[0.08]";
+    return (
+      <span className={`inline-flex items-center gap-1 w-fit rounded-[6px] font-extrabold tracking-[0.05em] uppercase border ${sizeClasses} ${colorClasses}`}>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+        {label}
+      </span>
+    );
+  }
+
   function renderItineraryContent() {
     if (isLoadingItinerary) {
       return (
-        <div className="empty-workspace">
-          <div className="loading-spinner" />
+        <div className="flex flex-col items-center justify-center flex-1 text-text-soft gap-6 text-center px-10 py-[60px]">
+          <div className="w-5 h-5 border-2 border-border border-t-secondary rounded-full animate-spin flex-shrink-0" />
           <p>Loading saved itinerary...</p>
         </div>
       );
     }
     if (itineraryError) {
-      return <div className="empty-workspace"><p>Unable to load this saved itinerary.</p></div>;
+      return (
+        <div className="flex flex-col items-center justify-center flex-1 text-text-soft gap-6 text-center px-10 py-[60px]">
+          <p>Unable to load this saved itinerary.</p>
+        </div>
+      );
     }
     if (!selectedItineraryId) {
-      return <div className="empty-workspace"><p>This saved trip is missing itinerary details.</p></div>;
+      return (
+        <div className="flex flex-col items-center justify-center flex-1 text-text-soft gap-6 text-center px-10 py-[60px]">
+          <p>This saved trip is missing itinerary details.</p>
+        </div>
+      );
     }
 
     if (fullItinerary && safeDays.length > 0) {
       return (
-        <div className="itinerary-split-view">
-          <div className={`itinerary-days-column${showCommentsPanel ? " comments-open" : ""}`}>
-            <header className="itinerary-days-header">
-              <div className="itinerary-title-group">
-                <h3>{selectedTrip?.destination || tripTitle}</h3>
-                <span className={`trip-status-chip ${getSavedStatusClass(getSavedStatusLabel(selectedTrip))}`}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
-                  {getSavedStatusLabel(selectedTrip)}
-                </span>
+        <div className="grid grid-cols-2 h-full bg-white">
+          {/* Days column */}
+          <div className={`flex flex-col overflow-y-auto border-r border-border p-6 ${showCommentsPanel ? "gap-4" : "gap-5"}`}>
+            {/* Column header */}
+            <header className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <h3 className="font-serif text-2xl m-0 text-text-primary">{selectedTrip?.destination || tripTitle}</h3>
+                <StatusChip trip={selectedTrip} />
               </div>
-              <div className="itinerary-actions">
+              <div className="flex items-center gap-2">
+                {/* Comments button */}
                 <button
-                  className={`action-btn comments-btn${showCommentsPanel ? " active" : ""}`}
+                  className={`inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border text-[0.85rem] font-bold cursor-pointer transition-all duration-200 relative ${
+                    showCommentsPanel
+                      ? "bg-primary text-white border-primary hover:bg-[#1a2d35] hover:border-[#1a2d35]"
+                      : "bg-white text-text-primary border-border hover:bg-background"
+                  }`}
                   onClick={() => setShowCommentsPanel((v) => !v)}
                   title="View client comments"
                 >
@@ -565,24 +623,33 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                   </svg>
                   Comments
                   {unreadCommentCount > 0 && (
-                    <span className="comment-notification-badge">
+                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-pill bg-[#dc2626] text-white text-[0.65rem] font-extrabold leading-none tracking-normal flex-shrink-0">
                       {unreadCommentCount > 99 ? "99+" : unreadCommentCount}
                     </span>
                   )}
                 </button>
-                <button className="action-btn share-btn" onClick={() => setShowShareDialog(true)}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg>
+                {/* Share button */}
+                <button
+                  className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border border-border bg-white text-text-primary text-[0.85rem] font-bold cursor-pointer transition-all duration-200 hover:bg-background"
+                  onClick={() => setShowShareDialog(true)}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                    <polyline points="16 6 12 2 8 6" />
+                    <line x1="12" y1="2" x2="12" y2="15" />
+                  </svg>
                   Share
                 </button>
+                {/* PDF button */}
                 <button
-                  className={`action-btn share-btn pdf-btn${pdfLoading ? " pdf-btn--loading" : ""}`}
+                  className={`inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border border-border bg-white text-text-primary text-[0.85rem] font-bold cursor-pointer transition-all duration-200 hover:bg-background ${pdfLoading ? "opacity-60 cursor-not-allowed pointer-events-none" : ""}`}
                   onClick={handleDownloadPdf}
                   disabled={pdfLoading || !fullItinerary}
                   title="Download itinerary as PDF"
                 >
                   {pdfLoading ? (
                     <>
-                      <span className="pdf-spinner" />
+                      <span className="inline-block w-[13px] h-[13px] border-2 border-border border-t-secondary rounded-full animate-spin flex-shrink-0" />
                       Generating...
                     </>
                   ) : (
@@ -596,22 +663,34 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                     </>
                   )}
                 </button>
-                <button className="action-btn more-btn">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" /></svg>
+                {/* More button */}
+                <button className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-white text-text-primary cursor-pointer transition-all duration-200 hover:bg-background">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" />
+                  </svg>
                 </button>
               </div>
             </header>
 
-            <div className="itinerary-meta-row">
+            {/* Meta row */}
+            <div className="flex flex-wrap gap-6 -mt-2">
               {tripDateRange && (
-                <span className="meta-item">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                <span className="inline-flex items-center gap-2 text-[0.9rem] text-text-soft font-semibold">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="opacity-60">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
                   {tripDateRange}{durationLabel ? ` (${durationLabel})` : ""}
                 </span>
               )}
               {travelerCount && (
-                <span className="meta-item">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+                <span className="inline-flex items-center gap-2 text-[0.9rem] text-text-soft font-semibold">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="opacity-60">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                  </svg>
                   {travelerCount} traveler{travelerCount > 1 ? "s" : ""}
                 </span>
               )}
@@ -625,35 +704,45 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
               />
             )}
 
-            <div className="day-timeline-list">
+            {/* Day timeline */}
+            <div className="flex flex-col gap-4">
               {safeDays.map((day, dIdx) => {
                 const accommodation = getAccommodationLabel(day);
                 return (
-                  <div key={day.id || day.dayNumber || dIdx} className="day-section">
-                    <div className="day-section-header">
-                      <span className="day-number-badge">Day {day.dayNumber}</span>
-                      <span className="day-date-label">{formatDayDate(day, tripStart)}</span>
+                  <div key={day.id || day.dayNumber || dIdx} className="bg-transparent border-none p-0 rounded-none">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-[#b91c1c] text-[0.85rem] font-extrabold">Day {day.dayNumber}</span>
+                      <span className="text-[0.85rem] text-text-soft font-semibold">{formatDayDate(day, tripStart)}</span>
                     </div>
-                    <h4 className="day-section-title">{day.title}</h4>
+                    <h4 className="text-[1.2rem] font-extrabold m-0 mb-3 text-text-primary tracking-tight">{day.title}</h4>
                     {accommodation && (
-                      <div className="day-accommodation">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 21h18M3 7v14M21 7v14M6 11h.01M6 15h.01M10 11h.01M10 15h.01M14 11h.01M14 15h.01M18 11h.01M18 15h.01" /><path d="M3 7l9-4 9 4" /></svg>
+                      <div className="flex items-center gap-2 text-[0.85rem] text-text-soft font-semibold mb-2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 21h18M3 7v14M21 7v14M6 11h.01M6 15h.01M10 11h.01M10 15h.01M14 11h.01M14 15h.01M18 11h.01M18 15h.01" />
+                          <path d="M3 7l9-4 9 4" />
+                        </svg>
                         {accommodation}
                       </div>
                     )}
-                    <div className="day-items-summary">
+                    <div className="flex flex-col gap-1 pl-3 border-l-2 border-border">
                       {(day.items || []).map((item, iIdx) => {
                         const gIdx = mapItems.findIndex(m => m.__dayNumber === day.dayNumber && m.__itemIndex === iIdx);
                         const timeLabel = getItemTimeLabel(item);
                         return (
                           <div
                             key={`${day.dayNumber}-${iIdx}`}
-                            className={`day-item-row ${activeStopIndex === gIdx ? "active" : ""}`}
+                            className={`flex items-center gap-3 px-3 py-2 rounded-sm text-[0.9rem] transition-all duration-200 cursor-default ${activeStopIndex === gIdx ? "bg-background" : "hover:bg-background"}`}
                             onMouseEnter={() => setActiveStopIndex(gIdx)}
                           >
-                            {timeLabel && <span className="item-time">{timeLabel}</span>}
-                            <span className="item-title">{item.title || "Untitled"}</span>
-                            {item.description && <span className="item-desc">{item.description}</span>}
+                            {timeLabel && (
+                              <span className="text-[0.8rem] text-text-soft font-bold min-w-[50px]">{timeLabel}</span>
+                            )}
+                            <span className="font-bold text-text-primary">{item.title || "Untitled"}</span>
+                            {item.description && (
+                              <span className="text-[0.85rem] text-text-soft whitespace-nowrap overflow-hidden text-ellipsis max-w-[260px]">
+                                {item.description}
+                              </span>
+                            )}
                           </div>
                         );
                       })}
@@ -664,8 +753,9 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
             </div>
           </div>
 
-          <div className="itinerary-map-column">
-            <div className="map-container">
+          {/* Map column */}
+          <div className="relative min-h-0 p-4 bg-background">
+            <div className="relative w-full h-full rounded-md overflow-hidden border border-border shadow-soft">
               <ItineraryLiveMap
                 items={mapItems}
                 liveMarkers={[]}
@@ -682,20 +772,39 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
       );
     }
 
-    return <div className="empty-workspace"><p>This saved trip is missing itinerary details.</p></div>;
+    return (
+      <div className="flex flex-col items-center justify-center flex-1 text-text-soft gap-6 text-center px-10 py-[60px]">
+        <p>This saved trip is missing itinerary details.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="client-itinerary-surface">
-      <aside className="client-sidebar-pane">
-        <div className="pane-header">
-          <h3 className="section-title">Client Directory</h3>
-          <div className="search-box">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-            <input type="text" placeholder="Search clients..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="search-input" />
+    <div className="grid grid-cols-[280px_1fr] gap-2 h-full min-h-0 items-stretch p-2">
+      {/* Client sidebar */}
+      <aside className="bg-surface border border-border rounded-md flex flex-col overflow-hidden shadow-soft backdrop-blur-[8px]">
+        {/* Pane header */}
+        <div className="px-4 py-4 border-b border-border grid gap-2.5">
+          <h3 className="font-serif text-[1.6rem] text-text-primary m-0 tracking-tight">Client Directory</h3>
+          <div className="relative flex items-center">
+            <svg
+              width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              className="absolute left-3.5 text-text-soft pointer-events-none z-[1]"
+            >
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search clients..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full py-3 pr-4 pl-12 rounded-md border border-border bg-background text-[0.95rem] font-[inherit] text-text-primary transition-all duration-200 focus:outline-none focus:border-secondary focus:bg-white focus:shadow-[0_0_0_4px_rgba(215,122,97,0.1)]"
+            />
           </div>
         </div>
-        <div className="client-list">
+
+        {/* Client list */}
+        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-1.5">
           {filteredClients.length > 0 ? (
             filteredClients.map(c => {
               const initials = c.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -703,36 +812,54 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
               const isSelected = selectedClientId === c.id;
 
               return (
-                <div 
-                  key={c.id} 
-                  className={`client-card-container ${isSelected ? 'selected' : ''} ${isConfirming ? 'confirming' : ''}`}
+                <div
+                  key={c.id}
+                  className={`flex items-center gap-2 p-1 rounded-md transition-all duration-300 relative mb-0.5 ${
+                    isSelected
+                      ? "bg-primary shadow-[0_8px_24px_rgba(34,56,67,0.15)]"
+                      : "hover:bg-background"
+                  }`}
                 >
-                  <button 
-                    className="client-card-main" 
-                    onClick={() => { 
-                      setSelectedClientId(c.id); 
-                      setSelectedTripId(c.trips[0]?.id || null); 
+                  <button
+                    className="all-unset flex-1 flex items-center gap-3.5 px-3 py-2.5 cursor-pointer min-w-0 rounded-sm"
+                    onClick={() => {
+                      setSelectedClientId(c.id);
+                      setSelectedTripId(c.trips[0]?.id || null);
                     }}
                     title={`View ${c.name}'s itineraries`}
                   >
-                    <div className="client-avatar">{initials}</div>
-                    <div className="client-info">
-                      <strong>{c.name}</strong>
-                      <span>{c.trips.length} saved itineraries</span>
+                    <div className={`w-11 h-11 rounded-full flex items-center justify-center font-extrabold text-[0.85rem] flex-shrink-0 shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-all duration-200 ${
+                      isSelected ? "bg-accent text-primary" : "bg-secondary text-white"
+                    }`}>
+                      {initials}
+                    </div>
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <strong className={`block text-[0.95rem] font-bold tracking-tight whitespace-nowrap overflow-hidden text-ellipsis transition-colors duration-200 ${
+                        isSelected ? "text-white" : "text-text-primary"
+                      }`}>
+                        {c.name}
+                      </strong>
+                      {!isConfirming && (
+                        <span className={`text-[0.75rem] font-semibold opacity-70 transition-colors duration-200 ${
+                          isSelected ? "text-white/80" : "text-text-soft"
+                        }`}>
+                          {c.trips.length} saved itineraries
+                        </span>
+                      )}
                     </div>
                   </button>
 
                   {isConfirming ? (
-                    <div className="client-delete-confirm">
-                      <button 
-                        className="client-confirm-yes" 
+                    <div className="flex gap-1 pr-2 flex-shrink-0" style={{ animation: "cip-slide-in 0.2s ease-out" }}>
+                      <button
+                        className="px-2.5 py-1.5 rounded-[6px] border-none bg-[#dc2626] text-white text-[0.7rem] font-extrabold cursor-pointer transition-all duration-200 shadow-[0_2px_8px_rgba(220,38,38,0.25)] whitespace-nowrap hover:enabled:bg-[#b91c1c] hover:enabled:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isDeletingClient}
                         onClick={() => handleDeleteClient(c)}
                       >
                         {isDeletingClient ? "..." : "Delete"}
                       </button>
-                      <button 
-                        className="client-confirm-no" 
+                      <button
+                        className="px-2 py-1.5 rounded-[6px] border border-border bg-white text-[0.7rem] font-bold text-text-soft cursor-pointer transition-all duration-200 whitespace-nowrap hover:enabled:bg-background"
                         disabled={isDeletingClient}
                         onClick={() => setShowClientDeleteConfirm(null)}
                       >
@@ -740,11 +867,15 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                       </button>
                     </div>
                   ) : (
-                    <button 
-                      className="client-delete-btn" 
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        setShowClientDeleteConfirm(c.id); 
+                    <button
+                      className={`border-none w-8 h-8 flex items-center justify-center cursor-pointer rounded-lg transition-all duration-200 flex-shrink-0 mr-1 ${
+                        isSelected
+                          ? "bg-transparent text-white/60 hover:bg-white/15 hover:text-white"
+                          : "bg-transparent text-text-soft hover:bg-[#fef2f2] hover:text-[#dc2626] hover:scale-110"
+                      }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowClientDeleteConfirm(c.id);
                       }}
                       title="Delete client record"
                     >
@@ -759,8 +890,8 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
             })
           ) : (
             clients.length === 0 ? (
-              <div className="sidebar-empty-state">
-                <div className="empty-state-icon">
+              <div className="flex flex-col items-center justify-center flex-1 m-3 p-6 border-2 border-dashed border-border rounded-md bg-[rgba(34,56,67,0.02)] text-text-soft text-center gap-3.5 min-h-[240px]">
+                <div className="text-secondary opacity-45 transition-opacity duration-300 hover:opacity-70">
                   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
@@ -768,77 +899,119 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                   </svg>
                 </div>
-                <p>No client directory yet.</p>
+                <p className="text-[0.85rem] font-bold tracking-[0.02em] m-0">No client directory yet.</p>
               </div>
             ) : searchQuery.trim() ? (
-              <div className="empty-results">No saved clients match your search.</div>
+              <div className="px-3.5 py-[22px] text-center text-text-soft italic text-[0.9rem] leading-relaxed">
+                No saved clients match your search.
+              </div>
             ) : null
           )}
         </div>
       </aside>
 
-      <main className="workspace-pane">
+      {/* Main workspace */}
+      <main className="bg-surface border border-border rounded-md flex flex-col overflow-hidden shadow-soft h-full backdrop-blur-[8px]">
         {selectedClient ? (
-          <div className="workspace-content">
-            <header className="workspace-header">
-              <div className="client-meta-row">
-                <div className="client-meta-copy">
-                  <h2>{selectedClient.name}</h2>
-                  <div className="saved-itineraries-badge">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+          <div className="flex flex-col h-full overflow-hidden">
+            {/* Workspace header */}
+            <header className="px-6 py-4 bg-transparent flex justify-between items-center">
+              <div className="flex items-center gap-5">
+                <div className="flex items-center gap-4">
+                  <h2 className="font-serif text-[1.8rem] m-0 leading-none">{selectedClient.name}</h2>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#fef2f2] border border-[#fee2e2] text-[#b91c1c] text-[0.75rem] font-extrabold uppercase tracking-[0.05em]">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+                    </svg>
                     Saved itineraries
                   </div>
-                  <span className="saved-count-label">{selectedClient.trips.length} saved</span>
+                  <span className="text-[0.9rem] text-text-soft font-semibold">
+                    {selectedClient.trips.length} saved
+                  </span>
                 </div>
               </div>
             </header>
-            <div className="workspace-layout">
-              <div className="trip-strip">
+
+            <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              {/* Trip strip */}
+              <div className="flex gap-4 px-6 pb-5 bg-transparent overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {selectedClient.trips.map(t => (
-                  <div key={t.id} className={`trip-card ${selectedTripId === t.id ? 'active' : ''}`}>
-                    <button className="trip-card-select" aria-pressed={selectedTripId === t.id} onClick={() => setSelectedTripId(t.id)}>
-                      <div className="trip-card-body">
-                        <strong>{t.destination || "Unnamed Trip"}</strong>
-                        <span className="trip-dates">{t.travelWindow || t.dates || "TBD"}</span>
-                        <span className={`trip-status-chip ${getSavedStatusClass(getSavedStatusLabel(t))}`}>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
-                          {getSavedStatusLabel(t)}
+                  <div
+                    key={t.id}
+                    className={`min-w-[240px] max-w-[280px] h-auto px-5 py-4 rounded-md border bg-white flex flex-col gap-2.5 text-left cursor-pointer transition-all duration-300 relative ${
+                      selectedTripId === t.id
+                        ? "border-secondary bg-[#fffcfb] shadow-[0_12px_30px_rgba(215,122,97,0.12)] outline outline-1 outline-secondary"
+                        : "border-border hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(0,0,0,0.06)] hover:border-secondary"
+                    }`}
+                  >
+                    <button
+                      className="all-unset flex flex-col gap-1 cursor-pointer w-full"
+                      aria-pressed={selectedTripId === t.id}
+                      onClick={() => setSelectedTripId(t.id)}
+                    >
+                      <div className="flex flex-col justify-center gap-1 min-w-0 flex-1">
+                        <strong className="block text-[1.05rem] text-text-primary m-0 leading-[1.2] whitespace-nowrap overflow-hidden text-ellipsis">
+                          {t.destination || "Unnamed Trip"}
+                        </strong>
+                        <span className="text-[0.8rem] text-text-soft font-semibold mb-1">
+                          {t.travelWindow || t.dates || "TBD"}
                         </span>
+                        <StatusChip trip={t} />
                       </div>
                     </button>
                     {selectedTripId === t.id && unreadCommentCount > 0 && (
-                      <div className="trip-card-comment-badge" title={`${unreadCommentCount} unread comment${unreadCommentCount !== 1 ? "s" : ""}`}>
+                      <div
+                        className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-[5px] rounded-pill bg-[#dc2626] text-white text-[0.65rem] font-extrabold flex items-center justify-center leading-none shadow-[0_2px_6px_rgba(220,38,38,0.35)] pointer-events-none z-[2]"
+                        title={`${unreadCommentCount} unread comment${unreadCommentCount !== 1 ? "s" : ""}`}
+                      >
                         {unreadCommentCount > 99 ? "99+" : unreadCommentCount}
                       </div>
                     )}
                     {showDeleteConfirm === t.id ? (
-                      <div className="delete-confirm-bar">
+                      <div className="flex items-center gap-2 pt-2 border-t border-border text-[0.75rem] font-semibold text-text-soft">
                         <span>Delete this trip?</span>
-                        <button className="confirm-yes" disabled={deletingTripId === t.id} onClick={() => handleDeleteTrip(t.id)}>
+                        <button
+                          className="px-2.5 py-1 rounded-[6px] border-none bg-[#dc2626] text-white text-[0.72rem] font-bold cursor-pointer transition-colors duration-150 hover:bg-[#b91c1c] disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={deletingTripId === t.id}
+                          onClick={() => handleDeleteTrip(t.id)}
+                        >
                           {deletingTripId === t.id ? "..." : "Yes"}
                         </button>
-                        <button className="confirm-no" onClick={() => setShowDeleteConfirm(null)}>No</button>
+                        <button
+                          className="px-2.5 py-1 rounded-[6px] border border-border bg-white text-[0.72rem] font-bold cursor-pointer text-text-soft transition-colors duration-150 hover:bg-background"
+                          onClick={() => setShowDeleteConfirm(null)}
+                        >
+                          No
+                        </button>
                       </div>
                     ) : (
                       <button
-                        className="trip-delete-btn"
+                        className="absolute top-2 right-2 w-7 h-7 rounded-lg border-none bg-transparent text-text-soft cursor-pointer flex items-center justify-center opacity-0 transition-all duration-150 group-hover:opacity-100 hover:bg-[#fef2f2] hover:text-[#dc2626] [.trip-card:hover_&]:opacity-100"
                         title="Delete trip"
                         onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(t.id); }}
+                        style={{ opacity: showDeleteConfirm !== null ? undefined : undefined }}
+                        onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
+                        onMouseLeave={(e) => { if (showDeleteConfirm !== t.id) e.currentTarget.style.opacity = "0"; }}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
                       </button>
                     )}
                   </div>
                 ))}
               </div>
-              <div className="itinerary-preview-area">
+
+              {/* Itinerary preview area */}
+              <div className="flex-1 overflow-y-auto min-h-0 bg-background border-t border-border flex flex-col">
                 {renderItineraryContent()}
               </div>
             </div>
           </div>
         ) : (
-          <div className="empty-workspace">
-            <div className="empty-state-icon">
+          <div className="flex flex-col items-center justify-center flex-1 text-text-soft gap-6 text-center px-10 py-[60px]">
+            <div className="text-secondary opacity-45">
               <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
@@ -846,8 +1019,10 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                 <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
             </div>
-            <h3>No saved itineraries yet.</h3>
-            <p>Saved itineraries will appear here after approval from Command Center.</p>
+            <h3 className="font-serif text-[2.2rem] text-text-primary m-0 tracking-tight">No saved itineraries yet.</h3>
+            <p className="max-w-[320px] mx-auto leading-relaxed text-[0.95rem] m-0">
+              Saved itineraries will appear here after approval from Command Center.
+            </p>
           </div>
         )}
       </main>
@@ -860,6 +1035,13 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
         tripId={selectedTripId}
         tripTitle={tripTitle}
       />
+
+      <style>{`
+        @keyframes cip-slide-in {
+          from { opacity: 0; transform: translateX(10px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
     </div>
   );
 }

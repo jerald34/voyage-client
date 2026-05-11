@@ -6,33 +6,54 @@ export default function AgentToolCallList({ toolCalls = [] }) {
 
   if (toolCalls.length === 0) return null;
 
+  const getBadgeClass = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'running':
+        return 'bg-[#fff4e5] text-[#b7791f]';
+      case 'completed':
+        return 'bg-[#e6fffa] text-[#2c7a7b]';
+      default:
+        return 'bg-background text-text-muted';
+    }
+  };
+
   return (
-    <div className="agent-tool-calls">
-      <h3 className="section-title">Tool Inspections</h3>
-      <div className="tool-items">
+    <div className="px-4 py-4">
+      <h3 className="text-[10px] uppercase tracking-[0.1em] text-text-soft font-extrabold mb-3">
+        Tool Inspections
+      </h3>
+      <div className="flex flex-col gap-2.5">
         {toolCalls.map((tool, index) => (
-          <div key={index} className={`tool-item ${tool.status.toLowerCase()}`}>
-            <div 
-              className="tool-header"
+          <div key={index} className="border border-border rounded-[6px] overflow-hidden bg-white">
+            <div
+              className="px-3 py-2.5 flex justify-between items-center cursor-pointer bg-black/[0.02] hover:bg-black/[0.04] transition-colors"
               onClick={() => setExpandedId(expandedId === index ? null : index)}
             >
-              <div className="tool-main">
-                <span className="tool-name">{tool.name}</span>
-                <span className="tool-status-badge">{tool.status}</span>
+              <div className="flex items-center gap-2.5">
+                <span className="font-mono text-xs text-primary font-semibold">{tool.name}</span>
+                <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded ${getBadgeClass(tool.status)}`}>
+                  {tool.status}
+                </span>
               </div>
-              <span className="expand-icon">{expandedId === index ? '−' : '+'}</span>
+              <span className="font-mono text-base text-text-soft">
+                {expandedId === index ? '−' : '+'}
+              </span>
             </div>
-            
+
             {expandedId === index && (
-              <div className="tool-details">
-                <div className="detail-block">
-                  <span className="detail-label">Input</span>
-                  <pre className="detail-json">{JSON.stringify(tool.input, null, 2)}</pre>
+              <div className="px-3 py-3 border-t border-border bg-[#fdfdfd] flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[9px] uppercase font-extrabold text-text-soft">Input</span>
+                  <pre className="font-mono text-[11px] bg-[#1e293b] text-[#e2e8f0] px-2.5 py-2.5 rounded m-0 overflow-x-auto leading-snug">
+                    {JSON.stringify(tool.input, null, 2)}
+                  </pre>
                 </div>
                 {tool.output && (
-                  <div className="detail-block">
-                    <span className="detail-label">Output</span>
-                    <pre className="detail-json">{JSON.stringify(tool.output, null, 2)}</pre>
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[9px] uppercase font-extrabold text-text-soft">Output</span>
+                    <pre className="font-mono text-[11px] bg-[#1e293b] text-[#e2e8f0] px-2.5 py-2.5 rounded m-0 overflow-x-auto leading-snug">
+                      {JSON.stringify(tool.output, null, 2)}
+                    </pre>
                   </div>
                 )}
               </div>
@@ -40,121 +61,6 @@ export default function AgentToolCallList({ toolCalls = [] }) {
           </div>
         ))}
       </div>
-
-      <style jsx>{`
-        .agent-tool-calls {
-          padding: 16px;
-        }
-
-        .section-title {
-          font-size: 10px;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          color: var(--voyage-text-soft);
-          font-weight: 800;
-          margin-bottom: 12px;
-        }
-
-        .tool-items {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .tool-item {
-          border: 1px solid var(--voyage-border);
-          border-radius: 6px;
-          overflow: hidden;
-          background: white;
-        }
-
-        .tool-header {
-          padding: 10px 12px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          cursor: pointer;
-          background: rgba(0, 0, 0, 0.02);
-          transition: background 0.2s;
-        }
-
-        .tool-header:hover {
-          background: rgba(0, 0, 0, 0.04);
-        }
-
-        .tool-main {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .tool-name {
-          font-family: var(--font-mono);
-          font-size: 12px;
-          color: var(--voyage-primary);
-          font-weight: 600;
-        }
-
-        .tool-status-badge {
-          font-size: 9px;
-          font-weight: 800;
-          text-transform: uppercase;
-          padding: 2px 6px;
-          border-radius: 4px;
-          background: var(--voyage-background);
-          color: var(--voyage-text-muted);
-        }
-
-        .tool-item.running .tool-status-badge {
-          background: #fff4e5;
-          color: #b7791f;
-        }
-
-        .tool-item.completed .tool-status-badge {
-          background: #e6fffa;
-          color: #2c7a7b;
-        }
-
-        .expand-icon {
-          font-family: var(--font-mono);
-          font-size: 16px;
-          color: var(--voyage-text-soft);
-        }
-
-        .tool-details {
-          padding: 12px;
-          border-top: 1px solid var(--voyage-border);
-          background: #fdfdfd;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .detail-block {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-
-        .detail-label {
-          font-size: 9px;
-          text-transform: uppercase;
-          font-weight: 800;
-          color: var(--voyage-text-soft);
-        }
-
-        .detail-json {
-          font-family: var(--font-mono);
-          font-size: 11px;
-          background: #1e293b;
-          color: #e2e8f0;
-          padding: 10px;
-          border-radius: 4px;
-          margin: 0;
-          overflow-x: auto;
-          line-height: 1.4;
-        }
-      `}</style>
     </div>
   );
 }

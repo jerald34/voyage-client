@@ -1,4 +1,5 @@
 import "./globals.css";
+import ThemeProvider from "./components/theme/ThemeProvider";
 
 export const metadata = {
   title: "Voyage | PWA trip planning prototype",
@@ -21,9 +22,18 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var t=localStorage.getItem('voyage-theme');if(t==='dark')document.documentElement.classList.add('dark')})()`,
+          }}
+        />
+      </head>
       <body suppressHydrationWarning>
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `

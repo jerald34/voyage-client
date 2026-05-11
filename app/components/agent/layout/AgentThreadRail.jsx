@@ -3,117 +3,37 @@ import Link from 'next/link';
 
 export default function AgentThreadRail() {
   return (
-    <div className="thread-rail-container">
-      <header className="rail-header">
-        <div className="agency-branding">
-          <span className="agency-label">Agency Workspace</span>
-          <h2 className="agency-name">Voyage Premium</h2>
+    <div className="flex flex-col gap-8 p-5 h-full">
+      <header className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] uppercase tracking-[0.1em] text-text-soft font-bold">
+            Agency Workspace
+          </span>
+          <h2 className="text-xl m-0 text-text-primary font-serif">Voyage Premium</h2>
         </div>
-        <Link href="/agency" className="back-link">
-          {"<-"} Dashboard
+        <Link href="/agency" className="text-xs text-secondary no-underline font-semibold hover:underline">
+          &larr; Dashboard
         </Link>
       </header>
 
-      <div className="rail-actions">
-        <button className="new-thread-btn">
-          <span className="btn-icon">+</span>
+      <div>
+        <button className="w-full px-3 py-3 bg-primary text-white border-0 rounded-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition hover:-translate-y-px">
+          <span className="text-base leading-none">+</span>
           New Itinerary Draft
         </button>
       </div>
 
-      <nav className="thread-list-nav">
-        <h3 className="section-title">Recent Threads</h3>
-        <div className="thread-empty-state">
-          <strong>No recent threads loaded</strong>
-          <span>Start or select an itinerary thread to populate this rail.</span>
+      <nav>
+        <h3 className="text-[11px] uppercase tracking-[0.05em] text-text-muted font-extrabold mb-4">
+          Recent Threads
+        </h3>
+        <div className="grid gap-2 p-3 rounded-sm border border-border bg-white">
+          <strong className="text-[13px] font-bold text-text-primary">No recent threads loaded</strong>
+          <span className="text-[11px] text-text-soft leading-relaxed">
+            Start or select an itinerary thread to populate this rail.
+          </span>
         </div>
       </nav>
-
-      <style jsx>{`
-        .thread-rail-container {
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 32px;
-          height: 100%;
-        }
-
-        .rail-header {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .agency-label {
-          font-size: 10px;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          color: var(--voyage-text-soft);
-          font-weight: 700;
-        }
-
-        .agency-name {
-          font-size: 1.25rem;
-          margin: 0;
-          color: var(--voyage-primary);
-        }
-
-        .back-link {
-          font-size: 12px;
-          color: var(--voyage-secondary);
-          text-decoration: none;
-          font-weight: 600;
-        }
-
-        .new-thread-btn {
-          width: 100%;
-          padding: 12px;
-          background: var(--voyage-primary);
-          color: white;
-          border: none;
-          border-radius: var(--voyage-radius-sm);
-          font-weight: 700;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          cursor: pointer;
-          transition: transform 0.2s;
-        }
-
-        .new-thread-btn:hover {
-          transform: translateY(-1px);
-        }
-
-        .section-title {
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          color: var(--voyage-text-muted);
-          margin-bottom: 16px;
-        }
-
-        .thread-empty-state {
-          display: grid;
-          gap: 8px;
-          padding: 12px;
-          border-radius: var(--voyage-radius-sm);
-          border: 1px solid var(--voyage-border);
-          background: white;
-        }
-
-        .thread-empty-state strong {
-          font-size: 13px;
-          font-weight: 700;
-          color: var(--voyage-text);
-        }
-
-        .thread-empty-state span {
-          font-size: 11px;
-          color: var(--voyage-text-soft);
-          line-height: 1.5;
-        }
-      `}</style>
     </div>
   );
 }

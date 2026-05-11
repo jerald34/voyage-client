@@ -22,11 +22,11 @@ function formatDuration(seconds) {
   return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
 }
 
-export default function AgentLiveWorkRail({ 
+export default function AgentLiveWorkRail({
   runStatus = 'idle',
-  tasks = [], 
-  toolCalls = [], 
-  sources = [], 
+  tasks = [],
+  toolCalls = [],
+  sources = [],
   itinerary = null,
   activeToolLabel = null,
   mapMarkers = [],
@@ -37,21 +37,31 @@ export default function AgentLiveWorkRail({
   const routeDistance = formatDistance(latestRouteEstimate?.distanceMeters);
   const routeDuration = formatDuration(latestRouteEstimate?.durationSeconds);
 
+  const pulseDotClass = runStatus === 'running'
+    ? 'w-2 h-2 rounded-full bg-secondary animate-pulse'
+    : runStatus === 'completed'
+    ? 'w-2 h-2 rounded-full bg-[#2c7a7b]'
+    : 'w-2 h-2 rounded-full bg-border';
+
   return (
-    <div className="live-work-rail">
-      <header className="rail-status-header">
-        <div className="status-stack">
-          <div className="status-indicator">
-            <span className={`pulse-dot ${runStatus}`}></span>
-            <span className="status-text">
+    <div className="flex flex-col h-full bg-white/40">
+      <header className="px-4 py-4 border-b border-border bg-white flex justify-between items-center gap-4">
+        <div className="flex flex-col gap-2 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className={pulseDotClass}></span>
+            <span className="text-[11px] font-extrabold uppercase text-primary">
               {runStatus === 'running' ? 'Agent Active' : runStatus === 'idle' ? 'Idle' : 'Run ' + runStatus}
             </span>
           </div>
           {(activeToolLabel || mapMarkers.length > 0 || latestRouteEstimate) && (
-            <div className="tool-banner" aria-live="polite">
-              {activeToolLabel && <span className="tool-banner-label">SYS: {activeToolLabel}</span>}
+            <div className="flex flex-wrap gap-2 items-center text-[11px] leading-snug" aria-live="polite">
+              {activeToolLabel && (
+                <span className="inline-flex items-center px-2 py-[5px] rounded-pill bg-[#0f172a] text-[#e2e8f0] font-bold whitespace-nowrap">
+                  SYS: {activeToolLabel}
+                </span>
+              )}
               {(mapMarkers.length > 0 || latestRouteEstimate) && (
-                <span className="tool-banner-meta">
+                <span className="inline-flex items-center px-2 py-[5px] rounded-pill bg-[#eef2f7] text-primary border border-border font-bold">
                   {mapMarkers.length > 0 && `${mapMarkers.length} markers`}
                   {mapMarkers.length > 0 && latestRouteEstimate && ' | '}
                   {latestRouteEstimate && `Route${routeDistance ? ` ${routeDistance}` : ''}${routeDuration ? ` | ${routeDuration}` : ''}`}
@@ -60,25 +70,33 @@ export default function AgentLiveWorkRail({
             </div>
           )}
         </div>
-        <div className="run-id-tag">OPERATIONS CENTER</div>
+        <div className="font-mono text-[10px] text-text-soft shrink-0">OPERATIONS CENTER</div>
       </header>
 
-      <nav className="rail-tabs">
-        <button 
-          className={`tab-btn ${activeTab === 'work' ? 'active' : ''}`}
+      <nav className="flex border-b border-border bg-white">
+        <button
+          className={`flex-1 py-3 border-0 text-[11px] font-extrabold uppercase tracking-[0.05em] cursor-pointer transition-all ${
+            activeTab === 'work'
+              ? 'text-primary bg-background shadow-[inset_0_-2px_0_rgb(var(--color-secondary))]'
+              : 'text-text-soft bg-transparent'
+          }`}
           onClick={() => setActiveTab('work')}
         >
           Process
         </button>
-        <button 
-          className={`tab-btn ${activeTab === 'itinerary' ? 'active' : ''}`}
+        <button
+          className={`flex-1 py-3 border-0 text-[11px] font-extrabold uppercase tracking-[0.05em] cursor-pointer transition-all ${
+            activeTab === 'itinerary'
+              ? 'text-primary bg-background shadow-[inset_0_-2px_0_rgb(var(--color-secondary))]'
+              : 'text-text-soft bg-transparent'
+          }`}
           onClick={() => setActiveTab('itinerary')}
         >
           Draft
         </button>
       </nav>
 
-      <div className="rail-content">
+      <div className="flex-grow overflow-y-auto">
         {activeTab === 'work' ? (
           <>
             <AgentTaskList tasks={tasks} />
@@ -89,134 +107,6 @@ export default function AgentLiveWorkRail({
           <ItineraryCanvas itinerary={itinerary} />
         )}
       </div>
-
-      <style jsx>{`
-        .live-work-rail {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-          background: rgba(255, 255, 255, 0.4);
-        }
-
-        .rail-status-header {
-          padding: 16px;
-          border-bottom: 1px solid var(--voyage-border-strong);
-          background: white;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 16px;
-        }
-
-        .status-stack {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          min-width: 0;
-        }
-
-        .status-indicator {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .pulse-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: var(--voyage-border-strong);
-        }
-
-        .pulse-dot.running {
-          background: var(--voyage-secondary);
-          animation: pulse 2s infinite;
-        }
-
-        .pulse-dot.completed {
-          background: #2c7a7b;
-        }
-
-        .status-text {
-          font-size: 11px;
-          font-weight: 800;
-          text-transform: uppercase;
-          color: var(--voyage-primary);
-        }
-
-        .tool-banner {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          align-items: center;
-          font-size: 11px;
-          line-height: 1.4;
-        }
-
-        .tool-banner-label,
-        .tool-banner-meta {
-          display: inline-flex;
-          align-items: center;
-          padding: 5px 8px;
-          border-radius: 999px;
-          background: #0f172a;
-          color: #e2e8f0;
-          font-weight: 700;
-        }
-
-        .tool-banner-label {
-          white-space: nowrap;
-        }
-
-        .tool-banner-meta {
-          background: #eef2f7;
-          color: var(--voyage-primary);
-          border: 1px solid var(--voyage-border);
-        }
-
-        .run-id-tag {
-          font-family: var(--font-mono);
-          font-size: 10px;
-          color: var(--voyage-text-soft);
-        }
-
-        .rail-tabs {
-          display: flex;
-          border-bottom: 1px solid var(--voyage-border-strong);
-          background: white;
-        }
-
-        .tab-btn {
-          flex: 1;
-          padding: 12px;
-          border: none;
-          background: transparent;
-          font-size: 11px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          color: var(--voyage-text-soft);
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .tab-btn.active {
-          color: var(--voyage-primary);
-          background: var(--voyage-background);
-          box-shadow: inset 0 -2px 0 var(--voyage-secondary);
-        }
-
-        .rail-content {
-          flex-grow: 1;
-          overflow-y: auto;
-        }
-
-        @keyframes pulse {
-          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(215, 122, 97, 0.7); }
-          70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(215, 122, 97, 0); }
-          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(215, 122, 97, 0); }
-        }
-      `}</style>
     </div>
   );
 }

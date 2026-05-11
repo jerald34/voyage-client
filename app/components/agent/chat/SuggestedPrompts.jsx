@@ -9,60 +9,21 @@ export default function SuggestedPrompts({ onSelect }) {
   ];
 
   return (
-    <div className="suggested-prompts">
-      <span className="prompts-label">Suggested:</span>
-      <div className="prompts-list">
+    <div className="flex flex-col gap-3 px-6 py-4">
+      <span className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-text-soft">
+        Suggested:
+      </span>
+      <div className="flex flex-wrap gap-2">
         {prompts.map((prompt, index) => (
-          <button 
-            key={index} 
-            className="prompt-chip"
+          <button
+            key={index}
             onClick={() => onSelect(prompt)}
+            className="px-4 py-2 bg-surface border border-border/20 rounded-pill text-xs font-semibold text-primary cursor-pointer transition-all hover:border-secondary hover:bg-secondary/5 hover:-translate-y-px"
           >
             {prompt}
           </button>
         ))}
       </div>
-
-      <style jsx>{`
-        .suggested-prompts {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          padding: 16px 24px;
-        }
-
-        .prompts-label {
-          font-size: 10px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          color: var(--voyage-text-soft);
-        }
-
-        .prompts-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-
-        .prompt-chip {
-          padding: 8px 16px;
-          background: white;
-          border: 1px solid var(--voyage-border);
-          border-radius: var(--voyage-radius-pill);
-          font-size: 12px;
-          font-weight: 600;
-          color: var(--voyage-primary);
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .prompt-chip:hover {
-          border-color: var(--voyage-secondary);
-          background: rgba(215, 122, 97, 0.05);
-          transform: translateY(-1px);
-        }
-      `}</style>
     </div>
   );
 }

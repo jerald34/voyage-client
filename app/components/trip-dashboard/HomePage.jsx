@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import "./HomePage.css";
 import { useAuth } from "../../hooks/useAuth.js";
 import { useAgentRunStream } from "../../hooks/useAgentRunStream.js";
 import { useTripPlanning } from "../../hooks/useTripPlanning.js";
@@ -492,7 +491,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   };
 
   return (
-    <div className="voyage-dashboard-layout">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-background text-text-primary font-sans">
       {isApprovalModalOpen && activeContext?.type === "draft" && (
         <ApproveItineraryModal
           itinerary={activeTripState?.itinerary ?? null}
@@ -533,7 +532,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
         onApproveDraft={() => { setApprovalError(""); setIsApprovalModalOpen(true); }}
       />
 
-      <div className="voyage-body">
+      <div className="flex flex-1 overflow-hidden relative">
         <DashboardSidebar
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
@@ -544,10 +543,10 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
           pendingCount={pendingCount}
         />
 
-        <main className="voyage-main-content">
+        <main className="flex-1 overflow-y-auto p-2 flex flex-col gap-2">
           {activeTab === "command-center" ? (
-            <section className="hero-stack">
-              <div className="agentic-surface">
+            <section className="flex flex-col flex-1 min-h-0">
+              <div className="grid grid-cols-[minmax(460px,0.75fr)_minmax(0,1.25fr)] gap-2 flex-1 min-h-0 max-[1100px]:grid-cols-1 max-[1100px]:grid-rows-[minmax(500px,auto)]">
                 <AgentCommandCenter
                   messages={activeTripState?.messages ?? []}
                   isStreaming={isVisible ? isStreaming : false}
