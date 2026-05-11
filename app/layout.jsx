@@ -1,18 +1,29 @@
-import './globals.css';
-import Sidebar from './components/navigation/Sidebar';
+import "./globals.css";
 
 export const metadata = {
-  title: 'Voyage | AI Itinerary Planner',
+  title: "Voyage | PWA trip planning prototype",
+  description:
+    "A responsive Voyage prototype for itinerary-first travel planning across welcome, entry, and trip brief screens.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-icon.png",
+  },
+};
+
+export const viewport = {
+  themeColor: "#223843",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className="bg-off-white text-slate-900 min-h-screen m-0 p-0" suppressHydrationWarning>
-        <Sidebar />
-        <main className="ml-20 min-h-screen">
-          {children}
-        </main>
+      <body suppressHydrationWarning>
+        {children}
         <script
           dangerouslySetInnerHTML={{
             __html: `

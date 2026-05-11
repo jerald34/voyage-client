@@ -345,8 +345,27 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
         return { type: "trip", id: tripId, clientName: title, label: title, destination: dest, statusLabel: "Approved", tripId, threadId: state.threadId ?? null };
       });
 
-    return [...drafts, ...trips, ...threadOnlyTrips];
-  }, [draftThreadOrder, draftThreadStates, safeTrips, tripStates]);
+    const options = [...drafts, ...trips, ...threadOnlyTrips];
+
+    // If we are currently creating a draft thread, and activeContext is set to that pending ID,
+    // add it to the options list so the switcher can identify it.
+    if (activeContext?.type === "draft" && String(activeContext.id).startsWith("pending-")) {
+      const isAlreadyInDrafts = drafts.some(d => d.id === activeContext.id);
+      if (!isAlreadyInDrafts) {
+        options.unshift({
+          type: "draft",
+          id: activeContext.id,
+          clientName: "New Itinerary...",
+          label: "New Itinerary...",
+          destination: "Planning",
+          statusLabel: "Creating...",
+          threadId: null
+        });
+      }
+    }
+
+    return options;
+  }, [draftThreadOrder, draftThreadStates, safeTrips, tripStates, activeContext]);
 
   const activeOption = useMemo(() => activeContext ? planningOptions.find(o => o.type === activeContext.type && o.id === activeContext.id) : planningOptions[0], [activeContext, planningOptions]);
 
@@ -383,7 +402,19 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
 
 
   // Actions
-  const handleNewItinerary = () => { onNewItinerary?.(); setActiveContext(null); /* useTripPlanning handles creation when message sent */ };
+  const handleNewItinerary = async () => {
+    // Reset to "command-center" tab so user sees the new draft being created
+    setActiveTab("command-center");
+    
+    // Set a placeholder context to immediately transition the UI to a "creating" state
+    // and avoid race conditions where the UI might try to render a null context.
+    const placeholderId = `pending-${Date.now()}`;
+    setActiveContext({ type: "draft", id: placeholderId });
+    
+    if (onNewItinerary) {
+      await onNewItinerary();
+    }
+  };
 
   const handleDeleteOption = async (option) => {
     const threadId = option?.threadId;
