@@ -1,6 +1,9 @@
 import React from "react";
+import { useTheme } from "../../theme/ThemeProvider";
 
 export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab, logout, user, pendingCount }) {
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
   const isAdmin = user?.role === "ADMIN";
 
   const navItemBase = "flex flex-col items-center justify-center py-[18px] px-1 text-[rgba(219,234,236,0.65)] no-underline gap-2.5 text-center bg-transparent border-none cursor-pointer font-[inherit] transition-all duration-200 w-full hover:not-[.active]:text-white hover:not-[.active]:bg-white/5 max-[900px]:flex-row max-[900px]:justify-start max-[900px]:px-4 max-[900px]:py-3 max-[900px]:gap-4 max-[900px]:rounded-xl";
@@ -82,6 +85,34 @@ export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, acti
           <button
             type="button"
             className={`${navItemBase} mt-auto`}
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            <span className="inline-flex items-center justify-center relative" aria-hidden="true">
+              {isDark ? (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+              ) : (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="5" />
+                  <line x1="12" y1="1" x2="12" y2="3" />
+                  <line x1="12" y1="21" x2="12" y2="23" />
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                  <line x1="1" y1="12" x2="3" y2="12" />
+                  <line x1="21" y1="12" x2="23" y2="12" />
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+              )}
+            </span>
+            <span className="text-[11px] font-semibold leading-tight max-[900px]:text-sm">{isDark ? "Light" : "Dark"}</span>
+          </button>
+
+          <button
+            type="button"
+            className={navItemBase}
             onClick={logout}
           >
             <span className="inline-flex items-center justify-center relative" aria-hidden="true">

@@ -1,17 +1,21 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode for any future `dark:*` variant usage. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ═══════════════════════════════════════════════════
    TAILWIND v4 THEME — Design Tokens
    ═══════════════════════════════════════════════════ */
 
 @theme {
-  /* Color palette — defined as space-separated RGB for alpha support */
+  /* Color palette */
   --color-primary: oklch(0.33 0.03 220);
   --color-secondary: oklch(0.63 0.13 30);
   --color-accent: oklch(0.78 0.06 40);
   --color-background: oklch(0.96 0.005 230);
   --color-surface: oklch(1.0 0 0);
   --color-surface-elevated: oklch(1.0 0 0);
+  --color-text: oklch(0.33 0.03 220);
   --color-text-primary: oklch(0.33 0.03 220);
   --color-text-muted: oklch(0.46 0.02 220);
   --color-text-soft: oklch(0.62 0.015 220);
@@ -31,11 +35,7 @@
   --radius-lg: 28px;
   --radius-pill: 999px;
 
-  /* Font families */
-  --font-serif: "DM Serif Display", serif;
-  --font-sans: "Plus Jakarta Sans", sans-serif;
-
-  /* Box shadows */
+  /* Box shadows (light-mode default; dark overrides applied via .dark .shadow-* below) */
   --shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.08);
   --shadow-strong: 0 20px 60px rgba(0, 0, 0, 0.12);
 }
@@ -71,6 +71,7 @@
   --color-background: oklch(0.15 0.005 250);
   --color-surface: oklch(0.20 0.005 250);
   --color-surface-elevated: oklch(0.24 0.006 250);
+  --color-text: oklch(0.94 0.005 220);
   --color-text-primary: oklch(0.94 0.005 220);
   --color-text-muted: oklch(0.72 0.015 220);
   --color-text-soft: oklch(0.55 0.015 220);
@@ -83,9 +84,6 @@
   --color-status-warning: #fb923c;
   --color-status-danger: #f87171;
   --color-status-info: #2dd4bf;
-
-  --shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.30);
-  --shadow-strong: 0 20px 60px rgba(0, 0, 0, 0.45);
 
   --color-primary-rgb: 232 236 238;
   --color-secondary-rgb: 224 144 111;
@@ -112,12 +110,11 @@
 
 @utility glass-panel {
   background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
   border-radius: 18px;
   box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05);
 }
+
 
 @utility bg-primary-navy {
   background-color: #1A1D1F;
@@ -147,12 +144,6 @@
    BASE STYLES
    ═══════════════════════════════════════════════════ */
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
 html {
   scroll-behavior: smooth;
 }
@@ -163,11 +154,21 @@ body {
     radial-gradient(circle at top right, rgba(216, 180, 160, 0.18), transparent 28%),
     linear-gradient(180deg, #ffffff 0%, rgb(var(--color-background-rgb)) 48%, #e1e7e9 100%);
   color: rgb(var(--color-text-rgb));
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
   line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Dark-mode shadow overrides — v4 inlines shadow values into the utility,
+   so redeclaring `--shadow-soft` under `.dark` is dead. Override the
+   utilities directly here. */
+.dark .shadow-soft {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.30);
+}
+.dark .shadow-strong {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
 }
 
 .dark body {
@@ -215,7 +216,7 @@ body::before {
   h3,
   h4 {
     color: var(--color-text-primary);
-    font-family: "DM Serif Display", serif;
+    font-family: var(--font-serif), "DM Serif Display", serif;
     font-weight: 400;
     letter-spacing: -0.01em;
     line-height: 1.08;

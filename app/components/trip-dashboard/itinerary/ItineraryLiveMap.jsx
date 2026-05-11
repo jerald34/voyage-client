@@ -249,18 +249,35 @@ function PlaceDetailPanel({ place, onClose }) {
   const mapsUrl = getGoogleMapsPlaceUrl(place);
 
   return (
-    <aside className="map-place-detail" aria-live="polite">
-      <div className="map-place-detail-header">
+    <aside
+      className="absolute left-[18px] bottom-[18px] z-[520] grid gap-2 w-[min(360px,calc(100%-36px))] p-4 rounded-[18px] bg-[rgba(15,23,42,0.92)] text-white shadow-[0_18px_40px_rgba(15,23,42,0.28)] backdrop-blur-[12px]"
+      aria-live="polite"
+    >
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <span>{place.source === "live" ? "Live map result" : place.dayLabel || "Itinerary stop"}</span>
-          <h3>{place.name}</h3>
+          <span className="text-[11px] font-bold tracking-[0.04em] uppercase text-white/60">
+            {place.source === "live" ? "Live map result" : place.dayLabel || "Itinerary stop"}
+          </span>
+          <h3 className="mt-0.5 text-xl leading-tight text-white font-serif">{place.name}</h3>
         </div>
-        <button type="button" onClick={onClose} aria-label="Close place detail">x</button>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close place detail"
+          className="w-8 h-8 border-0 rounded-full bg-white/10 text-white cursor-pointer text-xl leading-none hover:bg-white/20 transition-colors"
+        >
+          ×
+        </button>
       </div>
-      {place.formattedAddress ? <p>{place.formattedAddress}</p> : null}
-      {place.timeLabel ? <small>{place.timeLabel}</small> : null}
+      {place.formattedAddress ? <p className="m-0 text-[13px] leading-[1.45] text-white/70">{place.formattedAddress}</p> : null}
+      {place.timeLabel ? <small className="text-[11px] font-bold tracking-[0.04em] uppercase text-white/60">{place.timeLabel}</small> : null}
       {mapsUrl ? (
-        <a href={mapsUrl} target="_blank" rel="noreferrer noopener">
+        <a
+          href={mapsUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="inline-flex justify-center mt-1 rounded-full bg-[#dbeafe] text-[#0f3f86] py-[9px] px-3 text-[13px] font-extrabold no-underline hover:opacity-90 transition-opacity"
+        >
           Open in Google Maps
         </a>
       ) : null}
@@ -322,13 +339,13 @@ export default function ItineraryLiveMap({
   }, [onSelectPlace]);
 
   return (
-    <div className="itinerary-live-map-shell">
+    <div className="absolute inset-0 bg-[#f8fafc]">
       <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
         <Map
           defaultCenter={center}
           defaultZoom={center.lat !== 0 ? 13 : 2}
           mapId={MAP_ID}
-          className="itinerary-live-map"
+          style={{ width: "100%", height: "100%" }}
           disableDefaultUI={false}
           gestureHandling="greedy"
         >
@@ -421,128 +438,19 @@ export default function ItineraryLiveMap({
       </APIProvider>
 
       {!viewportPoints.length ? (
-        <div className="empty-map-content">
-          <strong>Map coordinates pending</strong>
-          <span>Locations will appear after the backend resolves itinerary places.</span>
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 grid gap-1.5 w-[min(320px,calc(100%-48px))] text-center p-6 border border-[rgba(226,232,240,0.8)] rounded-[20px] bg-white/95 backdrop-blur-[8px] text-[#0f172a] z-[500] shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),_0_8px_10px_-6px_rgba(0,0,0,0.1)] pointer-events-none">
+          <strong className="text-base font-semibold">
+            {GOOGLE_MAPS_API_KEY ? "Map coordinates pending" : "Map unavailable"}
+          </strong>
+          <span className="text-[#64748b] text-[13px] leading-[1.5]">
+            {GOOGLE_MAPS_API_KEY
+              ? "Locations will appear after the backend resolves itinerary places."
+              : "Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your .env to enable the map."}
+          </span>
         </div>
       ) : null}
 
       <PlaceDetailPanel place={selectedPlace} onClose={() => onSelectPlace?.("")} />
-
-      <style jsx>{`
-        .itinerary-live-map-shell {
-          position: absolute;
-          inset: 0;
-          background: #f8fafc;
-        }
-
-        .itinerary-live-map {
-          width: 100%;
-          height: 100%;
-        }
-
-        .empty-map-content {
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          display: grid;
-          gap: 6px;
-          width: min(320px, calc(100% - 48px));
-          text-align: center;
-          padding: 24px;
-          border: 1px solid rgba(226, 232, 240, 0.8);
-          border-radius: 20px;
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(8px);
-          color: #0f172a;
-          z-index: 500;
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-          pointer-events: none;
-        }
-
-        .empty-map-content strong {
-          font-size: 16px;
-          font-weight: 600;
-        }
-
-        .empty-map-content span {
-          color: #64748b;
-          font-size: 13px;
-          line-height: 1.5;
-        }
-
-        .map-place-detail {
-          position: absolute;
-          left: 18px;
-          bottom: 18px;
-          z-index: 520;
-          display: grid;
-          gap: 8px;
-          width: min(360px, calc(100% - 36px));
-          padding: 16px;
-          border-radius: 18px;
-          background: rgba(15, 23, 42, 0.92);
-          color: white;
-          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.28);
-          backdrop-filter: blur(12px);
-        }
-
-        .map-place-detail-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 12px;
-        }
-
-        .map-place-detail-header span,
-        .map-place-detail small {
-          color: rgba(255, 255, 255, 0.62);
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-        }
-
-        .map-place-detail h3 {
-          margin: 2px 0 0;
-          color: white;
-          font-size: 20px;
-          line-height: 1.2;
-        }
-
-        .map-place-detail p {
-          margin: 0;
-          color: rgba(255, 255, 255, 0.72);
-          font-size: 13px;
-          line-height: 1.45;
-        }
-
-        .map-place-detail button {
-          width: 32px;
-          height: 32px;
-          border: none;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, 0.12);
-          color: white;
-          cursor: pointer;
-          font-size: 20px;
-          line-height: 1;
-        }
-
-        .map-place-detail a {
-          display: inline-flex;
-          justify-content: center;
-          margin-top: 4px;
-          border-radius: 999px;
-          background: #dbeafe;
-          color: #0f3f86;
-          padding: 9px 12px;
-          font-size: 13px;
-          font-weight: 800;
-          text-decoration: none;
-        }
-      `}</style>
     </div>
   );
 }

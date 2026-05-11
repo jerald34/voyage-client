@@ -15,13 +15,14 @@ export default function ClientSwitcher({
   onPlanningOptionDelete,
   deletingThreadId,
   onPlanningOptionChange,
-  clientMenuEmptyBody
+  clientMenuEmptyBody,
 }) {
   return (
-    <div className="client-switcher-wrap" ref={clientMenuRef}>
-      {/* <span className="client-switcher-label">Current client</span> */}
+    <div className="relative min-w-0" ref={clientMenuRef}>
       <button
-        className={`client-switcher ${isClientMenuOpen ? "open" : ""}`}
+        className={`flex items-center gap-3 h-11 px-3 pr-2.5 rounded-pill border bg-surface text-text-primary min-w-0 max-w-[340px] cursor-pointer transition-all ${
+          isClientMenuOpen ? "border-secondary shadow-soft" : "border-border/30 hover:border-border/60"
+        }`}
         onClick={() => setIsClientMenuOpen((current) => !current)}
         type="button"
         aria-haspopup="listbox"
@@ -30,22 +31,32 @@ export default function ClientSwitcher({
       >
         {activeTripClientName ? (
           <>
-            <span className="client-badge-stack" aria-hidden="true">
-              <span className="client-badge primary">{activeTripInitials}</span>
-              {activeTripOrganizerInitials && <span className="client-badge secondary">{activeTripOrganizerInitials}</span>}
+            <span className="flex items-center flex-shrink-0" aria-hidden="true">
+              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary text-white text-[10px] font-bold">
+                {activeTripInitials}
+              </span>
+              {activeTripOrganizerInitials && (
+                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-secondary text-white text-[10px] font-bold -ml-2 border-2 border-surface">
+                  {activeTripOrganizerInitials}
+                </span>
+              )}
             </span>
-            <span className="client-switcher-name">{activeTripClientName}</span>
+            <span className="text-sm font-semibold truncate min-w-0">{activeTripClientName}</span>
           </>
         ) : (
-          <span className="client-switcher-empty">{clientMenuEmptyTitle}</span>
+          <span className="text-sm font-semibold text-text-muted truncate">{clientMenuEmptyTitle}</span>
         )}
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true" className="flex-shrink-0 ml-1">
           <path d="m6 9 6 6 6-6" />
         </svg>
       </button>
 
       {isClientMenuOpen && (
-        <div className="client-menu" role="listbox" aria-label="Current client">
+        <div
+          className="absolute top-full mt-2 left-0 right-0 min-w-[320px] max-h-[420px] overflow-y-auto rounded-md bg-surface-elevated border border-border/20 shadow-strong z-50"
+          role="listbox"
+          aria-label="Current client"
+        >
           {hasOptions ? (
             safeOptions.map((option) => {
               const isSelected = option?.type === activeOption?.type && option?.id === activeOption?.id;
@@ -58,11 +69,13 @@ export default function ClientSwitcher({
               return (
                 <div
                   key={`${option?.type ?? "option"}:${option?.id ?? optionName}`}
-                  className={`client-option-row ${option?.type === "draft" ? "draft" : "trip"} ${isSelected ? "selected" : ""}`}
+                  className={`flex items-stretch gap-1 border-b border-border/10 last:border-b-0 ${
+                    isSelected ? "bg-secondary/8" : "hover:bg-border/5"
+                  }`}
                 >
                   <button
                     type="button"
-                    className="client-option"
+                    className="flex-1 flex items-center gap-3 px-3 py-2.5 text-left cursor-pointer min-w-0"
                     role="option"
                     aria-selected={isSelected}
                     onClick={() => {
@@ -70,16 +83,20 @@ export default function ClientSwitcher({
                       setIsClientMenuOpen(false);
                     }}
                   >
-                    <span className="client-option-badge" aria-hidden="true">
+                    <span className="inline-flex items-center justify-center w-9 h-9 flex-shrink-0 rounded-full bg-primary text-white text-[11px] font-bold" aria-hidden="true">
                       {initials}
                     </span>
-                    <span className="client-option-body">
-                      <strong>{optionName}</strong>
-                      <span>{option?.destination || option?.statusLabel}</span>
-                      {option?.statusLabel && <small>{option.statusLabel}</small>}
+                    <span className="flex flex-col min-w-0 flex-1">
+                      <strong className="text-sm text-text-primary truncate">{optionName}</strong>
+                      {option?.destination && (
+                        <span className="text-xs text-text-muted truncate">{option.destination}</span>
+                      )}
+                      {option?.statusLabel && (
+                        <small className="text-[11px] text-text-soft">{option.statusLabel}</small>
+                      )}
                     </span>
                     {isSelected && (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true" className="text-secondary flex-shrink-0">
                         <path d="m20 6-11 11-5-5" />
                       </svg>
                     )}
@@ -87,13 +104,13 @@ export default function ClientSwitcher({
                   {canDeleteThread && (
                     <button
                       type="button"
-                      className="client-option-delete"
+                      className="flex-shrink-0 w-9 flex items-center justify-center text-text-soft hover:text-status-danger transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                       aria-label={`Delete ${optionName} thread`}
                       disabled={isDeletingThread}
                       onClick={() => onPlanningOptionDelete?.(option)}
                     >
                       {isDeletingThread ? (
-                        <span aria-hidden="true">...</span>
+                        <span aria-hidden="true" className="text-xs">...</span>
                       ) : (
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                           <path d="M3 6h18" />
@@ -109,9 +126,9 @@ export default function ClientSwitcher({
               );
             })
           ) : (
-            <div className="client-menu-empty" role="status" aria-live="polite">
-              <strong>{clientMenuEmptyTitle}</strong>
-              <p>{clientMenuEmptyBody}</p>
+            <div className="px-4 py-6 text-center" role="status" aria-live="polite">
+              <strong className="block text-sm text-text-primary">{clientMenuEmptyTitle}</strong>
+              <p className="mt-1 text-xs text-text-muted">{clientMenuEmptyBody}</p>
             </div>
           )}
         </div>

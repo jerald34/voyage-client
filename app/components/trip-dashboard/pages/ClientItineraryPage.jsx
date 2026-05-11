@@ -782,7 +782,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
   return (
     <div className="grid grid-cols-[280px_1fr] gap-2 h-full min-h-0 items-stretch p-2">
       {/* Client sidebar */}
-      <aside className="bg-surface border border-border rounded-md flex flex-col overflow-hidden shadow-soft backdrop-blur-[8px]">
+      <aside className="glass-panel backdrop-blur-lg flex flex-col overflow-hidden shadow-soft">
         {/* Pane header */}
         <div className="px-4 py-4 border-b border-border grid gap-2.5">
           <h3 className="font-serif text-[1.6rem] text-text-primary m-0 tracking-tight">Client Directory</h3>
@@ -911,7 +911,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
       </aside>
 
       {/* Main workspace */}
-      <main className="bg-surface border border-border rounded-md flex flex-col overflow-hidden shadow-soft h-full backdrop-blur-[8px]">
+      <main className="glass-panel backdrop-blur-lg flex flex-col overflow-hidden shadow-soft h-full">
         {selectedClient ? (
           <div className="flex flex-col h-full overflow-hidden">
             {/* Workspace header */}

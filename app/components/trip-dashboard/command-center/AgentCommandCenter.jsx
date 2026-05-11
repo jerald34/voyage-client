@@ -146,7 +146,7 @@ export default function AgentCommandCenter({
   }
 
   return (
-    <div className="bg-surface rounded-md border border-border p-4 flex flex-col min-h-0 h-full shadow-soft backdrop-blur-[8px]">
+    <div className="glass-panel backdrop-blur-lg p-4 flex flex-col min-h-0 h-full shadow-soft">
 
       {/* chat log */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-5 pr-2 mb-5">
