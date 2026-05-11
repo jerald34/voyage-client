@@ -78,7 +78,7 @@
   --color-sidebar: oklch(0.12 0.005 250);
   --color-sidebar-text: oklch(0.72 0.015 220);
   --color-sidebar-active: oklch(0.70 0.12 35);
-  --color-border: oklch(1.0 0 0);
+  --color-border: oklch(0.35 0.01 250);
 
   --color-status-success: #34d399;
   --color-status-warning: #fb923c;
@@ -94,14 +94,14 @@
   --color-text-rgb: 232 236 238;
   --color-text-muted-rgb: 155 168 176;
   --color-text-soft-rgb: 107 122 131;
-  --color-border-rgb: 255 255 255;
+  --color-border-rgb: 50 56 62;
   --color-sidebar-rgb: 13 16 19;
   --color-sidebar-text-rgb: 155 168 176;
   --color-sidebar-active-rgb: 224 144 111;
 
-  --glass-bg: rgba(30, 34, 39, 0.65);
-  --glass-blur: 20px;
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(30, 34, 39, 0.75);
+  --glass-blur: 24px;
+  --glass-border: rgba(255, 255, 255, 0.05);
 }
 
 /* ═══════════════════════════════════════════════════

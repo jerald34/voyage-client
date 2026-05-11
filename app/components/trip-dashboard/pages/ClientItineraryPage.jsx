@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
+import { useTheme } from "../../theme/ThemeProvider.jsx";
 import {
   fetchItineraryDraft,
   getUnreadCommentCount,
@@ -175,9 +176,9 @@ function CommentsPanel({ agencyId, tripId, onClose }) {
   const totalCount = comments.length;
 
   return (
-    <div className="flex flex-col border border-border rounded-md bg-white overflow-hidden flex-shrink-0 max-h-[480px]">
+    <div className="flex flex-col border border-border rounded-md bg-surface overflow-hidden flex-shrink-0 max-h-[480px]">
       {/* Header */}
-      <div className="flex items-center justify-between px-[18px] py-3.5 border-b border-border bg-background flex-shrink-0">
+      <div className="flex items-center justify-between px-[18px] py-3.5 border-b border-border bg-surface-elevated flex-shrink-0">
         <div className="flex items-center gap-2 text-sm font-extrabold text-text-primary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -230,12 +231,12 @@ function CommentsPanel({ agencyId, tripId, onClose }) {
             {groupComments.map((comment) => (
               <div
                 key={comment.id}
-                className="border border-border rounded-sm bg-white px-4 py-3.5 flex flex-col gap-2.5 transition-shadow duration-200 hover:shadow-[0_4px_12px_rgba(34,56,67,0.06)]"
+                className="border border-border rounded-sm bg-surface-elevated px-4 py-3.5 flex flex-col gap-2.5 transition-shadow duration-200 hover:shadow-soft"
               >
                 <div className="flex flex-col gap-2">
                   {/* Author row */}
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-[0.75rem] font-extrabold flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center text-[0.75rem] font-extrabold flex-shrink-0 shadow-sm">
                       {String(comment.authorName || "?")[0].toUpperCase()}
                     </div>
                     <div className="flex flex-col gap-px flex-1 min-w-0">
@@ -287,7 +288,7 @@ function CommentsPanel({ agencyId, tripId, onClose }) {
                     ) : (
                       <div className="flex flex-col gap-2">
                         <textarea
-                          className="w-full px-3 py-2.5 rounded-[10px] border border-border bg-background text-[0.85rem] font-[inherit] text-text-primary resize-none leading-relaxed transition-all duration-200 box-border focus:outline-none focus:border-secondary focus:bg-white focus:shadow-[0_0_0_3px_rgba(215,122,97,0.1)]"
+                          className="w-full px-3 py-2.5 rounded-[10px] border border-border bg-background text-[0.85rem] font-[inherit] text-text-primary resize-none leading-relaxed transition-all duration-200 box-border focus:outline-none focus:border-secondary focus:bg-surface focus:shadow-[0_0_0_3px_rgba(215,122,97,0.1)]"
                           placeholder="Write a reply..."
                           value={replyTexts[comment.id] || ""}
                           onChange={(e) => handleReplyChange(comment.id, e.target.value)}
@@ -305,7 +306,7 @@ function CommentsPanel({ agencyId, tripId, onClose }) {
                         )}
                         <div className="flex items-center gap-2 justify-end">
                           <button
-                            className="px-3 py-1.5 rounded-lg border border-border bg-white text-text-soft text-[0.8rem] font-bold cursor-pointer transition-all duration-150 hover:bg-background hover:text-text-primary"
+                            className="px-3 py-1.5 rounded-lg border border-border bg-surface text-text-soft text-[0.8rem] font-bold cursor-pointer transition-all duration-150 hover:bg-background hover:text-text-primary"
                             onClick={() => { setReplyingTo(null); setReplyErrors((p) => ({ ...p, [comment.id]: null })); }}
                           >
                             Cancel
@@ -334,6 +335,7 @@ function CommentsPanel({ agencyId, tripId, onClose }) {
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDeleteTrip }) {
+  const { theme } = useTheme();
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [selectedTripId, setSelectedTripId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -560,7 +562,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
       ? "text-[0.65rem] px-2 py-1"
       : "text-[0.65rem] px-2 py-1";
     const colorClasses = cls === "approved"
-      ? "bg-[#f0fdf4] text-[#166534] border-[#dcfce7]"
+      ? "bg-secondary/10 text-secondary border-secondary/20"
       : "bg-border/[0.06] text-text-primary border-border/[0.08]";
     return (
       <span className={`inline-flex items-center gap-1 w-fit rounded-[6px] font-extrabold tracking-[0.05em] uppercase border ${sizeClasses} ${colorClasses}`}>
@@ -598,9 +600,9 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
 
     if (fullItinerary && safeDays.length > 0) {
       return (
-        <div className="grid grid-cols-2 h-full bg-white">
+        <div className="grid grid-cols-2 h-full bg-surface/20 backdrop-blur-sm">
           {/* Days column */}
-          <div className={`flex flex-col overflow-y-auto border-r border-border p-6 ${showCommentsPanel ? "gap-4" : "gap-5"}`}>
+          <div className={`flex flex-col overflow-y-auto border-r border-border/5 p-6 ${showCommentsPanel ? "gap-4" : "gap-5"}`}>
             {/* Column header */}
             <header className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -612,8 +614,8 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                 <button
                   className={`inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border text-[0.85rem] font-bold cursor-pointer transition-all duration-200 relative ${
                     showCommentsPanel
-                      ? "bg-primary text-white border-primary hover:bg-[#1a2d35] hover:border-[#1a2d35]"
-                      : "bg-white text-text-primary border-border hover:bg-background"
+                      ? "bg-secondary text-white border-secondary shadow-soft"
+                      : "bg-surface-elevated text-text-primary border-border/20 hover:bg-surface hover:border-border/40"
                   }`}
                   onClick={() => setShowCommentsPanel((v) => !v)}
                   title="View client comments"
@@ -630,7 +632,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                 </button>
                 {/* Share button */}
                 <button
-                  className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border border-border bg-white text-text-primary text-[0.85rem] font-bold cursor-pointer transition-all duration-200 hover:bg-background"
+                  className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border border-border/20 bg-surface-elevated text-text-primary text-[0.85rem] font-bold cursor-pointer transition-all duration-200 hover:bg-surface hover:border-border/40"
                   onClick={() => setShowShareDialog(true)}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -642,7 +644,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                 </button>
                 {/* PDF button */}
                 <button
-                  className={`inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border border-border bg-white text-text-primary text-[0.85rem] font-bold cursor-pointer transition-all duration-200 hover:bg-background ${pdfLoading ? "opacity-60 cursor-not-allowed pointer-events-none" : ""}`}
+                  className={`inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border border-border/20 bg-surface-elevated text-text-primary text-[0.85rem] font-bold cursor-pointer transition-all duration-200 hover:bg-surface hover:border-border/40 ${pdfLoading ? "opacity-60 cursor-not-allowed pointer-events-none" : ""}`}
                   onClick={handleDownloadPdf}
                   disabled={pdfLoading || !fullItinerary}
                   title="Download itinerary as PDF"
@@ -664,7 +666,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                   )}
                 </button>
                 {/* More button */}
-                <button className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-white text-text-primary cursor-pointer transition-all duration-200 hover:bg-background">
+                <button className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-border/20 bg-surface-elevated text-text-primary cursor-pointer transition-all duration-200 hover:bg-surface hover:border-border/40">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" />
                   </svg>
@@ -711,7 +713,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                 return (
                   <div key={day.id || day.dayNumber || dIdx} className="bg-transparent border-none p-0 rounded-none">
                     <div className="flex items-center gap-3 mb-3">
-                      <span className="text-[#b91c1c] text-[0.85rem] font-extrabold">Day {day.dayNumber}</span>
+                      <span className="text-secondary/80 text-[0.85rem] font-extrabold uppercase tracking-wider">Day {day.dayNumber}</span>
                       <span className="text-[0.85rem] text-text-soft font-semibold">{formatDayDate(day, tripStart)}</span>
                     </div>
                     <h4 className="text-[1.2rem] font-extrabold m-0 mb-3 text-text-primary tracking-tight">{day.title}</h4>
@@ -754,8 +756,8 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
           </div>
 
           {/* Map column */}
-          <div className="relative min-h-0 p-4 bg-background">
-            <div className="relative w-full h-full rounded-md overflow-hidden border border-border shadow-soft">
+          <div className="relative min-h-0 p-4 bg-surface">
+            <div className="relative w-full h-full rounded-md overflow-hidden border border-border/10 shadow-soft">
               <ItineraryLiveMap
                 items={mapItems}
                 liveMarkers={[]}
@@ -765,6 +767,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                 selectedPlaceId=""
                 selectedPlace={null}
                 onSelectPlace={() => {}}
+                theme={theme}
               />
             </div>
           </div>
@@ -798,7 +801,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
               placeholder="Search clients..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full py-3 pr-4 pl-12 rounded-md border border-border bg-background text-[0.95rem] font-[inherit] text-text-primary transition-all duration-200 focus:outline-none focus:border-secondary focus:bg-white focus:shadow-[0_0_0_4px_rgba(215,122,97,0.1)]"
+              className="w-full py-3 pr-4 pl-12 rounded-md border border-border/10 bg-white/5 text-[0.95rem] font-[inherit] text-text-primary transition-all duration-200 focus:outline-none focus:border-secondary focus:bg-white/10 focus:shadow-[0_0_0_4px_rgba(215,122,97,0.1)]"
             />
           </div>
         </div>
@@ -816,32 +819,32 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                   key={c.id}
                   className={`flex items-center gap-2 p-1 rounded-md transition-all duration-300 relative mb-0.5 ${
                     isSelected
-                      ? "bg-primary shadow-[0_8px_24px_rgba(34,56,67,0.15)]"
-                      : "hover:bg-background"
+                      ? "bg-secondary/20 shadow-soft border border-secondary/30"
+                      : "hover:bg-background border border-transparent"
                   }`}
                 >
-                  <button
-                    className="all-unset flex-1 flex items-center gap-3.5 px-3 py-2.5 cursor-pointer min-w-0 rounded-sm"
-                    onClick={() => {
-                      setSelectedClientId(c.id);
-                      setSelectedTripId(c.trips[0]?.id || null);
-                    }}
-                    title={`View ${c.name}'s itineraries`}
-                  >
-                    <div className={`w-11 h-11 rounded-full flex items-center justify-center font-extrabold text-[0.85rem] flex-shrink-0 shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-all duration-200 ${
-                      isSelected ? "bg-accent text-primary" : "bg-secondary text-white"
-                    }`}>
-                      {initials}
-                    </div>
+                    <button
+                      className="all-unset flex-1 flex items-center gap-3.5 px-3 py-2.5 cursor-pointer min-w-0 rounded-sm"
+                      onClick={() => {
+                        setSelectedClientId(c.id);
+                        setSelectedTripId(c.trips[0]?.id || null);
+                      }}
+                      title={`View ${c.name}'s itineraries`}
+                    >
+                      <div className={`w-11 h-11 rounded-full flex items-center justify-center font-extrabold text-[0.85rem] flex-shrink-0 shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-all duration-200 ${
+                        isSelected ? "bg-secondary text-white" : "bg-secondary/40 text-white"
+                      }`}>
+                        {initials}
+                      </div>
                     <div className="flex flex-col gap-0.5 min-w-0">
                       <strong className={`block text-[0.95rem] font-bold tracking-tight whitespace-nowrap overflow-hidden text-ellipsis transition-colors duration-200 ${
-                        isSelected ? "text-white" : "text-text-primary"
+                        isSelected ? "text-secondary font-black" : "text-text-primary"
                       }`}>
                         {c.name}
                       </strong>
                       {!isConfirming && (
                         <span className={`text-[0.75rem] font-semibold opacity-70 transition-colors duration-200 ${
-                          isSelected ? "text-white/80" : "text-text-soft"
+                          isSelected ? "text-text-primary" : "text-text-soft"
                         }`}>
                           {c.trips.length} saved itineraries
                         </span>
@@ -859,7 +862,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                         {isDeletingClient ? "..." : "Delete"}
                       </button>
                       <button
-                        className="px-2 py-1.5 rounded-[6px] border border-border bg-white text-[0.7rem] font-bold text-text-soft cursor-pointer transition-all duration-200 whitespace-nowrap hover:enabled:bg-background"
+                        className="px-2 py-1.5 rounded-[6px] border border-border bg-surface text-[0.7rem] font-bold text-text-soft cursor-pointer transition-all duration-200 whitespace-nowrap hover:enabled:bg-background"
                         disabled={isDeletingClient}
                         onClick={() => setShowClientDeleteConfirm(null)}
                       >
@@ -919,7 +922,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
               <div className="flex items-center gap-5">
                 <div className="flex items-center gap-4">
                   <h2 className="font-serif text-[1.8rem] m-0 leading-none">{selectedClient.name}</h2>
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#fef2f2] border border-[#fee2e2] text-[#b91c1c] text-[0.75rem] font-extrabold uppercase tracking-[0.05em]">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20 text-secondary text-[0.75rem] font-extrabold uppercase tracking-[0.05em]">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                       <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
                     </svg>
@@ -938,10 +941,10 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                 {selectedClient.trips.map(t => (
                   <div
                     key={t.id}
-                    className={`min-w-[240px] max-w-[280px] h-auto px-5 py-4 rounded-md border bg-white flex flex-col gap-2.5 text-left cursor-pointer transition-all duration-300 relative ${
+                    className={`min-w-[240px] max-w-[280px] h-auto px-5 py-4 rounded-md border flex flex-col gap-2.5 text-left cursor-pointer transition-all duration-300 relative ${
                       selectedTripId === t.id
-                        ? "border-secondary bg-[#fffcfb] shadow-[0_12px_30px_rgba(215,122,97,0.12)] outline outline-1 outline-secondary"
-                        : "border-border hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(0,0,0,0.06)] hover:border-secondary"
+                        ? "border-secondary bg-secondary/10 shadow-strong"
+                        : "border-border/30 bg-surface hover:-translate-y-0.5 hover:shadow-soft hover:border-secondary"
                     }`}
                   >
                     <button
@@ -978,7 +981,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                           {deletingTripId === t.id ? "..." : "Yes"}
                         </button>
                         <button
-                          className="px-2.5 py-1 rounded-[6px] border border-border bg-white text-[0.72rem] font-bold cursor-pointer text-text-soft transition-colors duration-150 hover:bg-background"
+                          className="px-2.5 py-1 rounded-[6px] border border-border bg-surface text-[0.72rem] font-bold cursor-pointer text-text-soft transition-colors duration-150 hover:bg-background"
                           onClick={() => setShowDeleteConfirm(null)}
                         >
                           No

@@ -549,7 +549,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
 
         <main className="flex-1 overflow-y-auto p-2 flex flex-col gap-2">
           {activeTab === "command-center" ? (
-            <section className="relative flex flex-1 min-h-0 overflow-hidden rounded-[24px] border border-border shadow-inner">
+            <section className="relative flex flex-1 min-h-0 overflow-hidden rounded-[24px] border border-border/10 shadow-inner">
               {/* Immersive Map Background */}
               <div className="absolute inset-0 z-0 opacity-90 transition-opacity duration-700 hover:opacity-100">
                 <ItineraryLiveMap

@@ -3,43 +3,78 @@ import { buildRichItinerarySections } from "../../../lib/trip-dashboard/richItin
 
 function StopShell({ stop, selectedPlaceId, onPlaceSelect }) {
   const isSelected = stop.isSelectable && stop.placeId === selectedPlaceId;
-  const rowBase =
-    "grid gap-4 items-start w-full border border-border/10 rounded-xl bg-surface-elevated text-text-primary p-3.5 text-left transition-all duration-200 shadow-sm";
-  const rowGrid = "grid-cols-[74px_80px_minmax(0,1fr)]";
-  const rowSelectable = stop.isSelectable
-    ? "cursor-pointer hover:border-secondary/40 hover:shadow-md active:scale-[0.99]"
-    : "opacity-90";
-  const rowSelected = isSelected ? "border-secondary/60 ring-2 ring-secondary/10 shadow-md" : "";
+  
+  // Base Container Styles - Luxury Editorial Feel
+  const containerBase =
+    "group flex flex-col gap-4 w-full border border-border/10 rounded-2xl bg-surface-elevated text-text-primary p-5 text-left transition-all duration-300 shadow-sm overflow-hidden";
+  const containerSelectable = stop.isSelectable
+    ? "cursor-pointer hover:border-secondary/30 hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.99]"
+    : "opacity-95";
+  const containerSelected = isSelected ? "border-secondary/40 ring-4 ring-secondary/5 shadow-xl bg-surface-elevated/90" : "";
 
-  const className = `${rowBase} ${rowGrid} ${rowSelectable} ${rowSelected}`;
+  const className = `${containerBase} ${containerSelectable} ${containerSelected}`;
 
   const content = (
     <>
-      <span className="text-text-soft text-[11px] font-bold leading-[1.35] pt-1">{stop.timeLabel}</span>
-      {stop.photoUrl ? (
-        <img className="w-[80px] h-[80px] rounded-lg object-cover shadow-sm" src={stop.photoUrl} alt={stop.placeName} />
-      ) : (
-        <span className="w-[80px] h-[80px] rounded-lg inline-flex items-center justify-center bg-background text-text-soft text-xl font-bold border border-border/10" aria-hidden="true">
-          {stop.placeName.slice(0, 1).toUpperCase()}
-        </span>
-      )}
-      <span className="grid gap-1 min-w-0">
-        <strong className="text-text-primary text-[13px] leading-[1.25]">{stop.title}</strong>
-        <span className="flex flex-wrap gap-x-2 gap-y-1 text-text-soft text-[11px] font-bold leading-[1.35]">
-          {stop.rating ? <span>{stop.rating}</span> : null}
-          {stop.placeType ? <span>{stop.placeType}</span> : null}
-          {stop.userRatingCount ? <span>{stop.userRatingCount.toLocaleString()} reviews</span> : null}
-          <span>{stop.statusLabel}</span>
-        </span>
-        {stop.description ? <span className="text-text-primary text-xs leading-[1.4]">{stop.description}</span> : null}
-        {stop.highlights.length > 0 ? (
-          <span className="flex flex-col gap-0.5">
-            {stop.highlights.map((highlight) => (
-              <small key={highlight} className="text-text-soft text-[11px] leading-[1.35]">{highlight}</small>
-            ))}
+      {/* Top Meta Row - Time & Status */}
+      <div className="flex items-center justify-between gap-3 border-b border-border/5 pb-3">
+        <div className="flex items-center gap-2">
+          <span className="px-2.5 py-1 rounded-full bg-secondary/10 text-secondary text-[11px] font-black tracking-tight">
+            {stop.timeLabel}
           </span>
-        ) : null}
-      </span>
+        </div>
+        <span className={`text-[10px] font-bold tracking-widest uppercase transition-colors duration-300 ${isSelected ? "text-secondary" : "text-text-soft"}`}>
+          {stop.statusLabel}
+        </span>
+      </div>
+
+      {/* Identity Block - Image & Title */}
+      <div className="flex gap-5 items-start">
+        {stop.photoUrl ? (
+          <img 
+            className="w-[100px] h-[100px] rounded-2xl object-cover shadow-md group-hover:shadow-lg transition-shadow duration-500" 
+            src={stop.photoUrl} 
+            alt={stop.placeName} 
+          />
+        ) : (
+          <div className="w-[100px] h-[100px] rounded-2xl flex-shrink-0 flex items-center justify-center bg-background text-text-soft text-2xl font-serif font-bold border border-border/10 shadow-inner" aria-hidden="true">
+            {stop.placeName.slice(0, 1).toUpperCase()}
+          </div>
+        )}
+        
+        <div className="grid gap-1.5 min-w-0 flex-1">
+          <h4 className="m-0 text-text-primary text-[18px] font-serif leading-tight tracking-tight group-hover:text-secondary transition-colors duration-300">
+            {stop.title}
+          </h4>
+          
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-text-soft text-[11px] font-bold uppercase tracking-wider">
+            {stop.rating ? <span className="flex items-center gap-1">★ {stop.rating}</span> : null}
+            {stop.placeType ? <span>• {stop.placeType}</span> : null}
+            {stop.userRatingCount ? <span className="font-normal opacity-80">({stop.userRatingCount.toLocaleString()})</span> : null}
+          </div>
+        </div>
+      </div>
+
+      {/* Narrative Section - airy and readable */}
+      {stop.description || stop.highlights.length > 0 ? (
+        <div className="grid gap-3 pt-1">
+          {stop.description ? (
+            <p className="m-0 text-text-primary text-[14px] leading-relaxed font-medium opacity-90">
+              {stop.description}
+            </p>
+          ) : null}
+          
+          {stop.highlights.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {stop.highlights.map((highlight) => (
+                <span key={highlight} className="px-2 py-0.5 rounded-md bg-background/50 border border-border/10 text-text-soft text-[10px] font-bold">
+                  {highlight}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </>
   );
 
@@ -72,30 +107,36 @@ export default function RichItineraryMessage({
   );
 
   return (
-    <article className="grid gap-6 min-w-[min(100%,340px)] bg-surface-elevated p-5 rounded-2xl border border-border/10 shadow-sm" aria-label="Generated itinerary">
-      <header className="grid gap-2 p-1">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(215,122,97,0.6)]" />
-          <span className="text-text-soft text-[10px] font-black tracking-widest uppercase">Draft Itinerary</span>
+    <article className="grid gap-8 min-w-[min(100%,400px)] bg-surface-elevated/40 backdrop-blur-md p-6 rounded-[24px] border border-border/10 shadow-2xl" aria-label="Generated itinerary">
+      <header className="grid gap-3 p-1">
+        <div className="flex items-center gap-3">
+          <span className="h-[1px] flex-1 bg-gradient-to-r from-secondary/40 to-transparent" />
+          <span className="text-secondary text-[11px] font-black tracking-[0.2em] uppercase">Draft Itinerary</span>
+          <span className="h-[1px] flex-1 bg-gradient-to-l from-secondary/40 to-transparent" />
         </div>
-        <h2 className="m-0 text-text-primary text-2xl font-serif leading-[1.1] tracking-tight">{sections.title}</h2>
+        <h2 className="m-0 text-text-primary text-3xl font-serif leading-[1.1] tracking-tight text-center">{sections.title}</h2>
         {sections.summary ? (
-          <p className="m-0 text-text-soft text-[14px] leading-relaxed font-medium line-clamp-2 hover:line-clamp-none transition-all duration-300">
+          <p className="m-0 text-text-soft text-[15px] leading-relaxed text-center font-medium max-w-[90%] mx-auto">
             {sections.summary}
           </p>
         ) : null}
       </header>
 
-      <div className="grid gap-3.5">
+      <div className="grid gap-8">
         {sections.days.map((day) => (
-          <section className="grid gap-3" key={day.id}>
-            <h3 className="flex items-center gap-2 m-0 text-text-primary text-[14px] font-bold py-1 border-b border-border/10">
-              <span className="text-secondary tracking-tight">Day {day.dayNumber}</span>
+          <section className="grid gap-5" key={day.id}>
+            <div className="flex items-center gap-4">
+              <h3 className="m-0 text-text-primary text-[16px] font-serif font-black tracking-tighter whitespace-nowrap">
+                {day.label}
+              </h3>
+              <div className="h-[1px] flex-1 bg-border/10" />
               {day.title ? (
-                <span className="text-text-soft font-normal truncate"> — {day.title}</span>
+                <span className="text-text-soft text-[13px] font-medium tracking-tight italic">
+                  {day.title}
+                </span>
               ) : null}
-            </h3>
-            <div className="grid gap-2">
+            </div>
+            <div className="grid gap-4">
               {day.stops.map((stop) => (
                 <StopShell
                   key={stop.id}
@@ -108,6 +149,12 @@ export default function RichItineraryMessage({
           </section>
         ))}
       </div>
+
+      <footer className="pt-2 border-t border-border/5 text-center">
+        <p className="m-0 text-text-soft text-[11px] font-bold tracking-wide uppercase opacity-60">
+          Curated by Voyage Agent
+        </p>
+      </footer>
     </article>
   );
 }

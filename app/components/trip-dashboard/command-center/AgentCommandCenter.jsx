@@ -155,7 +155,7 @@ export default function AgentCommandCenter({
         {isStreaming && (
           <div className="flex gap-3 max-w-full">
             {/* assistant avatar */}
-            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[11px] font-extrabold mt-1 bg-primary text-white" aria-hidden="true">
+            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[11px] font-extrabold mt-1 bg-secondary text-white" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <path d="m16 10-4 4-4-4" />

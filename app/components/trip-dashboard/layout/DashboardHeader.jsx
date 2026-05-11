@@ -33,7 +33,7 @@ export default function DashboardHeader({
 }) {
   const showCenterActions = activeTab !== "itineraries";
   return (
-    <header className="flex items-center justify-between h-[84px] bg-surface/80 border-b border-border backdrop-blur-md px-7 flex-shrink-0 z-[100] gap-5 max-[900px]:px-4 max-[900px]:h-[72px]">
+    <header className="flex items-center justify-between h-[84px] bg-background/80 border-b border-border/10 backdrop-blur-md px-7 flex-shrink-0 z-[100] gap-5 max-[900px]:px-4 max-[900px]:h-[72px]">
       {/* Brand logo */}
       <div className="flex items-center gap-3.5 max-[600px]:gap-2">
         <button
@@ -50,7 +50,7 @@ export default function DashboardHeader({
           </svg>
         </button>
         <span
-          className="w-11 h-11 rounded-[14px] bg-primary text-white inline-flex items-center justify-center shadow-[0_6px_14px_rgba(34,56,67,0.16)] flex-shrink-0 max-[600px]:w-9 max-[600px]:h-9"
+          className="w-11 h-11 rounded-[14px] bg-secondary text-white inline-flex items-center justify-center shadow-[0_6px_20px_rgba(215,122,97,0.25)] flex-shrink-0 max-[600px]:w-9 max-[600px]:h-9"
           aria-hidden="true"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -66,7 +66,7 @@ export default function DashboardHeader({
       {showCenterActions && (
         <div className="flex items-end gap-3 flex-1 justify-center min-w-0">
           <button
-            className="inline-flex items-center gap-2 border border-primary rounded-pill bg-primary text-slate-50 px-[18px] text-[13px] font-bold tracking-[-0.01em] cursor-pointer whitespace-nowrap shadow-[0_4px_12px_rgba(34,56,67,0.12)] transition-all duration-200 h-11 hover:-translate-y-px hover:opacity-90 hover:shadow-[0_6px_14px_rgba(34,56,67,0.16)] disabled:cursor-wait disabled:opacity-[0.72] disabled:translate-y-0 disabled:shadow-none"
+            className="inline-flex items-center gap-2 border border-border/10 rounded-pill bg-white/10 text-text-primary px-[18px] text-[13px] font-bold tracking-[-0.01em] cursor-pointer whitespace-nowrap shadow-sm transition-all duration-200 h-11 hover:-translate-y-px hover:bg-white/15 hover:shadow-md disabled:cursor-wait disabled:opacity-50 disabled:translate-y-0"
             onClick={() => onNewItinerary?.()}
             disabled={isCreatingDraftThread}
             type="button"
@@ -95,7 +95,7 @@ export default function DashboardHeader({
             />
             {canApproveDraft && (
               <button
-                className="inline-flex items-center justify-center border border-border rounded-pill bg-surface text-primary px-4 text-[13px] font-extrabold cursor-pointer whitespace-nowrap h-11 hover:border-secondary hover:text-secondary transition-colors"
+                className="inline-flex items-center justify-center border border-border/10 rounded-pill bg-surface-elevated text-text-primary px-4 text-[13px] font-extrabold cursor-pointer whitespace-nowrap h-11 hover:border-secondary hover:text-secondary transition-colors shadow-sm"
                 onClick={() => onApproveDraft?.()}
                 type="button"
               >
@@ -114,13 +114,13 @@ export default function DashboardHeader({
               ? "bg-red-50 text-red-700 border-red-200"
               : scopedIsStreaming
               ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-              : "bg-surface text-text-primary border-border"
+              : "bg-white/5 text-text-primary border-border/10"
           }`}
         >
           <span className="w-2 h-2 rounded-pill bg-current" />
           {liveStatus}
         </div>
-        <div className="flex items-center gap-3 pl-3 border-l border-border max-[600px]:border-none max-[600px]:pl-0">
+        <div className="flex items-center gap-3 pl-3 border-l border-border/10 max-[600px]:border-none max-[600px]:pl-0">
           <div
             className="w-10 h-10 rounded-full inline-flex items-center justify-center bg-secondary text-white text-[13px] font-bold tracking-[0.04em] flex-shrink-0"
             aria-hidden="true"
@@ -128,8 +128,8 @@ export default function DashboardHeader({
             {getInitials(displayName)}
           </div>
           <div className="flex flex-col max-[600px]:hidden">
-            <strong className="text-sm text-primary">{displayName}</strong>
-            <span className="text-xs text-text-muted">{agencyId ? "Agency workspace" : "No agency selected"}</span>
+            <strong className="text-sm text-primary transition-colors">{displayName}</strong>
+            <span className="text-xs text-text-soft">{agencyId ? "Agency workspace" : "No agency selected"}</span>
           </div>
         </div>
       </div>

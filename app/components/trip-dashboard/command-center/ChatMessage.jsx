@@ -116,8 +116,8 @@ export default function ChatMessage({
   return (
     <div className={`flex gap-3 max-w-full ${isUser ? "flex-row-reverse" : "flex-row"}`}>
       <div
-        className={`w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[11px] font-extrabold mt-1 ${
-          isUser ? "bg-secondary text-white" : "bg-primary text-white"
+        className={`w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[11px] font-extrabold mt-1 shadow-sm ${
+          isUser ? "bg-secondary text-white" : "bg-secondary text-white"
         }`}
         aria-hidden="true"
       >

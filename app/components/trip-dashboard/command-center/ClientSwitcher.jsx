@@ -20,8 +20,10 @@ export default function ClientSwitcher({
   return (
     <div className="relative min-w-0" ref={clientMenuRef}>
       <button
-        className={`flex items-center gap-3 h-11 px-3 pr-2.5 rounded-pill border bg-surface text-text-primary min-w-0 max-w-[340px] cursor-pointer transition-all ${
-          isClientMenuOpen ? "border-secondary shadow-soft" : "border-border/30 hover:border-border/60"
+        className={`flex items-center gap-3 h-11 px-3 pr-2.5 rounded-pill border text-text-primary min-w-0 max-w-[340px] cursor-pointer transition-all ${
+          isClientMenuOpen 
+            ? "border-secondary bg-white/10 shadow-soft" 
+            : "border-border/20 bg-white/5 hover:bg-white/10 hover:border-border/40"
         }`}
         onClick={() => setIsClientMenuOpen((current) => !current)}
         type="button"
@@ -36,7 +38,7 @@ export default function ClientSwitcher({
                 {activeTripInitials}
               </span>
               {activeTripOrganizerInitials && (
-                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-secondary text-white text-[10px] font-bold -ml-2 border-2 border-surface">
+                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-secondary text-white text-[10px] font-bold -ml-2 border-2 border-background">
                   {activeTripOrganizerInitials}
                 </span>
               )}
