@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useTheme } from "../../theme/ThemeProvider.jsx";
 import {
@@ -9,6 +9,7 @@ import {
   replyToShareComment,
 } from "../../../lib/api.js";
 import { getItineraryPlaceEntityId } from "../../../lib/trip-dashboard/placeEntities.js";
+import { getSnapshotPhotoUrl, getReadablePlaceType } from "../../../lib/trip-dashboard/richItinerary.js";
 import {
   getSavedItineraryTrips,
   getSavedStatusLabel,
@@ -58,6 +59,22 @@ function getAccommodationLabel(day) {
     (i) => i?.type === "accommodation" || i?.type === "hotel" || /hotel|resort|inn|lodge|airbnb/i.test(i?.title ?? "")
   );
   return hotel?.title || hotel?.placeName || "";
+}
+
+function formatDayCardDate(day, tripStart) {
+  let start;
+  if (day?.date) {
+    start = new Date(day.date);
+  } else if (tripStart && day?.dayNumber) {
+    start = new Date(tripStart);
+    start.setDate(start.getDate() + (day.dayNumber - 1));
+  } else {
+    return "";
+  }
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  const fmt = (d) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return `${fmt(start)} - ${fmt(end)}`;
 }
 
 function formatCommentTime(dateStr) {
@@ -343,14 +360,13 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
   const [isLoadingItinerary, setIsLoadingItinerary] = useState(false);
   const [itineraryError, setItineraryError] = useState(null);
   const [activeStopIndex, setActiveStopIndex] = useState(0);
-  const [deletingTripId, setDeletingTripId] = useState(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showCommentsPanel, setShowCommentsPanel] = useState(false);
   const [unreadCommentCount, setUnreadCommentCount] = useState(0);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [showClientDeleteConfirm, setShowClientDeleteConfirm] = useState(null);
   const [isDeletingClient, setIsDeletingClient] = useState(false);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const requestSequenceRef = useRef(0);
 
   const savedTrips = useMemo(() => getSavedItineraryTrips(agencyTrips), [agencyTrips]);
@@ -433,15 +449,18 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
     return () => { cancelled = true; };
   }, [agencyId, selectedTripId]);
 
-  // Close comments panel when trip changes
+  // Reset per-trip UI state when trip changes
   useEffect(() => {
     setShowCommentsPanel(false);
+    setSelectedDayIndex(0);
   }, [selectedTripId]);
 
   const safeDays = useMemo(
     () => (Array.isArray(fullItinerary?.days) ? fullItinerary.days : []),
     [fullItinerary]
   );
+
+  const selectedDay = safeDays[selectedDayIndex] || null;
 
   const mapItems = useMemo(
     () =>
@@ -460,9 +479,17 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
     [safeDays]
   );
 
+  const selectedDayMapItems = useMemo(
+    () =>
+      selectedDay
+        ? mapItems.filter((m) => m.__dayNumber === selectedDay.dayNumber)
+        : mapItems,
+    [mapItems, selectedDay]
+  );
+
   useEffect(() => {
-    setActiveStopIndex(mapItems.length > 0 ? 0 : -1);
-  }, [mapItems.length]);
+    setActiveStopIndex(selectedDayMapItems.length > 0 ? 0 : -1);
+  }, [selectedDayMapItems.length]);
 
   const tripTitle = fullItinerary?.title || selectedTrip?.destination || "Itinerary";
   const tripSummary = fullItinerary?.summary || "";
@@ -470,41 +497,11 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
   const tripEnd = fullItinerary?.trip?.endDate || selectedTrip?.endDate;
   const travelerCount = fullItinerary?.trip?.travelerCount || selectedTrip?.travelerCount;
 
-  const nightCount = useMemo(() => {
-    if (!tripStart || !tripEnd) return null;
-    const diff = Math.round((new Date(tripEnd) - new Date(tripStart)) / 86400000);
-    return diff > 0 ? diff : null;
-  }, [tripStart, tripEnd]);
-
   const tripDateRange = useMemo(() => {
     if (!tripStart) return "";
     const fmt = (d) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
     return tripEnd ? `${fmt(tripStart)} - ${fmt(tripEnd)}` : fmt(tripStart);
   }, [tripStart, tripEnd]);
-
-  const durationLabel = useMemo(() => {
-    const parts = [];
-    if (safeDays.length > 0) parts.push(`${safeDays.length} day${safeDays.length > 1 ? "s" : ""}`);
-    if (nightCount) parts.push(`${nightCount} night${nightCount > 1 ? "s" : ""}`);
-    return parts.join(" / ");
-  }, [safeDays.length, nightCount]);
-
-  const handleDeleteTrip = async (tripId) => {
-    if (!agencyId || !tripId || deletingTripId) return;
-    setDeletingTripId(tripId);
-    try {
-      await onDeleteTrip?.(agencyId, tripId);
-      setShowDeleteConfirm(null);
-      if (selectedTripId === tripId) {
-        const remaining = selectedClient?.trips.filter(t => t.id !== tripId) || [];
-        setSelectedTripId(remaining[0]?.id || null);
-      }
-    } catch (e) {
-      console.error("Failed to delete trip:", e);
-    } finally {
-      setDeletingTripId(null);
-    }
-  };
 
   const handleDeleteClient = async (client) => {
     if (!agencyId || !client || isDeletingClient) return;
@@ -599,105 +596,11 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
     }
 
     if (fullItinerary && safeDays.length > 0) {
+      const dayAccommodation = selectedDay ? getAccommodationLabel(selectedDay) : "";
       return (
         <div className="grid grid-cols-2 h-full bg-surface/20 backdrop-blur-sm">
-          {/* Days column */}
-          <div className={`flex flex-col overflow-y-auto border-r border-border/5 p-6 ${showCommentsPanel ? "gap-4" : "gap-5"}`}>
-            {/* Column header */}
-            <header className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <h3 className="font-serif text-2xl m-0 text-text-primary">{selectedTrip?.destination || tripTitle}</h3>
-                <StatusChip trip={selectedTrip} />
-              </div>
-              <div className="flex items-center gap-2">
-                {/* Comments button */}
-                <button
-                  className={`inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border text-[0.85rem] font-bold cursor-pointer transition-all duration-200 relative ${
-                    showCommentsPanel
-                      ? "bg-secondary text-white border-secondary shadow-soft"
-                      : "bg-surface-elevated text-text-primary border-border/20 hover:bg-surface hover:border-border/40"
-                  }`}
-                  onClick={() => setShowCommentsPanel((v) => !v)}
-                  title="View client comments"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                  Comments
-                  {unreadCommentCount > 0 && (
-                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-pill bg-[#dc2626] text-white text-[0.65rem] font-extrabold leading-none tracking-normal flex-shrink-0">
-                      {unreadCommentCount > 99 ? "99+" : unreadCommentCount}
-                    </span>
-                  )}
-                </button>
-                {/* Share button */}
-                <button
-                  className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border border-border/20 bg-surface-elevated text-text-primary text-[0.85rem] font-bold cursor-pointer transition-all duration-200 hover:bg-surface hover:border-border/40"
-                  onClick={() => setShowShareDialog(true)}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                    <polyline points="16 6 12 2 8 6" />
-                    <line x1="12" y1="2" x2="12" y2="15" />
-                  </svg>
-                  Share
-                </button>
-                {/* PDF button */}
-                <button
-                  className={`inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border border-border/20 bg-surface-elevated text-text-primary text-[0.85rem] font-bold cursor-pointer transition-all duration-200 hover:bg-surface hover:border-border/40 ${pdfLoading ? "opacity-60 cursor-not-allowed pointer-events-none" : ""}`}
-                  onClick={handleDownloadPdf}
-                  disabled={pdfLoading || !fullItinerary}
-                  title="Download itinerary as PDF"
-                >
-                  {pdfLoading ? (
-                    <>
-                      <span className="inline-block w-[13px] h-[13px] border-2 border-border border-t-secondary rounded-full animate-spin flex-shrink-0" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
-                      </svg>
-                      PDF
-                    </>
-                  )}
-                </button>
-                {/* More button */}
-                <button className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-border/20 bg-surface-elevated text-text-primary cursor-pointer transition-all duration-200 hover:bg-surface hover:border-border/40">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" />
-                  </svg>
-                </button>
-              </div>
-            </header>
-
-            {/* Meta row */}
-            <div className="flex flex-wrap gap-6 -mt-2">
-              {tripDateRange && (
-                <span className="inline-flex items-center gap-2 text-[0.9rem] text-text-soft font-semibold">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="opacity-60">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                  {tripDateRange}{durationLabel ? ` (${durationLabel})` : ""}
-                </span>
-              )}
-              {travelerCount && (
-                <span className="inline-flex items-center gap-2 text-[0.9rem] text-text-soft font-semibold">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="opacity-60">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                  </svg>
-                  {travelerCount} traveler{travelerCount > 1 ? "s" : ""}
-                </span>
-              )}
-            </div>
-
+          {/* Day content column */}
+          <div className="flex flex-col overflow-y-auto border-r border-border/5 p-6 gap-4">
             {showCommentsPanel && (
               <CommentsPanel
                 agencyId={agencyId}
@@ -705,61 +608,118 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                 onClose={() => setShowCommentsPanel(false)}
               />
             )}
+            {selectedDay && (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="text-secondary/80 text-[0.85rem] font-extrabold uppercase tracking-wider">Day {selectedDay.dayNumber}</span>
+                  <span className="text-[0.85rem] text-text-soft font-semibold">{formatDayDate(selectedDay, tripStart)}</span>
+                </div>
+                <h4 className="text-[1.5rem] font-extrabold m-0 text-text-primary tracking-tight">{selectedDay.title}</h4>
+                {dayAccommodation && (
+                  <div className="flex items-center gap-2 text-[0.85rem] text-text-soft font-semibold">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 21h18M3 7v14M21 7v14M6 11h.01M6 15h.01M10 11h.01M10 15h.01M14 11h.01M14 15h.01M18 11h.01M18 15h.01" />
+                      <path d="M3 7l9-4 9 4" />
+                    </svg>
+                    {dayAccommodation}
+                  </div>
+                )}
+                <div className="flex flex-col gap-3">
+                  {(selectedDay.items || []).map((item, iIdx) => {
+                    const dayItemIdx = selectedDayMapItems.findIndex(
+                      (m) => m.__dayNumber === selectedDay.dayNumber && m.__itemIndex === iIdx
+                    );
+                    const timeLabel = getItemTimeLabel(item);
+                    const snapshot = item?.placeSnapshot ?? null;
+                    const photoUrl = getSnapshotPhotoUrl(snapshot);
+                    const placeType = getReadablePlaceType(snapshot);
+                    const rating = snapshot?.rating ?? snapshot?.metadata?.rating ?? null;
+                    const description = (item.description || snapshot?.formattedAddress || "").trim();
+                    const highlights = Array.isArray(item.highlights)
+                      ? item.highlights
+                      : Array.isArray(item.metadata?.highlights) ? item.metadata.highlights : [];
+                    const placeName = snapshot?.name || item.placeName || item.title || "Untitled";
+                    const isActive = activeStopIndex === dayItemIdx;
 
-            {/* Day timeline */}
-            <div className="flex flex-col gap-4">
-              {safeDays.map((day, dIdx) => {
-                const accommodation = getAccommodationLabel(day);
-                return (
-                  <div key={day.id || day.dayNumber || dIdx} className="bg-transparent border-none p-0 rounded-none">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="text-secondary/80 text-[0.85rem] font-extrabold uppercase tracking-wider">Day {day.dayNumber}</span>
-                      <span className="text-[0.85rem] text-text-soft font-semibold">{formatDayDate(day, tripStart)}</span>
-                    </div>
-                    <h4 className="text-[1.2rem] font-extrabold m-0 mb-3 text-text-primary tracking-tight">{day.title}</h4>
-                    {accommodation && (
-                      <div className="flex items-center gap-2 text-[0.85rem] text-text-soft font-semibold mb-2">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M3 21h18M3 7v14M21 7v14M6 11h.01M6 15h.01M10 11h.01M10 15h.01M14 11h.01M14 15h.01M18 11h.01M18 15h.01" />
-                          <path d="M3 7l9-4 9 4" />
-                        </svg>
-                        {accommodation}
-                      </div>
-                    )}
-                    <div className="flex flex-col gap-1 pl-3 border-l-2 border-border">
-                      {(day.items || []).map((item, iIdx) => {
-                        const gIdx = mapItems.findIndex(m => m.__dayNumber === day.dayNumber && m.__itemIndex === iIdx);
-                        const timeLabel = getItemTimeLabel(item);
-                        return (
-                          <div
-                            key={`${day.dayNumber}-${iIdx}`}
-                            className={`flex items-center gap-3 px-3 py-2 rounded-sm text-[0.9rem] transition-all duration-200 cursor-default ${activeStopIndex === gIdx ? "bg-background" : "hover:bg-background"}`}
-                            onMouseEnter={() => setActiveStopIndex(gIdx)}
-                          >
-                            {timeLabel && (
-                              <span className="text-[0.8rem] text-text-soft font-bold min-w-[50px]">{timeLabel}</span>
-                            )}
-                            <span className="font-bold text-text-primary">{item.title || "Untitled"}</span>
-                            {item.description && (
-                              <span className="text-[0.85rem] text-text-soft whitespace-nowrap overflow-hidden text-ellipsis max-w-[260px]">
-                                {item.description}
+                    return (
+                      <div
+                        key={`${selectedDay.dayNumber}-${iIdx}`}
+                        className={`flex flex-col gap-3 border rounded-xl p-4 cursor-default transition-all duration-200 ${
+                          isActive
+                            ? "border-secondary/40 bg-secondary/5 shadow-soft"
+                            : "border-border/20 bg-surface-elevated hover:border-secondary/20 hover:shadow-soft"
+                        }`}
+                        onMouseEnter={() => setActiveStopIndex(dayItemIdx)}
+                      >
+                        {/* Time badge + type */}
+                        <div className="flex items-center justify-between gap-2 border-b border-border/5 pb-2">
+                          <span className="px-2.5 py-1 rounded-full bg-secondary/10 text-secondary text-[0.7rem] font-black tracking-tight">
+                            {timeLabel || "Time pending"}
+                          </span>
+                          {placeType && (
+                            <span className="text-[0.65rem] font-bold tracking-widest uppercase text-text-soft">
+                              {placeType}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Image + title + rating */}
+                        <div className="flex gap-4 items-start">
+                          {photoUrl ? (
+                            <img
+                              src={photoUrl}
+                              alt={placeName}
+                              className="w-20 h-20 rounded-xl object-cover shadow-md flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-20 h-20 rounded-xl flex-shrink-0 flex items-center justify-center bg-background text-text-soft text-2xl font-serif font-bold border border-border/10 shadow-inner">
+                              {placeName.slice(0, 1).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="flex flex-col gap-1 flex-1 min-w-0">
+                            <h5 className="m-0 text-text-primary text-[1rem] font-serif leading-tight tracking-tight">
+                              {item.title || placeName}
+                            </h5>
+                            {rating && (
+                              <span className="text-[0.7rem] font-bold text-text-soft flex items-center gap-0.5">
+                                ★ {rating}
                               </span>
                             )}
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                        </div>
+
+                        {/* Description + highlights */}
+                        {(description || highlights.length > 0) && (
+                          <div className="flex flex-col gap-2">
+                            {description && (
+                              <p className="m-0 text-text-primary text-[0.85rem] leading-relaxed font-medium opacity-90">
+                                {description}
+                              </p>
+                            )}
+                            {highlights.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {highlights.map((h, hIdx) => (
+                                  <span key={hIdx} className="px-2 py-0.5 rounded-md bg-background/50 border border-border/10 text-text-soft text-[0.65rem] font-bold">
+                                    {h}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Map column */}
           <div className="relative min-h-0 p-4 bg-surface">
             <div className="relative w-full h-full rounded-md overflow-hidden border border-border/10 shadow-soft">
               <ItineraryLiveMap
-                items={mapItems}
+                items={selectedDayMapItems}
                 liveMarkers={[]}
                 routeEstimates={[]}
                 activeIndex={activeStopIndex}
@@ -768,6 +728,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                 selectedPlace={null}
                 onSelectPlace={() => {}}
                 theme={theme}
+                sidebarWidth={0}
               />
             </div>
           </div>
@@ -918,96 +879,131 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
         {selectedClient ? (
           <div className="flex flex-col h-full overflow-hidden">
             {/* Workspace header */}
-            <header className="px-6 py-4 bg-transparent flex justify-between items-center">
-              <div className="flex items-center gap-5">
-                <div className="flex items-center gap-4">
-                  <h2 className="font-serif text-[1.8rem] m-0 leading-none">{selectedClient.name}</h2>
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20 text-secondary text-[0.75rem] font-extrabold uppercase tracking-[0.05em]">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-                    </svg>
-                    Saved itineraries
-                  </div>
-                  <span className="text-[0.9rem] text-text-soft font-semibold">
-                    {selectedClient.trips.length} saved
-                  </span>
+            <header className="px-6 py-4 bg-transparent flex justify-between items-center gap-4 border-b border-border/10 flex-shrink-0">
+              <div className="flex items-center gap-4">
+                <h2 className="font-serif text-[1.8rem] m-0 leading-none">{selectedClient.name}</h2>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20 text-secondary text-[0.75rem] font-extrabold uppercase tracking-[0.05em]">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+                  </svg>
+                  Saved itineraries
                 </div>
+                <span className="text-[0.9rem] text-text-soft font-semibold">
+                  {selectedClient.trips.length} saved
+                </span>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {selectedTrip && <StatusChip trip={selectedTrip} />}
+                {selectedItineraryId && (
+                  <>
+                    <button
+                      className={`inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border text-[0.85rem] font-bold cursor-pointer transition-all duration-200 ${
+                        showCommentsPanel
+                          ? "bg-secondary text-white border-secondary shadow-soft"
+                          : "bg-surface-elevated text-text-primary border-border/20 hover:bg-surface hover:border-border/40"
+                      }`}
+                      onClick={() => setShowCommentsPanel((v) => !v)}
+                      title="View client comments"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
+                      Comments
+                      {unreadCommentCount > 0 && (
+                        <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-pill bg-[#dc2626] text-white text-[0.65rem] font-extrabold leading-none flex-shrink-0">
+                          {unreadCommentCount > 99 ? "99+" : unreadCommentCount}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border border-border/20 bg-surface-elevated text-text-primary text-[0.85rem] font-bold cursor-pointer transition-all duration-200 hover:bg-surface hover:border-border/40"
+                      onClick={() => setShowShareDialog(true)}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                        <polyline points="16 6 12 2 8 6" />
+                        <line x1="12" y1="2" x2="12" y2="15" />
+                      </svg>
+                      Share
+                    </button>
+                    <button
+                      className={`inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border border-border/20 bg-surface-elevated text-text-primary text-[0.85rem] font-bold cursor-pointer transition-all duration-200 hover:bg-surface hover:border-border/40 ${pdfLoading ? "opacity-60 cursor-not-allowed pointer-events-none" : ""}`}
+                      onClick={handleDownloadPdf}
+                      disabled={pdfLoading || !fullItinerary}
+                      title="Download itinerary as PDF"
+                    >
+                      {pdfLoading ? (
+                        <>
+                          <span className="inline-block w-[13px] h-[13px] border-2 border-border border-t-secondary rounded-full animate-spin flex-shrink-0" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                          </svg>
+                          PDF
+                        </>
+                      )}
+                    </button>
+                  </>
+                )}
               </div>
             </header>
 
             <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              {/* Trip strip */}
-              <div className="flex gap-4 px-6 pb-5 bg-transparent overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {selectedClient.trips.map(t => (
-                  <div
-                    key={t.id}
-                    className={`min-w-[240px] max-w-[280px] h-auto px-5 py-4 rounded-md border flex flex-col gap-2.5 text-left cursor-pointer transition-all duration-300 relative ${
-                      selectedTripId === t.id
-                        ? "border-secondary bg-secondary/10 shadow-strong"
-                        : "border-border/30 bg-surface hover:-translate-y-0.5 hover:shadow-soft hover:border-secondary"
-                    }`}
-                  >
+              {/* Trip selector — only shown when client has multiple saved trips */}
+              {selectedClient.trips.length > 1 && (
+                <div className="flex gap-2 px-6 py-3 border-b border-border/10 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-shrink-0">
+                  {selectedClient.trips.map(t => (
                     <button
-                      className="all-unset flex flex-col gap-1 cursor-pointer w-full"
-                      aria-pressed={selectedTripId === t.id}
+                      key={t.id}
+                      className={`px-3.5 py-1.5 rounded-md text-[0.8rem] font-bold whitespace-nowrap border transition-all duration-200 relative ${
+                        selectedTripId === t.id
+                          ? "bg-secondary text-white border-secondary"
+                          : "bg-surface border-border/30 text-text-soft hover:text-text-primary hover:border-secondary/40"
+                      }`}
                       onClick={() => setSelectedTripId(t.id)}
                     >
-                      <div className="flex flex-col justify-center gap-1 min-w-0 flex-1">
-                        <strong className="block text-[1.05rem] text-text-primary m-0 leading-[1.2] whitespace-nowrap overflow-hidden text-ellipsis">
-                          {t.destination || "Unnamed Trip"}
-                        </strong>
-                        <span className="text-[0.8rem] text-text-soft font-semibold mb-1">
-                          {t.travelWindow || t.dates || "TBD"}
+                      {t.destination || "Unnamed Trip"}
+                      {selectedTripId === t.id && unreadCommentCount > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-pill bg-[#dc2626] text-white text-[0.6rem] font-extrabold flex items-center justify-center leading-none pointer-events-none">
+                          {unreadCommentCount > 99 ? "99+" : unreadCommentCount}
                         </span>
-                        <StatusChip trip={t} />
-                      </div>
+                      )}
                     </button>
-                    {selectedTripId === t.id && unreadCommentCount > 0 && (
-                      <div
-                        className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-[5px] rounded-pill bg-[#dc2626] text-white text-[0.65rem] font-extrabold flex items-center justify-center leading-none shadow-[0_2px_6px_rgba(220,38,38,0.35)] pointer-events-none z-[2]"
-                        title={`${unreadCommentCount} unread comment${unreadCommentCount !== 1 ? "s" : ""}`}
-                      >
-                        {unreadCommentCount > 99 ? "99+" : unreadCommentCount}
+                  ))}
+                </div>
+              )}
+
+              {/* Day strip */}
+              {fullItinerary && safeDays.length > 0 && (
+                <div className="flex gap-3 px-6 py-4 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-shrink-0 border-b border-border/10">
+                  {safeDays.map((day, dIdx) => (
+                    <div
+                      key={day.id || day.dayNumber || dIdx}
+                      className={`min-w-[200px] max-w-[260px] px-4 py-3 rounded-md border cursor-pointer transition-all duration-300 flex-shrink-0 ${
+                        selectedDayIndex === dIdx
+                          ? "border-secondary/60 bg-secondary/10 shadow-soft"
+                          : "border-border/30 bg-surface hover:border-secondary/40 hover:-translate-y-0.5 hover:shadow-soft"
+                      }`}
+                      onClick={() => setSelectedDayIndex(dIdx)}
+                    >
+                      <div className={`text-[0.8rem] font-extrabold tracking-wide mb-1 leading-snug ${selectedDayIndex === dIdx ? "text-secondary" : "text-text-soft"}`}>
+                        DAY {day.dayNumber}: {day.title}
                       </div>
-                    )}
-                    {showDeleteConfirm === t.id ? (
-                      <div className="flex items-center gap-2 pt-2 border-t border-border text-[0.75rem] font-semibold text-text-soft">
-                        <span>Delete this trip?</span>
-                        <button
-                          className="px-2.5 py-1 rounded-[6px] border-none bg-[#dc2626] text-white text-[0.72rem] font-bold cursor-pointer transition-colors duration-150 hover:bg-[#b91c1c] disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={deletingTripId === t.id}
-                          onClick={() => handleDeleteTrip(t.id)}
-                        >
-                          {deletingTripId === t.id ? "..." : "Yes"}
-                        </button>
-                        <button
-                          className="px-2.5 py-1 rounded-[6px] border border-border bg-surface text-[0.72rem] font-bold cursor-pointer text-text-soft transition-colors duration-150 hover:bg-background"
-                          onClick={() => setShowDeleteConfirm(null)}
-                        >
-                          No
-                        </button>
+                      <div className="text-[0.73rem] text-text-soft font-semibold">
+                        {formatDayCardDate(day, tripStart)}
                       </div>
-                    ) : (
-                      <button
-                        className="absolute top-2 right-2 w-7 h-7 rounded-lg border-none bg-transparent text-text-soft cursor-pointer flex items-center justify-center opacity-0 transition-all duration-150 group-hover:opacity-100 hover:bg-[#fef2f2] hover:text-[#dc2626] [.trip-card:hover_&]:opacity-100"
-                        title="Delete trip"
-                        onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(t.id); }}
-                        style={{ opacity: showDeleteConfirm !== null ? undefined : undefined }}
-                        onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
-                        onMouseLeave={(e) => { if (showDeleteConfirm !== t.id) e.currentTarget.style.opacity = "0"; }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Itinerary preview area */}
-              <div className="flex-1 overflow-y-auto min-h-0 bg-background border-t border-border flex flex-col">
+              <div className="flex-1 min-h-0 bg-background border-t border-border flex flex-col overflow-hidden">
                 {renderItineraryContent()}
               </div>
             </div>

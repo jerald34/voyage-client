@@ -177,7 +177,7 @@ function Polyline({ points, color = "#3b82f6", weight = 3, opacity = 0.5, dashAr
   return null;
 }
 
-function FitBounds({ points }) {
+function FitBounds({ points, sidebarWidth }) {
   const map = useMap();
 
   useEffect(() => {
@@ -185,33 +185,33 @@ function FitBounds({ points }) {
 
     const bounds = new google.maps.LatLngBounds();
     points.forEach((point) => bounds.extend(point));
-    
+
     map.fitBounds(bounds, {
       top: 60,
       right: 60,
       bottom: 60,
-      left: 560, // 520px sidebar + 40px padding
+      left: sidebarWidth > 0 ? sidebarWidth + 40 : 60,
     });
-  }, [map, points]);
+  }, [map, points, sidebarWidth]);
 
   return null;
 }
 
-function FocusActiveStop({ points, activeIndex }) {
+function FocusActiveStop({ points, activeIndex, sidebarWidth }) {
   const map = useMap();
 
   useEffect(() => {
     if (!map || !Number.isInteger(activeIndex) || activeIndex < 0 || activeIndex >= points.length) return;
     const activePoint = points[activeIndex];
     if (!activePoint) return;
-    
+
     map.panTo(activePoint);
-    map.panBy(-260, 0); // Offset for sidebar
+    if (sidebarWidth > 0) map.panBy(-(sidebarWidth / 2), 0);
     const currentZoom = map.getZoom();
     if (currentZoom < 14) {
       map.setZoom(14);
     }
-  }, [activeIndex, map, points]);
+  }, [activeIndex, map, points, sidebarWidth]);
 
   return null;
 }
@@ -229,18 +229,18 @@ function FocusLiveMarker({ liveMarkers }) {
   return null;
 }
 
-function FocusSelectedPlace({ selectedPlace }) {
+function FocusSelectedPlace({ selectedPlace, sidebarWidth }) {
   const map = useMap();
 
   useEffect(() => {
     if (!map || !selectedPlace) return;
     map.panTo({ lat: selectedPlace.lat, lng: selectedPlace.lng });
-    map.panBy(-260, 0); // Offset for sidebar
+    if (sidebarWidth > 0) map.panBy(-(sidebarWidth / 2), 0);
     const currentZoom = map.getZoom();
     if (!currentZoom || currentZoom < 15) {
       map.setZoom(15);
     }
-  }, [map, selectedPlace]);
+  }, [map, selectedPlace, sidebarWidth]);
 
   return null;
 }
@@ -287,7 +287,7 @@ function PlaceDetailPanel({ place, onClose }) {
   );
 }
 
-function MapHandler({ selectedPlaceId, viewportPoints, setSelectedPoint }) {
+function MapHandler({ selectedPlaceId, viewportPoints, setSelectedPoint, sidebarWidth }) {
   const map = useMap();
 
   useEffect(() => {
@@ -301,16 +301,14 @@ function MapHandler({ selectedPlaceId, viewportPoints, setSelectedPoint }) {
       setSelectedPoint(point);
       if (map) {
         map.panTo({ lat: point.lat, lng: point.lng });
-        map.panBy(-260, 0); // Offset for sidebar
-        
-        // Also ensure we are zoomed in enough to see details
+        if (sidebarWidth > 0) map.panBy(-(sidebarWidth / 2), 0);
         const currentZoom = map.getZoom();
         if (!currentZoom || currentZoom < 14) {
           map.setZoom(14);
         }
       }
     }
-  }, [selectedPlaceId, viewportPoints, map, setSelectedPoint]);
+  }, [selectedPlaceId, viewportPoints, map, setSelectedPoint, sidebarWidth]);
 
   return null;
 }
@@ -326,6 +324,7 @@ export default function ItineraryLiveMap({
   selectedPlace = null,
   onSelectPlace,
   theme = "light",
+  sidebarWidth = 520,
 }) {
   const [selectedPoint, setSelectedPoint] = useState(null);
   const isDark = theme === "dark";
@@ -386,11 +385,12 @@ export default function ItineraryLiveMap({
             selectedPlaceId={selectedPlaceId}
             viewportPoints={viewportPoints}
             setSelectedPoint={setSelectedPoint}
+            sidebarWidth={sidebarWidth}
           />
-          {viewportPoints.length > 0 && <FitBounds points={viewportPoints} />}
-          <FocusActiveStop points={points} activeIndex={activeIndex} />
+          {viewportPoints.length > 0 && <FitBounds points={viewportPoints} sidebarWidth={sidebarWidth} />}
+          <FocusActiveStop points={points} activeIndex={activeIndex} sidebarWidth={sidebarWidth} />
           <FocusLiveMarker liveMarkers={liveMarkerPoints} />
-          <FocusSelectedPlace selectedPlace={selectedPlace} />
+          <FocusSelectedPlace selectedPlace={selectedPlace} sidebarWidth={sidebarWidth} />
 
           {/* Planned path */}
           {points.length > 1 && (
