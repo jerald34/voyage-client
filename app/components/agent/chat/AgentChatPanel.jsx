@@ -3,11 +3,11 @@ import AgentMessageList from './AgentMessageList';
 import AgentComposer from './AgentComposer';
 import SuggestedPrompts from './SuggestedPrompts';
 
-export default function AgentChatPanel({ 
-  messages = [], 
-  onSend, 
-  isLoading, 
-  streamingMessage = '' 
+export default function AgentChatPanel({
+  messages = [],
+  onSend,
+  isLoading,
+  streamingMessage = ''
 }) {
   const handlePromptSelect = (prompt) => {
     onSend(prompt);
@@ -39,41 +39,21 @@ export default function AgentChatPanel({
   }
 
   return (
-    <div className="chat-panel-container">
-      <div className="chat-messages-area">
+    <div className="flex flex-col h-full bg-surface">
+      <div className="flex-grow overflow-y-hidden flex flex-col">
         <AgentMessageList
           messages={displayMessages}
           isStreaming={shouldShowStreamingBubble}
         />
       </div>
-      
+
       {messages.length < 2 && !shouldShowStreamingBubble && (
         <SuggestedPrompts onSelect={handlePromptSelect} />
       )}
 
-      <div className="chat-input-area">
+      <div className="flex-shrink-0">
         <AgentComposer onSend={onSend} isLoading={isLoading} />
       </div>
-
-      <style jsx>{`
-        .chat-panel-container {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-          background: white;
-        }
-
-        .chat-messages-area {
-          flex-grow: 1;
-          overflow-y: hidden;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .chat-input-area {
-          flex-shrink: 0;
-        }
-      `}</style>
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { fetchPublicItinerary, postPublicComment } from "../../../lib/api.js";
 import { generateItineraryPdf, titleToFilename } from "../../../lib/pdfExport.js";
-import "./page.css";
+import ThemeToggle from "../../../components/theme/ThemeToggle";
 
 const ItineraryLiveMap = dynamic(
   () =>
@@ -118,7 +118,7 @@ function MapPinLink({ placeSnapshot }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="pv-map-link"
+      className="inline-flex items-center justify-center flex-shrink-0 w-7 h-7 rounded-lg bg-secondary/10 text-secondary no-underline transition-all duration-150 hover:bg-secondary/20 hover:scale-105 active:scale-95"
       title="Open in Google Maps"
       aria-label={`Open ${placeSnapshot.name || "location"} in Google Maps`}
     >
@@ -164,40 +164,45 @@ function NamePromptBanner({ onComplete }) {
   }
 
   return (
-    <div className="pv-name-banner">
-      <div className="pv-name-banner-icon">
+    <div className="flex items-start gap-3 px-[18px] py-4 mb-6 bg-primary/[0.04] border border-border border-l-[3px] border-l-secondary rounded-sm">
+      <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-full bg-secondary/[0.12] text-secondary mt-px hidden sm:flex">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
           <circle cx="12" cy="7" r="4" />
         </svg>
       </div>
-      <div className="pv-name-banner-body">
-        <p className="pv-name-banner-text">
+      <div className="flex-1 min-w-0 grid gap-[10px]">
+        <p className="m-0 text-[13px] leading-[1.5] text-text-soft">
           Want to leave comments on this itinerary? Let us know your name first.
         </p>
-        <form className="pv-name-banner-form" onSubmit={handleSubmit}>
-          <div className="pv-name-banner-fields">
-            <div className="pv-name-field-wrap">
+        <form className="flex items-start gap-2 flex-wrap max-sm:flex-col" onSubmit={handleSubmit}>
+          <div className="flex gap-2 flex-1 min-w-0 flex-wrap max-sm:flex-col">
+            <div className="flex flex-col gap-1 flex-1 min-w-[130px] max-sm:min-w-0">
               <input
                 ref={inputRef}
                 type="text"
-                className={`pv-name-input${nameError ? " pv-name-input--error" : ""}`}
+                className={`px-[11px] py-[7px] border rounded-sm bg-white text-[13px] text-text-primary outline-none w-full box-border transition-all duration-150 focus:border-secondary focus:shadow-[0_0_0_3px_rgba(215,122,97,0.12)] ${nameError ? "border-red-500 shadow-[0_0_0_3px_rgba(224,92,92,0.1)]" : "border-border"}`}
                 placeholder="Your name *"
                 value={name}
                 onChange={(e) => { setName(e.target.value); setNameError(false); }}
                 maxLength={80}
               />
-              {nameError && <span className="pv-name-error">Please enter your name</span>}
+              {nameError && <span className="text-[11px] text-red-500 font-medium">Please enter your name</span>}
             </div>
             <input
               type="email"
-              className="pv-name-input pv-name-input--email"
+              className="px-[11px] py-[7px] border border-border rounded-sm bg-white text-[13px] text-text-primary outline-none flex-1 min-w-[130px] max-sm:min-w-0 box-border transition-all duration-150 focus:border-secondary focus:shadow-[0_0_0_3px_rgba(215,122,97,0.12)]"
               placeholder="Email (optional)"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          <button type="submit" className="pv-name-btn">Continue</button>
+          <button
+            type="submit"
+            className="px-4 py-[7px] bg-secondary text-white border-none rounded-sm text-[13px] font-semibold cursor-pointer whitespace-nowrap flex-shrink-0 transition-all duration-150 hover:bg-[#c46a51] active:scale-97 max-sm:self-start"
+          >
+            Continue
+          </button>
         </form>
       </div>
     </div>
@@ -238,10 +243,10 @@ function CommentForm({ token, dayNumber, itemId, commenterName, commenterEmail, 
   }
 
   return (
-    <form className="pv-comment-form" onSubmit={handleSubmit}>
+    <form className="grid gap-2 p-3 bg-primary/[0.03] border border-border rounded-sm mt-1" onSubmit={handleSubmit}>
       {status === "success" ? (
-        <div className="pv-comment-success">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <div className="inline-flex items-center gap-[7px] py-[10px] text-[13px] font-semibold text-[#2a7a4f]">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#2a7a4f] flex-shrink-0">
             <polyline points="20 6 9 17 4 12" />
           </svg>
           Comment sent!
@@ -250,7 +255,7 @@ function CommentForm({ token, dayNumber, itemId, commenterName, commenterEmail, 
         <>
           <textarea
             ref={textareaRef}
-            className="pv-comment-textarea"
+            className="w-full box-border px-3 py-[9px] border border-border rounded-sm bg-white text-[13px] leading-[1.55] text-text-primary resize-y outline-none font-[inherit] transition-all duration-150 min-h-[72px] focus:border-secondary focus:shadow-[0_0_0_3px_rgba(215,122,97,0.1)] disabled:opacity-60 disabled:cursor-not-allowed max-sm:p-[10px]"
             placeholder="Write a comment…"
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -259,12 +264,12 @@ function CommentForm({ token, dayNumber, itemId, commenterName, commenterEmail, 
             disabled={status === "submitting"}
           />
           {status === "error" && (
-            <p className="pv-comment-error">Something went wrong. Please try again.</p>
+            <p className="m-0 text-[12px] text-red-500 font-medium">Something went wrong. Please try again.</p>
           )}
-          <div className="pv-comment-actions">
+          <div className="flex items-center justify-end gap-2 max-[400px]:flex-col-reverse max-[400px]:items-stretch">
             <button
               type="button"
-              className="pv-comment-cancel"
+              className="px-[14px] py-[6px] border border-border rounded-sm bg-transparent text-text-soft text-[12px] font-medium cursor-pointer transition-colors duration-150 hover:bg-primary/[0.06] disabled:opacity-50 disabled:cursor-not-allowed max-[400px]:text-center max-[400px]:w-full"
               onClick={onCancel}
               disabled={status === "submitting"}
             >
@@ -272,7 +277,7 @@ function CommentForm({ token, dayNumber, itemId, commenterName, commenterEmail, 
             </button>
             <button
               type="submit"
-              className="pv-comment-send"
+              className="px-4 py-[6px] bg-secondary text-white border-none rounded-sm text-[12px] font-semibold cursor-pointer transition-all duration-150 hover:enabled:bg-[#c46a51] active:enabled:scale-97 disabled:opacity-45 disabled:cursor-not-allowed max-[400px]:text-center max-[400px]:w-full"
               disabled={!text.trim() || status === "submitting"}
             >
               {status === "submitting" ? "Sending…" : "Send"}
@@ -288,12 +293,12 @@ function CommentForm({ token, dayNumber, itemId, commenterName, commenterEmail, 
 
 function PendingCommentChip({ comment }) {
   return (
-    <div className="pv-pending-comment">
-      <div className="pv-pending-comment-header">
-        <span className="pv-pending-comment-author">{comment.authorName}</span>
-        <span className="pv-pending-badge">Pending</span>
+    <div className="grid gap-1 px-[14px] py-[10px] mt-[6px] bg-[rgba(216,180,160,0.15)] border border-dashed border-secondary/30 rounded-sm">
+      <div className="flex items-center gap-2">
+        <span className="text-[12px] font-semibold text-primary">{comment.authorName}</span>
+        <span className="inline-flex items-center px-[7px] py-px bg-secondary/[0.12] text-secondary rounded-pill text-[10px] font-bold tracking-[0.04em] uppercase">Pending</span>
       </div>
-      <p className="pv-pending-comment-text">{comment.content}</p>
+      <p className="m-0 text-[13px] leading-[1.5] text-text-soft whitespace-pre-wrap">{comment.content}</p>
     </div>
   );
 }
@@ -304,7 +309,7 @@ function CommentTriggerBtn({ label, compact, onClick }) {
   return (
     <button
       type="button"
-      className={`pv-comment-trigger${compact ? " pv-comment-trigger--compact" : ""}`}
+      className={`inline-flex items-center gap-[5px] border border-border rounded-sm bg-transparent text-text-soft text-[12px] font-medium cursor-pointer flex-shrink-0 transition-all duration-150 hover:bg-secondary/[0.08] hover:text-secondary hover:border-secondary/30 active:bg-secondary/[0.14] ${compact ? "px-[6px] py-1 w-[26px] h-[26px] justify-center" : "px-[10px] py-[5px]"}`}
       onClick={onClick}
       aria-label={label}
       title={label}
@@ -494,9 +499,9 @@ export default function PublicItineraryPage() {
   /* ── loading state ── */
   if (loading) {
     return (
-      <div className="pv-loading-screen">
-        <div className="pv-loading-spinner" />
-        <p className="pv-loading-text">Loading your itinerary...</p>
+      <div className="flex flex-col items-center justify-center h-dvh bg-background gap-5">
+        <div className="w-9 h-9 border-[3px] border-border border-t-secondary rounded-full animate-spin" />
+        <p className="text-[14px] text-text-soft font-medium m-0">Loading your itinerary...</p>
       </div>
     );
   }
@@ -504,9 +509,9 @@ export default function PublicItineraryPage() {
   /* ── error state ── */
   if (error) {
     return (
-      <div className="pv-error-screen">
-        <div className="pv-error-card">
-          <div className="pv-error-icon">
+      <div className="flex flex-col items-center justify-center h-dvh bg-background px-6">
+        <div className="grid gap-3 justify-items-center text-center max-w-[400px] px-8 py-10 bg-surface border border-border rounded-lg shadow-soft">
+          <div className="mb-1">
             {error.type === "expired" ? (
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--voyage-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
@@ -520,18 +525,18 @@ export default function PublicItineraryPage() {
               </svg>
             )}
           </div>
-          <h1 className="pv-error-title">
+          <h1 className="font-serif text-2xl font-normal text-primary m-0">
             {error.type === "not_found" && "Link Not Found"}
             {error.type === "expired" && "Link Expired"}
             {error.type === "generic" && "Something Went Wrong"}
           </h1>
-          <p className="pv-error-message">{error.message}</p>
-          <p className="pv-error-hint">
+          <p className="text-[15px] leading-[1.5] text-text-muted m-0">{error.message}</p>
+          <p className="text-[12px] text-text-soft m-0">
             If you believe this is a mistake, please contact your travel agent.
           </p>
         </div>
-        <footer className="pv-branding-footer">
-          <span className="pv-powered-by">Powered by Voyage</span>
+        <footer className="mt-8">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-soft opacity-60">Powered by Voyage</span>
         </footer>
       </div>
     );
@@ -564,20 +569,21 @@ export default function PublicItineraryPage() {
   const { trip, itinerary } = data;
 
   return (
-    <div className="pv-page">
+    <div className="flex flex-col h-dvh bg-background text-text-primary overflow-hidden">
       {/* ── top branding bar ── */}
-      <header className="pv-header">
-        <span className="pv-logo">Voyage</span>
-        <span className="pv-header-label">Shared Itinerary</span>
+      <header className="flex items-center justify-between px-6 py-3 bg-primary text-white flex-shrink-0 z-20 max-sm:px-4 max-sm:py-[10px]">
+        <span className="font-serif text-[20px] tracking-[0.02em] max-sm:text-[18px]">Voyage</span>
+        <span className="text-[12px] font-semibold uppercase tracking-[0.08em] opacity-70 max-sm:text-[10px]">Shared Itinerary</span>
+        <ThemeToggle />
       </header>
 
-      {/* ── mobile tab toggle ── */}
-      <div className="pv-mobile-tabs">
+      {/* ── mobile tab toggle (hidden on desktop) ── */}
+      <div className="hidden max-sm:flex gap-0 bg-surface border-b border-border flex-shrink-0 z-[15]">
         <button
-          className={`pv-tab-btn ${mobileTab === "itinerary" ? "active" : ""}`}
+          className={`flex-1 inline-flex items-center justify-center gap-[6px] py-3 border-none bg-none text-[13px] font-semibold cursor-pointer transition-all duration-150 relative after:content-[''] after:absolute after:bottom-0 after:left-4 after:right-4 after:h-[2px] after:rounded-sm after:transition-colors after:duration-200 ${mobileTab === "itinerary" ? "text-primary after:bg-secondary" : "text-text-soft after:bg-transparent"}`}
           onClick={() => setMobileTab("itinerary")}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
             <line x1="8" y1="6" x2="21" y2="6" />
             <line x1="8" y1="12" x2="21" y2="12" />
             <line x1="8" y1="18" x2="21" y2="18" />
@@ -588,10 +594,10 @@ export default function PublicItineraryPage() {
           Itinerary
         </button>
         <button
-          className={`pv-tab-btn ${mobileTab === "map" ? "active" : ""}`}
+          className={`flex-1 inline-flex items-center justify-center gap-[6px] py-3 border-none bg-none text-[13px] font-semibold cursor-pointer transition-all duration-150 relative after:content-[''] after:absolute after:bottom-0 after:left-4 after:right-4 after:h-[2px] after:rounded-sm after:transition-colors after:duration-200 ${mobileTab === "map" ? "text-primary after:bg-secondary" : "text-text-soft after:bg-transparent"}`}
           onClick={() => setMobileTab("map")}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
             <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
             <line x1="8" y1="2" x2="8" y2="18" />
             <line x1="16" y1="6" x2="16" y2="22" />
@@ -601,10 +607,10 @@ export default function PublicItineraryPage() {
       </div>
 
       {/* ── main split layout ── */}
-      <div className="pv-layout">
+      <div className="grid grid-cols-[45fr_55fr] flex-1 min-h-0 overflow-hidden max-sm:flex max-sm:flex-col">
         {/* ── left: timeline panel ── */}
         <div
-          className={`pv-timeline-panel ${mobileTab === "itinerary" ? "pv-mobile-visible" : "pv-mobile-hidden"}`}
+          className={`overflow-y-auto overflow-x-hidden px-7 py-8 pb-12 scrollbar-thin scrollbar-color-border scrollbar-track-transparent max-sm:px-4 max-sm:py-5 max-sm:pb-10 max-[400px]:px-3 max-[400px]:py-4 max-[400px]:pb-8 ${mobileTab === "itinerary" ? "max-sm:flex max-sm:flex-col max-sm:flex-1 max-sm:min-h-0" : "max-sm:hidden"}`}
         >
           {/* name prompt banner */}
           {showNamePrompt && (
@@ -612,15 +618,17 @@ export default function PublicItineraryPage() {
           )}
 
           {/* trip header */}
-          <div className="pv-trip-header">
-            <h1 className="pv-trip-title">{trip.title || itinerary.title}</h1>
+          <div className="mb-8 pb-6 border-b border-border max-sm:mb-6 max-sm:pb-5">
+            <h1 className="font-serif text-[28px] font-normal leading-[1.2] m-0 mb-[6px] text-primary max-sm:text-[22px] max-[400px]:text-[20px]">
+              {trip.title || itinerary.title}
+            </h1>
             {trip.destinationSummary && (
-              <p className="pv-trip-destination">{trip.destinationSummary}</p>
+              <p className="text-[15px] text-secondary font-semibold m-0 mb-3">{trip.destinationSummary}</p>
             )}
-            <div className="pv-trip-meta">
+            <div className="flex flex-wrap gap-4 mb-2 max-sm:gap-3">
               {(trip.startDate || trip.endDate) && (
-                <span className="pv-meta-item">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <span className="inline-flex items-center gap-[6px] text-[13px] text-text-soft font-medium">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 text-text-soft">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                     <line x1="16" y1="2" x2="16" y2="6" />
                     <line x1="8" y1="2" x2="8" y2="6" />
@@ -630,8 +638,8 @@ export default function PublicItineraryPage() {
                 </span>
               )}
               {trip.travelerCount > 0 && (
-                <span className="pv-meta-item">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <span className="inline-flex items-center gap-[6px] text-[13px] text-text-soft font-medium">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 text-text-soft">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -642,14 +650,14 @@ export default function PublicItineraryPage() {
               )}
             </div>
             <button
-              className={`pv-pdf-btn${pdfLoading ? " pv-pdf-btn--loading" : ""}`}
+              className={`inline-flex items-center gap-[7px] mt-[14px] px-4 py-2 rounded-pill border border-border bg-surface text-primary text-[13px] font-semibold cursor-pointer transition-all duration-150 whitespace-nowrap hover:enabled:bg-background hover:enabled:border-secondary hover:enabled:shadow-[0_2px_8px_rgba(215,122,97,0.12)] active:enabled:scale-97 disabled:opacity-65 disabled:cursor-not-allowed`}
               onClick={handleDownloadPdf}
               disabled={pdfLoading}
               aria-label="Download itinerary as PDF"
             >
               {pdfLoading ? (
                 <>
-                  <span className="pv-pdf-spinner" />
+                  <span className="inline-block w-[13px] h-[13px] border-2 border-border border-t-secondary rounded-full animate-spin flex-shrink-0" />
                   Generating PDF...
                 </>
               ) : (
@@ -664,32 +672,36 @@ export default function PublicItineraryPage() {
               )}
             </button>
             {itinerary.summary && (
-              <p className="pv-trip-summary">{itinerary.summary}</p>
+              <p className="mt-3 mb-0 text-[14px] leading-[1.6] text-text-muted">{itinerary.summary}</p>
             )}
           </div>
 
           {/* days */}
-          <div className="pv-days">
+          <div className="grid gap-7 max-sm:gap-5">
             {itinerary.days?.map((day) => (
-              <section key={day.id} className="pv-day">
-                <div className="pv-day-header">
-                  <span className="pv-day-badge">Day {day.dayNumber}</span>
-                  <div className="pv-day-header-text">
-                    <h2 className="pv-day-title">{day.title}</h2>
+              <section key={day.id} className="grid gap-3">
+                <div className="flex items-start gap-3">
+                  <span className="inline-flex items-center justify-center flex-shrink-0 w-14 h-7 bg-primary text-white rounded-pill text-[11px] font-bold tracking-[0.04em] uppercase max-[400px]:w-12 max-[400px]:h-6 max-[400px]:text-[10px]">
+                    Day {day.dayNumber}
+                  </span>
+                  <div className="flex flex-col gap-[2px] pt-[2px]">
+                    <h2 className="font-serif text-[19px] font-normal leading-[1.3] m-0 text-primary max-[400px]:text-[17px]">{day.title}</h2>
                     {day.date && (
-                      <span className="pv-day-date">{formatDate(day.date)}</span>
+                      <span className="text-[12px] text-text-soft font-medium">{formatDate(day.date)}</span>
                     )}
                   </div>
-                  <CommentTriggerBtn
-                    label={`Comment on Day ${day.dayNumber}`}
-                    compact
-                    onClick={() => openForm({ type: "day", dayNumber: day.dayNumber, itemId: undefined })}
-                  />
+                  <div className="ml-auto">
+                    <CommentTriggerBtn
+                      label={`Comment on Day ${day.dayNumber}`}
+                      compact
+                      onClick={() => openForm({ type: "day", dayNumber: day.dayNumber, itemId: undefined })}
+                    />
+                  </div>
                 </div>
 
                 {/* inline day-level comment form */}
                 {isFormActive({ type: "day", dayNumber: day.dayNumber, itemId: undefined }) && (
-                  <div className="pv-day-comment-area">
+                  <div>
                     <CommentForm
                       token={token}
                       dayNumber={day.dayNumber}
@@ -704,16 +716,16 @@ export default function PublicItineraryPage() {
 
                 {/* pending day-level comments */}
                 {getDayComments(day.dayNumber).map((c, i) => (
-                  <div key={i} className="pv-day-comment-area">
+                  <div key={i}>
                     <PendingCommentChip comment={c} />
                   </div>
                 ))}
 
                 {day.summary && (
-                  <p className="pv-day-summary">{day.summary}</p>
+                  <p className="m-0 pl-[68px] text-[13px] leading-[1.55] text-text-soft max-sm:pl-0">{day.summary}</p>
                 )}
 
-                <div className="pv-items">
+                <div className="grid gap-0 pl-6 max-sm:pl-3 max-[400px]:pl-1">
                   {day.items.map((item, idx) => {
                     const globalIdx = mapItems.findIndex(
                       (mi) =>
@@ -727,26 +739,27 @@ export default function PublicItineraryPage() {
                     return (
                       <div
                         key={item.id}
-                        className={`pv-item ${isActive ? "pv-item--active" : ""}`}
+                        className={`grid grid-cols-[24px_1fr] gap-3 py-2 transition-colors duration-150 rounded-sm ${isActive ? "bg-primary/[0.04]" : ""}`}
                         onMouseEnter={() => handleHoverItem(globalIdx)}
                         onMouseLeave={() => handleHoverItem(-1)}
                       >
-                        <div className="pv-item-connector">
-                          <span className="pv-item-dot" />
+                        {/* connector: dot + vertical line */}
+                        <div className="flex flex-col items-center pt-[6px]">
+                          <span className={`w-[10px] h-[10px] rounded-full flex-shrink-0 ${isActive ? "bg-primary shadow-[0_0_0_3px_rgba(34,56,67,0.18)]" : "bg-secondary shadow-[0_0_0_3px_rgba(215,122,97,0.15)]"}`} />
                           {idx < day.items.length - 1 && (
-                            <span className="pv-item-line" />
+                            <span className="w-[2px] flex-1 min-h-4 bg-border" />
                           )}
                         </div>
 
-                        <div className="pv-item-content">
-                          <div className="pv-item-header">
-                            <div className="pv-item-type-icon">
+                        <div className="grid gap-[6px] pb-3">
+                          <div className="flex items-start gap-2">
+                            <div className={`flex items-center justify-center flex-shrink-0 w-7 h-7 rounded-lg text-primary ${isActive ? "bg-primary/10" : "bg-primary/[0.06]"}`}>
                               {itemTypeIcon(item.type)}
                             </div>
-                            <div className="pv-item-title-block">
-                              <h3 className="pv-item-title">{item.title}</h3>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-[15px] font-semibold leading-[1.3] m-0 text-text-primary max-[400px]:text-[14px]">{item.title}</h3>
                               {(item.startTime || item.endTime) && (
-                                <span className="pv-item-time">
+                                <span className="text-[12px] text-text-soft font-medium">
                                   {item.startTime && formatTime(item.startTime)}
                                   {item.startTime && item.endTime && " – "}
                                   {item.endTime && formatTime(item.endTime)}
@@ -762,18 +775,18 @@ export default function PublicItineraryPage() {
                           </div>
 
                           {item.description && (
-                            <p className="pv-item-desc">{item.description}</p>
+                            <p className="m-0 text-[13px] leading-[1.55] text-text-muted pl-9">{item.description}</p>
                           )}
 
                           {item.placeSnapshot?.name && (
-                            <div className="pv-item-place">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <div className="flex items-start gap-[6px] pl-9 text-[12px] text-text-soft leading-[1.4]">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-[1px]">
                                 <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z" />
                                 <circle cx="12" cy="10" r="3" />
                               </svg>
                               <span>{item.placeSnapshot.name}</span>
                               {item.placeSnapshot.formattedAddress && (
-                                <span className="pv-item-address">
+                                <span className="block mt-px text-text-soft opacity-80">
                                   {item.placeSnapshot.formattedAddress}
                                 </span>
                               )}
@@ -781,8 +794,8 @@ export default function PublicItineraryPage() {
                           )}
 
                           {item.clientNotes && (
-                            <div className="pv-item-notes">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <div className="flex items-start gap-[6px] px-3 py-2 ml-9 mt-[2px] bg-secondary/[0.06] rounded-sm border-l-[3px] border-secondary text-[12px] text-text-muted leading-[1.5]">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-[1px] text-secondary">
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                               </svg>
                               <span>{item.clientNotes}</span>
@@ -816,12 +829,12 @@ export default function PublicItineraryPage() {
           </div>
 
           {/* ── general feedback section ── */}
-          <div className="pv-general-feedback">
-            <div className="pv-general-feedback-header">
+          <div className="grid gap-3 mt-10 px-5 py-[22px] bg-primary/[0.03] border border-border rounded-md max-sm:mt-7 max-sm:p-4">
+            <div className="flex items-center gap-2 text-primary">
               <ChatBubbleIcon size={16} />
-              <h3 className="pv-general-feedback-title">General Feedback</h3>
+              <h3 className="font-serif text-[17px] font-normal m-0 text-primary">General Feedback</h3>
             </div>
-            <p className="pv-general-feedback-desc">
+            <p className="m-0 text-[13px] leading-[1.5] text-text-soft">
               Have overall thoughts about this itinerary? Share them here.
             </p>
 
@@ -848,14 +861,14 @@ export default function PublicItineraryPage() {
           </div>
 
           {/* bottom branding */}
-          <footer className="pv-timeline-footer">
-            <span className="pv-powered-by">Powered by Voyage</span>
+          <footer className="pt-8 text-center">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-soft opacity-60">Powered by Voyage</span>
           </footer>
         </div>
 
         {/* ── right: map panel ── */}
         <div
-          className={`pv-map-panel ${mobileTab === "map" ? "pv-mobile-visible" : "pv-mobile-hidden"}`}
+          className={`relative border-l border-border min-h-0 max-sm:border-l-0 max-sm:border-t max-sm:border-border ${mobileTab === "map" ? "max-sm:flex max-sm:flex-col max-sm:flex-1 max-sm:min-h-0" : "max-sm:hidden"}`}
         >
           <ItineraryLiveMap
             items={mapItems}

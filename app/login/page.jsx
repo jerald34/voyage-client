@@ -32,7 +32,7 @@ const socialProviders = [
 function FloatingOrb({ delay, size, left, top }) {
   return (
     <div
-      className="auth-floating-orb"
+      className="absolute rounded-full bg-gradient-to-br from-[rgba(216,180,160,0.18)] via-[rgba(215,122,97,0.08)] to-transparent [animation:auth-orb-drift_14s_ease-in-out_infinite_alternate] blur-[2px]"
       style={{
         width: size,
         height: size,
@@ -47,15 +47,15 @@ function FloatingOrb({ delay, size, left, top }) {
 
 function WizardProgress({ step }) {
   return (
-    <div className="auth-wizard-progress">
-      <div className={`auth-wizard-step ${step >= 1 ? "active" : ""}`}>
-        <span className="auth-wizard-step-number">1</span>
-        <span className="auth-wizard-step-label">Account</span>
+    <div className="flex items-center justify-center gap-0 mb-7">
+      <div className={`flex items-center gap-2 transition-opacity duration-250 ${step >= 1 ? "opacity-100" : "opacity-40"}`}>
+        <span className="w-7 h-7 rounded-full bg-border text-text-muted flex items-center justify-center text-xs font-semibold transition-colors duration-250" style={step >= 1 ? { backgroundColor: "var(--voyage-secondary)", color: "#fff" } : {}}>1</span>
+        <span className={`text-xs font-medium transition-colors duration-250 ${step >= 1 ? "text-text-primary" : "text-text-muted"}`}>Account</span>
       </div>
-      <div className="auth-wizard-step-divider" />
-      <div className={`auth-wizard-step ${step >= 2 ? "active" : ""}`}>
-        <span className="auth-wizard-step-number">2</span>
-        <span className="auth-wizard-step-label">Agency</span>
+      <div className="w-12 h-0.5 bg-border mx-3" />
+      <div className={`flex items-center gap-2 transition-opacity duration-250 ${step >= 2 ? "opacity-100" : "opacity-40"}`}>
+        <span className="w-7 h-7 rounded-full bg-border text-text-muted flex items-center justify-center text-xs font-semibold transition-colors duration-250" style={step >= 2 ? { backgroundColor: "var(--voyage-secondary)", color: "#fff" } : {}}>2</span>
+        <span className={`text-xs font-medium transition-colors duration-250 ${step >= 2 ? "text-text-primary" : "text-text-muted"}`}>Agency</span>
       </div>
     </div>
   );
@@ -180,57 +180,44 @@ function LoginForm() {
   const isRegister = mode === "register";
 
   return (
-    <div className={`auth-page ${mounted ? "auth-page-visible" : ""}`}>
+    <div className={`grid grid-cols-2 min-h-[calc(100vh-100px)] gap-0 rounded-lg overflow-hidden border border-border shadow-strong transition-all duration-650 ${mounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-6 scale-[0.985]"}`}>
       {/* LEFT: Brand showcase panel */}
-      <div className="auth-brand-panel">
-        <div className="auth-brand-orbs" aria-hidden="true">
+      <div className="relative flex flex-col justify-center p-[clamp(40px,5vw,72px)] bg-gradient-to-br from-primary via-[#1a2e38] to-[#2d3436] overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <FloatingOrb delay="0s" size="320px" left="-80px" top="-60px" />
           <FloatingOrb delay="2.4s" size="200px" left="60%" top="55%" />
           <FloatingOrb delay="4.8s" size="140px" left="30%" top="80%" />
         </div>
 
-        <div className="auth-brand-content">
-          <Link href="/" className="auth-brand-logo" aria-label="Back to home">
+        <div className="relative z-[2] flex flex-col gap-12">
+          <Link href="/" className="inline-block text-[rgba(255,255,255,0.92)] font-serif text-2xl font-normal tracking-[-0.03em] no-underline transition-colors duration-200 hover:text-accent" aria-label="Back to home">
             Voyage
           </Link>
 
-          <div className="auth-brand-copy">
-            <span className="frame-label">Welcome aboard</span>
-            <h1 className="auth-brand-title">
+          <div className="flex flex-col gap-0">
+            <span className="inline-flex items-center gap-2.5 mb-5 text-accent font-extrabold text-[0.76rem] tracking-[0.18em] uppercase">
+              <span className="w-11 h-px bg-current opacity-55" />
+              Welcome aboard
+            </span>
+            <h1 className="text-white text-[clamp(2rem,3.2vw,3rem)] font-serif font-normal leading-tight max-w-56 mb-5">
               {isRegister && wizardStep === 2
                 ? "Tell us about your agency"
                 : "Every great trip starts with a single step"}
             </h1>
-            <p className="auth-brand-subtitle">
+            <p className="text-[rgba(255,255,255,0.58)] text-[1.05rem] max-w-[42ch] leading-[1.7]">
               {isRegister && wizardStep === 2
                 ? "We'll review your application and get you set up quickly."
                 : "Plan smarter itineraries with AI-powered route logic, real-time collaboration, and map-aware scheduling — all in one workspace."}
             </p>
           </div>
 
-          <div className="auth-brand-stats">
-            <div className="auth-stat">
-              <strong>2.4k+</strong>
-              <span>Trips planned</span>
-            </div>
-            <div className="auth-stat-divider" />
-            <div className="auth-stat">
-              <strong>98%</strong>
-              <span>Satisfaction</span>
-            </div>
-            <div className="auth-stat-divider" />
-            <div className="auth-stat">
-              <strong>40+</strong>
-              <span>Destinations</span>
-            </div>
-          </div>
         </div>
       </div>
 
       {/* RIGHT: Auth form */}
-      <div className="auth-form-panel">
-        <div className="auth-form-top-nav">
-          <Link href="/" className="auth-back-link">
+      <div className="flex flex-col p-[clamp(28px,4vw,56px)] bg-gradient-to-b from-[rgba(255,255,255,0.98)] to-[rgba(239,241,243,0.94)] overflow-y-auto">
+        <div className="mb-8">
+          <Link href="/" className="inline-flex items-center gap-2 text-text-muted text-xs font-bold no-underline transition-colors duration-160 hover:text-secondary">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
@@ -238,27 +225,29 @@ function LoginForm() {
           </Link>
         </div>
 
-        <div className="auth-form-container">
+        <div className="flex-1 flex flex-col justify-center max-w-[440px] w-full mx-auto">
           {/* Mode toggle */}
           {!isAuthenticated && (
-            <div className="auth-mode-toggle">
+            <div className="relative grid grid-cols-2 p-1 mb-9 bg-[rgba(34,56,67,0.05)] border border-border rounded-pill">
               <button
-                className={`auth-mode-btn ${mode === "login" ? "active" : ""}`}
+                className={`relative z-[2] px-0 py-3 bg-none border-none font-extrabold text-xs cursor-pointer transition-colors duration-240 ${mode === "login" ? "text-text-primary" : "text-text-muted"}`}
                 onClick={() => handleModeSwitch("login")}
                 type="button"
               >
                 Sign in
               </button>
               <button
-                className={`auth-mode-btn ${mode === "register" ? "active" : ""}`}
+                className={`relative z-[2] px-0 py-3 bg-none border-none font-extrabold text-xs cursor-pointer transition-colors duration-240 ${mode === "register" ? "text-text-primary" : "text-text-muted"}`}
                 onClick={() => handleModeSwitch("register")}
                 type="button"
               >
                 Create account
               </button>
               <div
-                className="auth-mode-indicator"
+                className="absolute top-1 left-1 rounded-pill bg-white shadow-md transition-transform duration-320"
                 style={{
+                  width: "calc(50% - 5px)",
+                  height: "calc(100% - 10px)",
                   transform: mode === "register" ? "translateX(100%)" : "translateX(0)",
                 }}
               />
@@ -268,21 +257,21 @@ function LoginForm() {
           {/* Wizard progress for register mode */}
           {isRegister && <WizardProgress step={wizardStep} />}
 
-          <div className={`auth-form-body ${isTransitioning ? "auth-form-exit" : "auth-form-enter"}`}>
+          <div className={`flex flex-col gap-0 ${isTransitioning ? "[animation:auth-slide-out_0.22s_ease_forwards]" : "[animation:auth-slide-in_0.32s_ease_forwards]"}`}>
 
             {/* ─── LOGIN FORM ─── */}
             {mode === "login" && (
               <>
-                <div className="auth-form-heading">
-                  <h2>Welcome back</h2>
-                  <p className="lede">Sign in to pick up where you left off.</p>
+                <div className="mb-7">
+                  <h2 className="text-[clamp(1.6rem,2.4vw,2.2rem)] mb-2">Welcome back</h2>
+                  <p className="text-[1.08rem] text-text-muted mb-0">Sign in to pick up where you left off.</p>
                 </div>
 
-                <div className="auth-social-group">
+                <div className="grid grid-cols-2 gap-3 mb-6">
                   {socialProviders.map((provider) => (
                     <button
                       key={provider.id}
-                      className="auth-social-btn"
+                      className="flex items-center justify-center gap-2.5 px-4 py-3.5 bg-white border border-border rounded-md text-text-primary text-xs font-bold cursor-pointer transition-all duration-160 hover:border-border-strong hover:shadow-[0_4px_16px_rgba(34,56,67,0.08)] hover:-translate-y-0.5"
                       type="button"
                       onClick={() => auth.startOAuth(provider.id)}
                     >
@@ -292,32 +281,36 @@ function LoginForm() {
                   ))}
                 </div>
 
-                <div className="auth-divider"><span>or continue with email</span></div>
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="flex-1 h-px bg-border/[0.12]" />
+                  <span className="text-text-soft text-[0.78rem] font-bold uppercase tracking-[0.1em] whitespace-nowrap">or continue with email</span>
+                  <div className="flex-1 h-px bg-border/[0.12]" />
+                </div>
 
-                <form onSubmit={handleLoginSubmit} className="auth-fields">
-                  <div className="auth-field">
-                    <label htmlFor="auth-email">Email address</label>
-                    <div className="auth-input-wrap">
-                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <form onSubmit={handleLoginSubmit} className="flex flex-col gap-5">
+                  <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
+                    <label htmlFor="auth-email" className="text-text-primary text-[0.86rem] font-bold">Email address</label>
+                    <div className="relative flex items-center">
+                      <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="2" y="4" width="20" height="16" rx="2" />
                         <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                       </svg>
-                      <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+                      <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
                   </div>
 
-                  <div className="auth-field">
-                    <div className="auth-field-header">
-                      <label htmlFor="auth-password">Password</label>
-                      <button type="button" className="auth-forgot-link">Forgot password?</button>
+                  <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
+                    <div className="flex justify-between items-center">
+                      <label htmlFor="auth-password" className="text-text-primary text-[0.86rem] font-bold">Password</label>
+                      <button type="button" className="bg-none border-none text-secondary font-bold text-xs cursor-pointer transition-colors duration-160 hover:text-text-primary">Forgot password?</button>
                     </div>
-                    <div className="auth-input-wrap">
-                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <div className="relative flex items-center">
+                      <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
-                      <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
-                      <button type="button" className="auth-toggle-vis" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>
+                      <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" className="w-full !pl-[46px] !pr-14 py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <button type="button" className="absolute right-3.5 flex items-center justify-center w-8.5 h-8.5 bg-none border-none text-text-soft cursor-pointer rounded-sm transition-all duration-160 hover:text-secondary hover:bg-[rgba(215,122,97,0.06)]" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>
                         {showPassword ? (
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
                         ) : (
@@ -327,9 +320,9 @@ function LoginForm() {
                     </div>
                   </div>
 
-                  {auth.error && <div className="auth-error" role="alert">{auth.error.message}</div>}
+                  {auth.error && <div className="p-3 rounded-sm bg-status-danger/[0.06] border border-status-danger/[0.18] text-status-danger text-[0.86rem] font-semibold leading-relaxed text-center [animation:auth-field-in_0.25s_ease_both]" role="alert">{auth.error.message}</div>}
 
-                  <button type="submit" className="button button-primary auth-submit" disabled={auth.loading}>
+                  <button type="submit" className="w-full mt-2 inline-flex items-center justify-center gap-2 min-h-[54px] px-7 py-4 rounded-pill font-extrabold bg-accent text-white hover:-translate-y-0.5 transition cursor-pointer disabled:opacity-55 disabled:cursor-not-allowed disabled:transform-none" disabled={auth.loading}>
                     {auth.loading ? "Signing in…" : "Sign in to Voyage"}
                   </button>
                 </form>
@@ -339,16 +332,16 @@ function LoginForm() {
             {/* ─── REGISTER STEP 1: Personal Account ─── */}
             {isRegister && wizardStep === 1 && (
               <>
-                <div className="auth-form-heading">
-                  <h2>Create your account</h2>
-                  <p className="lede">Start planning unforgettable trips today.</p>
+                <div className="mb-7">
+                  <h2 className="text-[clamp(1.6rem,2.4vw,2.2rem)] mb-2">Create your account</h2>
+                  <p className="text-[1.08rem] text-text-muted mb-0">Start planning unforgettable trips today.</p>
                 </div>
 
-                <div className="auth-social-group">
+                <div className="grid grid-cols-2 gap-3 mb-6">
                   {socialProviders.map((provider) => (
                     <button
                       key={provider.id}
-                      className="auth-social-btn"
+                      className="flex items-center justify-center gap-2.5 px-4 py-3.5 bg-white border border-border rounded-md text-text-primary text-xs font-bold cursor-pointer transition-all duration-160 hover:border-border-strong hover:shadow-[0_4px_16px_rgba(34,56,67,0.08)] hover:-translate-y-0.5"
                       type="button"
                       onClick={() => auth.startOAuth(provider.id)}
                     >
@@ -358,39 +351,43 @@ function LoginForm() {
                   ))}
                 </div>
 
-                <div className="auth-divider"><span>or continue with email</span></div>
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="flex-1 h-px bg-border/[0.12]" />
+                  <span className="text-text-soft text-[0.78rem] font-bold uppercase tracking-[0.1em] whitespace-nowrap">or continue with email</span>
+                  <div className="flex-1 h-px bg-border/[0.12]" />
+                </div>
 
-                <form onSubmit={handleStep1Next} className="auth-fields">
-                  <div className="auth-field">
-                    <label htmlFor="auth-fullname">Full name</label>
-                    <div className="auth-input-wrap">
-                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <form onSubmit={handleStep1Next} className="flex flex-col gap-5">
+                  <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
+                    <label htmlFor="auth-fullname" className="text-text-primary text-[0.86rem] font-bold">Full name</label>
+                    <div className="relative flex items-center">
+                      <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
                       </svg>
-                      <input id="auth-fullname" type="text" placeholder="Your full name" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" />
+                      <input id="auth-fullname" type="text" placeholder="Your full name" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
-                    {step1Errors.fullName && <span className="auth-field-error">{step1Errors.fullName}</span>}
+                    {step1Errors.fullName && <span className="text-[0.8rem] text-status-danger mt-0.5">{step1Errors.fullName}</span>}
                   </div>
 
-                  <div className="auth-field">
-                    <label htmlFor="auth-email">Email address</label>
-                    <div className="auth-input-wrap">
-                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
+                    <label htmlFor="auth-email" className="text-text-primary text-[0.86rem] font-bold">Email address</label>
+                    <div className="relative flex items-center">
+                      <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                       </svg>
-                      <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+                      <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
-                    {step1Errors.email && <span className="auth-field-error">{step1Errors.email}</span>}
+                    {step1Errors.email && <span className="text-[0.8rem] text-status-danger mt-0.5">{step1Errors.email}</span>}
                   </div>
 
-                  <div className="auth-field">
-                    <label htmlFor="auth-password">Password</label>
-                    <div className="auth-input-wrap">
-                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
+                    <label htmlFor="auth-password" className="text-text-primary text-[0.86rem] font-bold">Password</label>
+                    <div className="relative flex items-center">
+                      <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
-                      <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
-                      <button type="button" className="auth-toggle-vis" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>
+                      <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" className="w-full !pl-[46px] !pr-14 py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <button type="button" className="absolute right-3.5 flex items-center justify-center w-8.5 h-8.5 bg-none border-none text-text-soft cursor-pointer rounded-sm transition-all duration-160 hover:text-secondary hover:bg-[rgba(215,122,97,0.06)]" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>
                         {showPassword ? (
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
                         ) : (
@@ -398,31 +395,37 @@ function LoginForm() {
                         )}
                       </button>
                     </div>
-                    {step1Errors.password && <span className="auth-field-error">{step1Errors.password}</span>}
+                    {step1Errors.password && <span className="text-[0.8rem] text-status-danger mt-0.5">{step1Errors.password}</span>}
                   </div>
 
-                  <div className="auth-field">
-                    <label htmlFor="auth-confirm-password">Confirm password</label>
-                    <div className="auth-input-wrap">
-                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
+                    <label htmlFor="auth-confirm-password" className="text-text-primary text-[0.86rem] font-bold">Confirm password</label>
+                    <div className="relative flex items-center">
+                      <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                       </svg>
-                      <input id="auth-confirm-password" type="password" placeholder="Repeat your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" />
+                      <input id="auth-confirm-password" type="password" placeholder="Repeat your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
-                    {step1Errors.confirmPassword && <span className="auth-field-error">{step1Errors.confirmPassword}</span>}
+                    {step1Errors.confirmPassword && <span className="text-[0.8rem] text-status-danger mt-0.5">{step1Errors.confirmPassword}</span>}
                   </div>
 
-                  <label className="auth-checkbox-row" htmlFor="auth-terms">
-                    <input type="checkbox" id="auth-terms" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} />
-                    <span>
+                  <label className="flex items-center gap-3 cursor-pointer py-0.5" htmlFor="auth-terms">
+                    <input
+                      type="checkbox"
+                      id="auth-terms"
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="w-4.5 h-4.5 rounded border-border text-secondary focus:ring-secondary cursor-pointer"
+                    />
+                    <span className="text-[0.92rem] text-text-muted leading-tight">
                       I agree to the{" "}
-                      <a href="#" className="auth-inline-link">Terms of Service</a> and{" "}
-                      <a href="#" className="auth-inline-link">Privacy Policy</a>
+                      <a href="#" className="text-secondary font-semibold hover:underline">Terms of Service</a> and{" "}
+                      <a href="#" className="text-secondary font-semibold hover:underline">Privacy Policy</a>
                     </span>
                   </label>
-                  {step1Errors.terms && <span className="auth-field-error">{step1Errors.terms}</span>}
+                  {step1Errors.terms && <span className="text-[0.8rem] text-status-danger mt-0.5">{step1Errors.terms}</span>}
 
-                  <button type="submit" className="button button-primary auth-submit">
+                  <button type="submit" className="w-full mt-2 inline-flex items-center justify-center gap-3 min-h-[54px] px-7 py-4 border border-transparent rounded-pill text-base font-extrabold cursor-pointer bg-accent text-white shadow-[0_16px_32px_rgba(216,180,160,0.26)] hover:-translate-y-px hover:bg-[#dbbfae] transition-all">
                     Next: Agency Details
                   </button>
                 </form>
@@ -432,72 +435,74 @@ function LoginForm() {
             {/* ─── REGISTER STEP 2: Agency Details ─── */}
             {isRegister && wizardStep === 2 && (
               <>
-                <div className="auth-form-heading">
-                  <h2>Your agency</h2>
-                  <p className="lede">Tell us about your travel agency so we can set up your workspace.</p>
+                <div className="mb-7">
+                  <h2 className="text-[clamp(1.6rem,2.4vw,2.2rem)] mb-2">Your agency</h2>
+                  <p className="text-[1.08rem] text-text-muted mb-0">Tell us about your travel agency so we can set up your workspace.</p>
                 </div>
 
-                <form onSubmit={handleStep2Submit} className="auth-fields">
-                  <div className="auth-field">
-                    <label htmlFor="auth-agency-name">Agency name</label>
-                    <div className="auth-input-wrap">
-                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <form onSubmit={handleStep2Submit} className="flex flex-col gap-5">
+                  <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
+                    <label htmlFor="auth-agency-name" className="text-text-primary text-[0.86rem] font-bold">Agency name</label>
+                    <div className="relative flex items-center">
+                      <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
                       </svg>
-                      <input id="auth-agency-name" type="text" placeholder="e.g. Wanderlust Travel Co." value={agencyName} onChange={(e) => setAgencyName(e.target.value)} required />
+                      <input id="auth-agency-name" type="text" placeholder="e.g. Wanderlust Travel Co." value={agencyName} onChange={(e) => setAgencyName(e.target.value)} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
                   </div>
 
-                  <div className="auth-field">
-                    <label htmlFor="auth-business-phone">Business phone</label>
-                    <div className="auth-input-wrap">
-                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
+                    <label htmlFor="auth-business-phone" className="text-text-primary text-[0.86rem] font-bold">Business phone</label>
+                    <div className="relative flex items-center">
+                      <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                       </svg>
-                      <input id="auth-business-phone" type="tel" placeholder="+1 (555) 123-4567" value={businessPhone} onChange={(e) => setBusinessPhone(e.target.value)} required />
+                      <input id="auth-business-phone" type="tel" placeholder="+1 (555) 123-4567" value={businessPhone} onChange={(e) => setBusinessPhone(e.target.value)} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
                   </div>
 
-                  <div className="auth-field">
-                    <label htmlFor="auth-business-email">Business email <span className="auth-optional-tag">(optional)</span></label>
-                    <div className="auth-input-wrap">
-                      <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
+                    <label htmlFor="auth-business-email" className="text-text-primary text-[0.86rem] font-bold">
+                      Business email <span className="text-text-soft font-normal text-[0.78rem]">(optional)</span>
+                    </label>
+                    <div className="relative flex items-center">
+                      <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                       </svg>
-                      <input id="auth-business-email" type="email" placeholder="info@youragency.com" value={businessEmail} onChange={(e) => setBusinessEmail(e.target.value)} />
+                      <input id="auth-business-email" type="email" placeholder="info@youragency.com" value={businessEmail} onChange={(e) => setBusinessEmail(e.target.value)} className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
                   </div>
 
-                  <div className="auth-field-grid">
-                    <div className="auth-field">
-                      <label htmlFor="auth-country">Country</label>
-                      <div className="auth-input-wrap">
-                        <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
+                      <label htmlFor="auth-country" className="text-text-primary text-[0.86rem] font-bold">Country</label>
+                      <div className="relative flex items-center">
+                        <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                         </svg>
-                        <input id="auth-country" type="text" placeholder="Philippines" value={country} onChange={(e) => setCountry(e.target.value)} required />
+                        <input id="auth-country" type="text" placeholder="Philippines" value={country} onChange={(e) => setCountry(e.target.value)} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                       </div>
                     </div>
 
-                    <div className="auth-field">
-                      <label htmlFor="auth-city">City</label>
-                      <div className="auth-input-wrap">
-                        <svg className="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
+                      <label htmlFor="auth-city" className="text-text-primary text-[0.86rem] font-bold">City</label>
+                      <div className="relative flex items-center">
+                        <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
                         </svg>
-                        <input id="auth-city" type="text" placeholder="Manila" value={city} onChange={(e) => setCity(e.target.value)} required />
+                        <input id="auth-city" type="text" placeholder="Manila" value={city} onChange={(e) => setCity(e.target.value)} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                       </div>
                     </div>
                   </div>
 
-                  {auth.error && <div className="auth-error" role="alert">{auth.error.message}</div>}
+                  {auth.error && <div className="p-3 rounded-sm bg-status-danger/[0.06] border border-status-danger/[0.18] text-status-danger text-[0.86rem] font-semibold leading-relaxed text-center" role="alert">{auth.error.message}</div>}
 
-                  <button type="submit" className="button button-primary auth-submit" disabled={auth.loading}>
+                  <button type="submit" className="w-full mt-2 inline-flex items-center justify-center gap-3 min-h-[54px] px-7 py-4 border border-transparent rounded-pill text-base font-extrabold cursor-pointer bg-accent text-white shadow-[0_16px_32px_rgba(216,180,160,0.26)] hover:-translate-y-px hover:bg-[#dbbfae] transition-all disabled:opacity-55 disabled:cursor-not-allowed disabled:transform-none" disabled={auth.loading}>
                     {auth.loading ? "Setting up your agency…" : "Create my agency"}
                   </button>
 
                   {!isAuthenticated && (
-                    <button type="button" className="auth-back-step" onClick={handleStep2Back}>
+                    <button type="button" className="inline-flex items-center justify-center gap-2 mt-1 bg-none border-none text-text-muted text-[0.88rem] font-bold cursor-pointer transition-colors hover:text-secondary" onClick={handleStep2Back}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M19 12H5M12 19l-7-7 7-7" />
                       </svg>
@@ -511,11 +516,11 @@ function LoginForm() {
 
           {/* Bottom switch prompt */}
           {!isAuthenticated && (
-            <p className="auth-switch-prompt">
-              {mode === "login" ? "Don’t have an account? " : "Already have an account? "}
+            <p className="text-center mt-8 text-text-muted text-[0.92rem]">
+              {mode === "login" ? "Don't have an account? " : "Already have an account? "}
               <button
                 type="button"
-                className="auth-switch-btn"
+                className="bg-none border-none text-secondary font-extrabold text-[0.92rem] cursor-pointer no-underline hover:text-text-primary hover:underline transition-colors"
                 onClick={() => handleModeSwitch(mode === "login" ? "register" : "login")}
               >
                 {mode === "login" ? "Create one" : "Sign in"}
@@ -530,7 +535,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="system-shell">
+    <main className="w-full max-w-[1320px] mx-auto px-5 pt-7 pb-[72px] min-h-screen">
       <div className="system-grain" aria-hidden="true" />
       <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
         <LoginForm />

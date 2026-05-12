@@ -1,287 +1,359 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import ThemeToggle from "../theme/ThemeToggle";
 
-const landingNavItems = [
-  { id: "home", label: "Home" },
-  { id: "plan", label: "Plan" },
-  { id: "how-it-works", label: "How It Works" },
-  { id: "for-agencies", label: "For Agencies" },
-  { id: "for-travelers", label: "For Travelers" },
-  { id: "voyage-agent", label: "Voyage Agent" },
-];
+/* ------------------------------------------------------------------ */
+/*  Inline SVG icon components (no external icon library dependency)   */
+/* ------------------------------------------------------------------ */
 
-const featureHighlights = [
-  {
-    title: "Plan the trip",
-    description: "Turn a rough travel idea into a structured itinerary brief with clear priorities and pace.",
-  },
-  {
-    title: "See the route",
-    description: "Keep planning tied to geography so timing, movement, and daily flow stay realistic.",
-  },
-  {
-    title: "Refine with AI",
-    description: "Use the Voyage agent to revise stops, rebalance days, and react faster to changes.",
-  },
-  {
-    title: "Share the final itinerary",
-    description: "Hand off the plan cleanly to clients, collaborators, or fellow travelers.",
-  },
+function IconSparkle({ className = "w-5 h-5" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3v1m0 16v1m-7.07-2.93l.71-.71M18.36 5.64l.71-.71M3 12h1m16 0h1M5.64 5.64l-.71-.71m13.43 13.43l-.71-.71" />
+      <circle cx="12" cy="12" r="4" />
+    </svg>
+  );
+}
+
+function IconUsers({ className = "w-5 h-5" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function IconZap({ className = "w-5 h-5" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  );
+}
+
+function IconShare({ className = "w-5 h-5" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+    </svg>
+  );
+}
+
+function IconCheckCircle({ className = "w-5 h-5" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
+  );
+}
+
+function IconShield({ className = "w-5 h-5" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  );
+}
+
+function IconArrowRight({ className = "w-4 h-4" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12" />
+      <polyline points="12 5 19 12 12 19" />
+    </svg>
+  );
+}
+
+function IconPlay({ className = "w-4 h-4" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="5 3 19 12 5 21 5 3" />
+    </svg>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Data                                                               */
+/* ------------------------------------------------------------------ */
+
+const navLinks = [
+  { label: "Features", href: "#features" },
+  { label: "How It Works", href: "#how-it-works" },
+  { label: "Pricing", href: "#pricing" },
 ];
 
 const workflowSteps = [
-  {
-    step: "01",
-    title: "Brief the trip",
-    description: "Capture destination, schedule, traveler count, pace, and priorities in one clear planning brief.",
-  },
-  {
-    step: "02",
-    title: "Build the itinerary",
-    description: "Shape daily plans with structured stops instead of juggling notes, tabs, and spreadsheets.",
-  },
-  {
-    step: "03",
-    title: "Review on the map",
-    description: "Keep route awareness visible so travel time and location clustering support better decisions.",
-  },
-  {
-    step: "04",
-    title: "Share and revise",
-    description:
-      "Update plans quickly when clients or travelers ask for changes, then send the latest version with confidence.",
-  },
+  { num: 1, title: "Brief your AI", description: "Describe the trip, traveler preferences, dates, and pace in plain language." },
+  { num: 2, title: "Review the draft", description: "Your AI co-pilot produces a structured day-by-day itinerary in seconds." },
+  { num: 3, title: "Refine together", description: "Swap stops, rebalance days, and adjust pacing through conversation." },
+  { num: 4, title: "Share with client", description: "Export a polished, branded itinerary your clients will love." },
 ];
 
-const audienceCards = [
-  {
-    id: "for-agencies",
-    title: "For agencies and organizers",
-    benefits: [
-      "Reduce manual recalculation across multiple client itineraries.",
-      "Keep planning, revision, and route awareness in one workspace.",
-      "Move faster when clients request destination or schedule changes.",
-    ],
-  },
-  {
-    id: "for-travelers",
-    title: "For individual travelers",
-    benefits: [
-      "Turn scattered trip ideas into a clear day-by-day plan.",
-      "Balance stops, pace, and travel time with less context switching.",
-      "Use Voyage as a travel copilot before the trip ever begins.",
-    ],
-  },
+const agencyBenefits = [
+  { icon: IconUsers, title: "Multi-client management", description: "Handle dozens of active trips across your whole team from one dashboard." },
+  { icon: IconShare, title: "Branded share screens", description: "Client-facing itineraries match your agency's look and feel." },
+  { icon: IconCheckCircle, title: "Team collaboration", description: "Assign trips to agents, leave notes, and co-edit in real time." },
+  { icon: IconShield, title: "Approval workflows", description: "Built-in review stages so nothing ships without sign-off." },
 ];
 
-const heroCarouselItems = [
-  {
-    id: "brief",
-    label: "Trip brief",
-    title: "Turn direction into a clear planning brief",
-    description: "Capture destination, dates, pace, and planning priorities before the itinerary starts to take shape.",
-    colorClass: "preview-card-brief",
-    image: "https://images.unsplash.com/photo-1499529112087-3cb3b73cec95?q=80&w=1000&auto=format&fit=crop",
-  },
-  {
-    id: "itinerary",
-    label: "Itinerary",
-    title: "Shape daily flow with structured stops",
-    description: "Build day-by-day plans that stay readable, editable, and ready for collaboration.",
-    colorClass: "preview-card-itinerary",
-    image: "https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?q=80&w=1000&auto=format&fit=crop",
-  },
-  {
-    id: "map",
-    label: "Google Maps",
-    title: "Keep route logic visible while planning",
-    description: "Review the trip geographically so timing, clustering, and movement stay grounded in the real route.",
-    colorClass: "preview-card-map",
-    image: "https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1000&auto=format&fit=crop",
-  },
-  {
-    id: "agent",
-    label: "Voyage agent",
-    title: "Revise plans faster when priorities change",
-    description: "Use AI support to rebalance days, update stops, and respond quickly to new requests.",
-    colorClass: "preview-card-agent",
-    image: "https://images.unsplash.com/photo-1542204165-65bf26472b9b?q=80&w=1000&auto=format&fit=crop",
-  },
-];
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 
-export default function LandingPage({ onStart }) {
-  const [activeSlide, setActiveSlide] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % heroCarouselItems.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
-
+export default function LandingPage({ onLogin, onContinue }) {
   return (
-    <div className="landing-shell">
-      <header className="landing-header">
-        <a className="landing-brand" href="#home">
-          Voyage
-        </a>
-        <nav className="landing-nav" aria-label="Landing page">
-          {landingNavItems.map((item) => (
-            <a key={item.id} href={`#${item.id}`}>
-              {item.label}
-            </a>
-          ))}
-        </nav>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexShrink: 0 }}>
-          <Link href="/login" className="button button-secondary landing-header-cta" style={{ minHeight: "44px", padding: "10px 22px" }}>
-            Login
-          </Link>
-          <button className="button button-primary landing-header-cta" onClick={onStart} type="button" style={{ minHeight: "44px", padding: "10px 22px" }}>
-            Start Planning
-          </button>
+    <div className="flex flex-col min-h-screen font-sans text-text-primary bg-background overflow-x-hidden">
+
+      {/* ── Sticky Header ─────────────────────────────────────── */}
+      <header className="sticky top-4 z-50 mx-auto w-full max-w-[1220px] px-4">
+        <div className="flex items-center justify-between gap-6 px-7 py-4 bg-surface/80 backdrop-blur-md border border-border/[0.12] rounded-pill shadow-soft">
+          {/* Brand */}
+          <a href="#" className="font-serif text-2xl tracking-tight text-text-primary no-underline shrink-0">
+            Voyage
+          </a>
+
+          {/* Nav */}
+          <nav className="hidden md:flex items-center gap-2" aria-label="Landing navigation">
+            {navLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="px-3 py-2 text-sm font-bold text-text-muted rounded-pill transition-colors duration-150 hover:text-secondary hover:bg-accent/[0.08] no-underline"
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
+
+          {/* Actions */}
+          <div className="flex items-center gap-3 shrink-0">
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={onLogin}
+              className="hidden sm:inline-flex items-center px-5 py-2.5 text-sm font-extrabold text-text-primary border border-border/[0.18] rounded-pill bg-transparent transition-all duration-150 hover:bg-accent/[0.08] hover:border-accent/30 cursor-pointer"
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              onClick={onContinue}
+              className="inline-flex items-center px-5 py-2.5 text-sm font-extrabold text-white bg-secondary rounded-pill border border-transparent transition-opacity duration-150 hover:opacity-90 cursor-pointer"
+            >
+              Get Early Access
+            </button>
+          </div>
         </div>
       </header>
 
-      <section className="landing-hero" id="home">
-        <div className="landing-hero-copy">
-          <span className="frame-label">Unified travel planning</span>
-          <h1>Plan smarter trips with AI, itinerary logic, and map-aware routing</h1>
-          <p className="lede">
-            Voyage brings together trip briefs, itinerary building, Google Maps-aware planning, and fast revisions in
-            one workspace for travelers, agencies, and organizers.
-          </p>
-          <div className="button-stack">
-            <button className="button button-primary" onClick={onStart} type="button">
-              Start planning
-            </button>
-            <a className="button button-secondary" href="#how-it-works">
-              See how Voyage works
-            </a>
-          </div>
+      {/* ── Hero Section ──────────────────────────────────────── */}
+      <section className="w-full max-w-[1220px] mx-auto px-4 pt-24 pb-20 md:pt-36 md:pb-28 text-center flex flex-col items-center gap-6">
+        {/* Overline */}
+        <span className="text-text-soft uppercase tracking-[0.18em] text-xs font-extrabold">
+          AI-Powered Travel Platform
+        </span>
+
+        {/* Headline */}
+        <h1 className="font-serif text-3xl md:text-5xl lg:text-[3.5rem] leading-[1.08] tracking-tight text-text-primary max-w-[18ch] mx-auto">
+          Itinerary Intelligence for Travel Agencies
+        </h1>
+
+        {/* Subheadline */}
+        <p className="text-text-muted text-lg max-w-[52ch] mx-auto leading-relaxed">
+          Build, refine, and share stunning itineraries with your AI co-pilot.
+        </p>
+
+        {/* CTAs */}
+        <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
+          <button
+            type="button"
+            onClick={onContinue}
+            className="inline-flex items-center gap-2 bg-secondary text-white rounded-pill px-6 py-3 text-sm font-extrabold border border-transparent transition-opacity duration-150 hover:opacity-90 cursor-pointer"
+          >
+            Get Early Access
+            <IconArrowRight className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 border border-border/20 text-text-primary rounded-pill px-6 py-3 text-sm font-extrabold bg-transparent transition-colors duration-150 hover:bg-accent/[0.08] cursor-pointer"
+          >
+            <IconPlay className="w-3.5 h-3.5" />
+            Watch Demo
+          </button>
         </div>
 
-        <div className="landing-hero-panel" aria-label="Voyage product preview">
-          <div className="carousel-view">
-            {heroCarouselItems.map((item, index) => (
-              <div
-                key={item.id}
-                style={{
-                  display: index === activeSlide ? "block" : "none",
-                  animation: index === activeSlide ? "fade-in 0.4s ease-out" : "none",
-                }}
-              >
-                <article className={`preview-card ${item.colorClass}`} style={{ padding: 0 }}>
-                  <div className="preview-card-image">
-                    <img src={item.image} alt={item.label} />
-                  </div>
-                  <div className="preview-card-content">
-                    <span className="frame-label">{item.label}</span>
-                    <h2>{item.title}</h2>
-                    <p>{item.description}</p>
-                  </div>
-                </article>
+      </section>
+
+      {/* ── Bento Grid ────────────────────────────────────────── */}
+      <section id="features" className="w-full max-w-[1220px] mx-auto px-4 pb-24">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+          {/* Large Left — AI Agent Command Center */}
+          <div className="md:col-span-2 md:row-span-2 group overflow-hidden bg-surface rounded-lg shadow-soft border border-border/[0.08] flex flex-col hover:-translate-y-1 transition-transform duration-200">
+            {/* Visual preview area — grows to fill available space */}
+            <div className="flex-1 bg-gradient-to-br from-primary/[0.06] via-secondary/20 to-accent/30 p-8 flex flex-col gap-3 min-h-[200px]">
+              <div className="w-3/4 h-10 rounded-md bg-surface/80 border border-border/[0.06]" />
+              <div className="w-1/2 h-10 rounded-md bg-secondary/[0.14] border border-secondary/[0.08] self-end" />
+              <div className="w-2/3 h-10 rounded-md bg-surface/80 border border-border/[0.06]" />
+            </div>
+            {/* Description — in normal flow at the bottom */}
+            <div className="p-6 md:p-8 bg-surface border-t border-border/[0.06]">
+              <span className="text-secondary uppercase tracking-[0.18em] text-xs font-extrabold">
+                Flagship Feature
+              </span>
+              <h3 className="font-serif text-2xl md:text-3xl text-text-primary mt-2 mb-2">
+                AI Agent Command Center
+              </h3>
+              <p className="text-text-muted text-sm leading-relaxed">
+                Chat with your AI co-pilot, watch the itinerary build in real time, and see every stop plotted on the map — all in one split-screen workspace.
+              </p>
+            </div>
+          </div>
+
+          {/* Top Right — Client-Ready in Seconds */}
+          <div className="group relative overflow-hidden bg-surface rounded-lg shadow-soft border border-border/[0.08] p-6 flex flex-col justify-end min-h-[220px] hover:-translate-y-1 transition-transform duration-200">
+            <div className="absolute inset-0 bg-gradient-to-br from-accent/[0.15] to-secondary/[0.06]" />
+            <div className="relative">
+              <IconZap className="w-8 h-8 text-secondary mb-3" />
+              <h3 className="font-serif text-xl text-text-primary mb-1.5">
+                Client-Ready in Seconds
+              </h3>
+              <p className="text-text-muted text-sm leading-relaxed">
+                Generate polished, branded PDF itineraries that look hand-crafted in a fraction of the time.
+              </p>
+            </div>
+          </div>
+
+          {/* Bottom Right — Centralized Client Directory */}
+          <div className="group relative overflow-hidden bg-surface rounded-lg shadow-soft border border-border/[0.08] p-6 flex flex-col justify-end min-h-[220px] hover:-translate-y-1 transition-transform duration-200">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.04] to-accent/[0.08]" />
+            <div className="relative">
+              <IconUsers className="w-8 h-8 text-secondary mb-3" />
+              <h3 className="font-serif text-xl text-text-primary mb-1.5">
+                Centralized Client Directory
+              </h3>
+              <p className="text-text-muted text-sm leading-relaxed">
+                Every client, trip history, and preference in one searchable directory for your entire team.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ── How It Works ──────────────────────────────────────── */}
+      <section id="how-it-works" className="w-full max-w-[1220px] mx-auto px-4 pb-24">
+        <div className="text-center mb-14">
+          <span className="text-text-soft uppercase tracking-[0.18em] text-xs font-extrabold">
+            Workflow
+          </span>
+          <h2 className="font-serif text-3xl md:text-4xl text-text-primary mt-3 mb-3">
+            How It Works
+          </h2>
+          <p className="text-text-muted text-base max-w-[52ch] mx-auto leading-relaxed">
+            Four simple steps from a rough travel idea to a polished, client-ready itinerary.
+          </p>
+        </div>
+
+        {/* Steps — horizontal on desktop, vertical on mobile */}
+        <div className="relative flex flex-col md:flex-row items-start md:items-stretch gap-10 md:gap-0">
+          {/* Connecting dashed line (desktop only) */}
+          <div className="hidden md:block absolute top-4 left-[calc(12.5%+16px)] right-[calc(12.5%+16px)] border-t-2 border-dashed border-border/20" />
+
+          {workflowSteps.map((step, i) => (
+            <div key={step.num} className="flex-1 flex flex-col items-center text-center relative px-4">
+              {/* Number badge */}
+              <div className="relative z-10 w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center text-sm font-bold mb-4 shrink-0">
+                {step.num}
               </div>
-            ))}
-          </div>
+              <h3 className="font-serif text-lg text-text-primary mb-2">{step.title}</h3>
+              <p className="text-text-muted text-sm leading-relaxed max-w-[28ch]">{step.description}</p>
 
-          <div className="carousel-indicators">
-            {heroCarouselItems.map((item, index) => (
-              <button
-                key={item.id}
-                className={`carousel-dot ${index === activeSlide ? "active" : ""}`}
-                onClick={() => setActiveSlide(index)}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="landing-section" id="plan">
-        <div className="section-heading">
-          <span className="frame-label">Product overview</span>
-          <h2>What is Voyage?</h2>
-          <p className="lede">
-            Voyage is a planning workspace that connects trip briefs, itinerary structure, route awareness, and AI
-            revision tools so travel planning feels coordinated from the first draft to the final share.
-          </p>
-        </div>
-
-        <div className="feature-grid">
-          {featureHighlights.map((feature) => (
-            <article key={feature.title} className="marketing-card">
-              <span className="frame-label">{feature.title}</span>
-              <p>{feature.description}</p>
-            </article>
+              {/* Vertical connector on mobile (between items) */}
+              {i < workflowSteps.length - 1 && (
+                <div className="md:hidden w-px h-8 border-l-2 border-dashed border-border/20 mt-4" />
+              )}
+            </div>
           ))}
         </div>
       </section>
 
-      <section className="landing-section" id="how-it-works">
-        <div className="section-heading">
-          <span className="frame-label">Workflow</span>
-          <h2>How Voyage works</h2>
-          <p className="lede">
-            Move from a rough request to a map-aware itinerary in a four-step flow built for iteration instead of
-            scattered planning tools.
-          </p>
-        </div>
+      {/* ── Agency Value Props ────────────────────────────────── */}
+      <section id="pricing" className="w-full max-w-[1220px] mx-auto px-4 pb-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
 
-        <div className="workflow-grid">
-          {workflowSteps.map((step) => (
-            <article key={step.step} className="workflow-card">
-              <span className="frame-label">{step.step}</span>
-              <h3>{step.title}</h3>
-              <p>{step.description}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+          {/* Left — copy + benefit rows */}
+          <div>
+            <span className="text-text-soft uppercase tracking-[0.18em] text-xs font-extrabold">
+              For Professionals
+            </span>
+            <h2 className="font-serif text-3xl md:text-4xl text-text-primary mt-3 mb-8">
+              Built for Agencies
+            </h2>
 
-      <section className="landing-section">
-        <div className="section-heading">
-          <span className="frame-label">Audience</span>
-          <h2>Built for every kind of planner</h2>
-          <p className="lede">
-            Whether you are coordinating client travel or mapping your own trip, Voyage keeps the planning logic in one
-            place.
-          </p>
-        </div>
-
-        <div className="audience-grid">
-          {audienceCards.map((audience) => (
-            <article key={audience.id} className="audience-card" id={audience.id}>
-              <h3>{audience.title}</h3>
-              <ul>
-                {audience.benefits.map((benefit) => (
-                  <li key={benefit}>{benefit}</li>
-                ))}
-              </ul>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="landing-section" id="voyage-agent">
-        <div className="frame-panel">
-          <span className="frame-label">Voyage agent</span>
-          <h2>Keep every revision connected to the plan</h2>
-          <p className="lede">
-            Voyage helps you revise with context, keep route awareness visible, and move from draft planning to a
-            confident itinerary without restarting the workflow.
-          </p>
-          <div className="button-stack">
-            <button className="button button-primary" onClick={onStart} type="button">
-              Open the planner
-            </button>
-            <a className="button button-secondary" href="#plan">
-              Review the product overview
-            </a>
+            <div className="flex flex-col gap-7">
+              {agencyBenefits.map((b) => {
+                const Icon = b.icon;
+                return (
+                  <div key={b.title} className="flex gap-4 items-start">
+                    <div className="shrink-0 w-10 h-10 rounded-sm bg-secondary/[0.1] flex items-center justify-center text-secondary">
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-sans text-sm font-extrabold text-text-primary mb-1">{b.title}</h4>
+                      <p className="text-text-muted text-sm leading-relaxed">{b.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
+
+          {/* Right — placeholder illustration with glassmorphic treatment */}
+          <div className="relative rounded-lg overflow-hidden min-h-[360px] md:min-h-[440px]">
+            {/* Background gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-accent/30 via-secondary/[0.12] to-primary/[0.06]" />
+            {/* Glassmorphic card overlay */}
+            <div className="absolute inset-6 md:inset-10 bg-surface/60 backdrop-blur-md border border-border/[0.12] rounded-md shadow-soft flex flex-col items-center justify-center gap-4 p-8 text-center">
+              <IconSparkle className="w-10 h-10 text-secondary" />
+              <p className="font-serif text-xl text-text-primary">Agency Dashboard Preview</p>
+              <p className="text-text-muted text-sm max-w-[32ch]">
+                See your entire client portfolio, upcoming departures, and agent workload at a glance.
+              </p>
+            </div>
+          </div>
+
         </div>
       </section>
+
+      {/* ── CTA Footer ────────────────────────────────────────── */}
+      <section className="w-full bg-sidebar py-20 md:py-28 mt-auto">
+        <div className="max-w-[1220px] mx-auto px-4 text-center flex flex-col items-center gap-6">
+          <h2 className="font-serif text-3xl md:text-4xl text-white">
+            Ready to transform your agency?
+          </h2>
+          <p className="text-white/60 text-base max-w-[44ch] mx-auto leading-relaxed">
+            Get early access and be among the first agencies to plan smarter with AI-powered itinerary tools.
+          </p>
+          <button
+            type="button"
+            onClick={onLogin}
+            className="inline-flex items-center gap-2 bg-secondary text-white rounded-pill px-8 py-3.5 text-sm font-extrabold border border-transparent transition-opacity duration-150 hover:opacity-90 cursor-pointer"
+          >
+            Request Early Access
+            <IconArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </section>
+
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import "./ItineraryDraftPanel.css";
 import dynamic from "next/dynamic";
 import { getItineraryPlaceEntityId } from "../../../lib/trip-dashboard/placeEntities.js";
 
@@ -58,7 +57,7 @@ export default function ItineraryDraftPanel({
 
   const [activeStopIndex, setActiveStopIndex] = useState(mapItems.length > 0 ? 0 : -1);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [position, setPosition] = useState({ x: 8, y: 56 });
+  const [position, setPosition] = useState({ x: 60, y: 60 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
   const containerRef = useRef(null);
@@ -91,93 +90,122 @@ export default function ItineraryDraftPanel({
   }, [isDragging]);
 
   return (
-    <div className="itinerary-draft-panel" ref={containerRef}>
-      <div className="map-background">
-        <ItineraryLiveMap
-          items={mapItems}
-          liveMarkers={mapMarkers}
-          routeEstimates={routeEstimates}
-          activeIndex={activeStopIndex}
-          onHoverItem={setActiveStopIndex}
-          selectedPlaceId={selectedPlaceId}
-          selectedPlace={selectedPlace}
-          onSelectPlace={onPlaceSelect}
-        />
-      </div>
-
-      {/* <header className="panel-header">
-        <div className="header-actions">
-          <span className="draft-version-tag"><span className="dot" />{draftVersion}</span>
-          <button className="btn-action primary" onClick={onContinue} type="button">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
-            Run Agency Review
-          </button>
-          <button className="btn-action secondary" onClick={() => dispatchAgentMessage("Regenerate this itinerary draft.")} type="button">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
-            Regenerate
-          </button>
-        </div>
-        {(mapMarkers.length > 0 || latestEstimate) && (
-          <div className="live-telemetry">
-            {mapMarkers.length > 0 && <span className="telemetry-chip">{mapMarkers.length} live markers</span>}
-            {latestEstimate && <span className="telemetry-chip">Route {formatDistance(latestEstimate.distanceMeters)} | {formatDuration(latestEstimate.durationSeconds)}</span>}
-          </div>
-        )}
-      </header> */}
-
-      <div className={`hover-container ${isMinimized ? "minimized" : ""}`} style={{ transform: `translate(${position.x}px, ${position.y}px)`, right: "auto", bottom: "auto" }}>
-        <article className="itinerary-floating-card">
-          <header className="card-head" onMouseDown={(e) => { if (e.target.closest(".drag-handle") || e.target.closest(".card-head")) { setIsDragging(true); dragStartPos.current = { x: e.clientX - position.x, y: e.clientY - position.y }; } }}>
-            <div className="drag-indicator drag-handle"><span /><span /><span /></div>
-            <div className="head-main">
-              <div className="title-row">
-                <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg>
-                <h2>{panelTitle}</h2>
-              </div>
-              {panelSummary && <p className="subtitle">{panelSummary}</p>}
+    <div className="absolute inset-0 pointer-events-none z-20" ref={containerRef}>
+      {/* floating draggable card */}
+      <div
+        className={`absolute pointer-events-auto flex items-start will-change-transform transition-all duration-300 ease-out ${isMinimized ? "w-[300px]" : "w-[440px]"}`}
+        style={{ transform: `translate(${position.x}px, ${position.y}px)`, right: "auto", bottom: "auto" }}
+      >
+        <article className="w-full bg-[rgba(34,56,67,0.85)] backdrop-blur-[24px] border border-white/10 rounded-[32px] text-white flex flex-col max-h-[calc(100vh-220px)] shadow-[0_32px_64px_rgba(0,0,0,0.35)] overflow-hidden">
+          {/* card header / drag handle */}
+          <header
+            className="px-6 py-4 cursor-grab select-none flex items-center gap-4 border-b border-white/[0.08] active:cursor-grabbing bg-white/[0.02]"
+            onMouseDown={(e) => { 
+              if (e.target.closest(".drag-handle") || e.target.closest("header") && !e.target.closest("button")) { 
+                setIsDragging(true); 
+                dragStartPos.current = { x: e.clientX - position.x, y: e.clientY - position.y }; 
+              } 
+            }}
+          >
+            {/* drag indicator */}
+            <div className="drag-handle flex flex-col gap-[3px] opacity-40">
+              <span className="w-3.5 h-0.5 bg-white rounded-[2px]" />
+              <span className="w-3.5 h-0.5 bg-white rounded-[2px]" />
+              <span className="w-3.5 h-0.5 bg-white rounded-[2px]" />
             </div>
-            <button className="minimize-btn" onClick={() => setIsMinimized(!isMinimized)}>
-              {isMinimized ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></svg> : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12" /></svg>}
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-0.5">
+                <svg className="text-secondary drop-shadow-[0_0_12px_rgba(215,122,97,0.6)]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg>
+                <h2 className="m-0 text-[19px] font-normal tracking-tight font-serif text-white">{panelTitle}</h2>
+              </div>
+              {panelSummary && <p className="m-0 text-white/50 text-[12px] font-medium truncate max-w-[240px]">{panelSummary}</p>}
+            </div>
+            <button
+              className="bg-white/[0.08] border border-white/10 rounded-xl w-9 h-9 flex items-center justify-center text-white/70 cursor-pointer transition-all duration-300 hover:bg-secondary hover:text-white hover:border-secondary hover:scale-105 active:scale-95"
+              onClick={() => setIsMinimized(!isMinimized)}
+              title={isMinimized ? "Expand" : "Minimize"}
+            >
+              {isMinimized
+                ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></svg>
+                : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              }
             </button>
           </header>
 
           {!isMinimized && (
             <>
-              <div className="timeline-container">
+              {/* timeline */}
+              <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar scroll-smooth">
                 {safeDays.length > 0 ? (
-                  <div className="timeline-list">
+                  <div className="flex flex-col">
                     {safeDays.map((day, dIdx) => (
-                      <div key={day.id || day.dayNumber || dIdx} className="day-group">
-                        <div className="day-header"><span className="day-badge">Day {day.dayNumber}</span><span className="day-title">{day.title}</span></div>
+                      <div key={day.id || day.dayNumber || dIdx} className="mb-10 last:mb-2">
+                        <div className="flex items-center gap-4 mb-6 sticky top-0 bg-[rgba(34,56,67,0.01)] backdrop-blur-[2px] py-1 z-[5]">
+                          <span className="bg-secondary/20 text-secondary border border-secondary/30 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase">Day {day.dayNumber}</span>
+                          <span className="font-serif text-[20px] text-white/90">{day.title}</span>
+                        </div>
                         {(day.items || []).length > 0 ? (day.items.map((item, iIdx) => {
                           const gIdx = mapItems.findIndex(m => m.__dayNumber === day.dayNumber && m.__itemIndex === iIdx);
+                          const isActive = activeStopIndex === gIdx;
                           return (
                             <div
                               key={`${day.dayNumber}-${iIdx}`}
-                              className={`timeline-item ${activeStopIndex === gIdx ? "active" : ""}`}
+                              className={`flex gap-6 group cursor-pointer relative py-1`}
                               onMouseEnter={() => setActiveStopIndex(gIdx)}
                               onClick={() => onPlaceSelect?.(mapItems[gIdx]?.__placeEntityId)}
                             >
-                              <div className="timeline-rail"><span className={`timeline-dot ${activeStopIndex === gIdx ? "active" : ""}`} /><div className="timeline-line" /></div>
-                              <div className="timeline-content">
-                                <div className="item-time"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>{getItemTimeLabel(item)}</div>
-                                <h3>{item.title || "Untitled"}</h3>
-                                {item.description && <p>{item.description}</p>}
+                              {/* timeline rail */}
+                              <div className="flex flex-col items-center w-3.5 pt-2.5">
+                                <span className={`w-3 h-3 rounded-full flex-shrink-0 transition-all duration-500 ${isActive ? "bg-secondary shadow-[0_0_20px_rgba(215,122,97,0.8)] scale-[1.3]" : "bg-white/15 group-hover:bg-white/30"}`} />
+                                <div className="w-[1.5px] flex-1 bg-white/[0.08] my-2 rounded-full" />
+                              </div>
+                              {/* content */}
+                              <div className="flex-1 pb-8 group-last:pb-2">
+                                <div className="flex items-center gap-2 text-[11px] font-bold text-white/40 mb-2 tracking-wide uppercase">
+                                  <svg className="opacity-60" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                                  {getItemTimeLabel(item)}
+                                </div>
+                                <h3 className={`m-0 mb-2 transition-colors duration-300 font-bold text-[17px] leading-snug ${isActive ? "text-secondary" : "text-white group-hover:text-white"}`}>{item.title || "Untitled stop"}</h3>
+                                {item.description && <p className="m-0 text-white/60 text-[14px] leading-relaxed font-medium line-clamp-2 group-hover:line-clamp-none transition-all duration-300">{item.description}</p>}
                               </div>
                             </div>
                           );
-                        })) : <div className="empty-day-placeholder"><div className="timeline-rail"><span className="timeline-dot empty" /><div className="timeline-line dashed" /></div><p>No activities planned.</p></div>}
+                        })) : (
+                          <div className="flex gap-6 text-white/20 italic text-[14px] py-2">
+                            <div className="flex flex-col items-center w-3.5 pt-2">
+                              <span className="w-2.5 h-2.5 rounded-full bg-white/10" />
+                              <div className="w-[1px] flex-1 my-1 border-l border-dashed border-white/10" />
+                            </div>
+                            <p>Exploration pending.</p>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
-                ) : <div className="empty-itinerary"><p>No active itinerary generated.</p></div>}
+                ) : (
+                  <div className="py-16 text-center">
+                    <div className="w-16 h-16 bg-white/[0.05] rounded-3xl flex items-center justify-center mx-auto mb-6">
+                      <svg className="text-white/20" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg>
+                    </div>
+                    <p className="text-white/40 font-medium text-lg">No active itinerary generated yet.</p>
+                    <p className="text-white/20 text-sm mt-2">Brief the agent to start planning.</p>
+                  </div>
+                )}
               </div>
-              <footer className="card-footer"><button type="button" className="send-client-btn" onClick={onContinue}>{primaryActionLabel}</button></footer>
+              {/* footer */}
+              <footer className="px-8 pb-8 pt-2">
+                <button
+                  type="button"
+                  className="w-full py-4 bg-secondary text-white border-none rounded-[20px] text-[15px] font-black cursor-pointer transition-all duration-300 shadow-[0_20px_40px_rgba(215,122,97,0.3)] hover:-translate-y-1 hover:shadow-[0_24px_48px_rgba(215,122,97,0.4)] active:scale-[0.98]"
+                  onClick={onContinue}
+                >
+                  {primaryActionLabel}
+                </button>
+              </footer>
             </>
           )}
         </article>
       </div>
-
     </div>
   );
 }

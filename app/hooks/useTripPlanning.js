@@ -281,7 +281,7 @@ export function useTripPlanning(agencyId) {
       let currentContext = activeContextRef.current;
       let ensuredState = null;
 
-      if (!currentContext) {
+      if (!currentContext || (currentContext.type === "draft" && String(currentContext.id).startsWith("pending-"))) {
         ensuredState = await createDraftThread();
         currentContext = createPlanningContext("draft", ensuredState?.threadId ?? null);
         setActiveContext(currentContext);
