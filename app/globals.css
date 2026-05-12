@@ -254,9 +254,9 @@ body::before {
    FORM INPUTS
    ═══════════════════════════════════════════════════ */
 
-input[type="email"],
+:where(input[type="email"],
 input[type="text"],
-input[type="password"] {
+input[type="password"]) {
   width: 100%;
   padding: 15px 18px;
   border: 1px solid rgb(var(--color-border-rgb) / 0.12);

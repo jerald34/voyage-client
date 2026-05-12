@@ -148,7 +148,7 @@ export default function LandingPage({ onLogin, onContinue }) {
               onClick={onContinue}
               className="inline-flex items-center px-5 py-2.5 text-sm font-extrabold text-white bg-secondary rounded-pill border border-transparent transition-opacity duration-150 hover:opacity-90 cursor-pointer"
             >
-              Start Free Trial
+              Get Early Access
             </button>
           </div>
         </div>
@@ -178,7 +178,7 @@ export default function LandingPage({ onLogin, onContinue }) {
             onClick={onContinue}
             className="inline-flex items-center gap-2 bg-secondary text-white rounded-pill px-6 py-3 text-sm font-extrabold border border-transparent transition-opacity duration-150 hover:opacity-90 cursor-pointer"
           >
-            Start Free Trial
+            Get Early Access
             <IconArrowRight className="w-4 h-4" />
           </button>
           <button
@@ -190,23 +190,6 @@ export default function LandingPage({ onLogin, onContinue }) {
           </button>
         </div>
 
-        {/* Social Proof */}
-        <div className="flex flex-col items-center gap-3 mt-6">
-          <p className="text-text-soft text-sm font-bold">
-            Trusted by 2,400+ travel agencies
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            <span className="px-3 py-1.5 text-xs font-bold text-text-muted bg-surface border border-border/[0.1] rounded-pill">
-              4.9 avg rating
-            </span>
-            <span className="px-3 py-1.5 text-xs font-bold text-text-muted bg-surface border border-border/[0.1] rounded-pill">
-              120k+ itineraries built
-            </span>
-            <span className="px-3 py-1.5 text-xs font-bold text-text-muted bg-surface border border-border/[0.1] rounded-pill">
-              32 countries
-            </span>
-          </div>
-        </div>
       </section>
 
       {/* ── Bento Grid ────────────────────────────────────────── */}
@@ -357,17 +340,17 @@ export default function LandingPage({ onLogin, onContinue }) {
           <h2 className="font-serif text-3xl md:text-4xl text-white">
             Ready to transform your agency?
           </h2>
+          <p className="text-white/60 text-base max-w-[44ch] mx-auto leading-relaxed">
+            Get early access and be among the first agencies to plan smarter with AI-powered itinerary tools.
+          </p>
           <button
             type="button"
-            onClick={onContinue}
+            onClick={onLogin}
             className="inline-flex items-center gap-2 bg-secondary text-white rounded-pill px-8 py-3.5 text-sm font-extrabold border border-transparent transition-opacity duration-150 hover:opacity-90 cursor-pointer"
           >
-            Start Free Trial
+            Request Early Access
             <IconArrowRight className="w-4 h-4" />
           </button>
-          <p className="text-white/50 text-sm">
-            No credit card required. 14-day free trial.
-          </p>
         </div>
       </section>
 
