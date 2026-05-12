@@ -600,6 +600,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                     assistantMessage={isVisible ? assistantMessage : ""}
                     toolCalls={isVisible ? toolCalls : []}
                     activeToolLabel={isVisible ? activeToolLabel : null}
+                    streamingItinerary={isVisible ? streamingItinerary : null}
                     dispatchAgentMessage={(prompt) => dispatchMessage(prompt, startStream)}
                     composerInput={composerInput}
                     setComposerInput={setComposerInput}
