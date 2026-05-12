@@ -753,7 +753,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
           <div className="relative flex items-center">
             <svg
               width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-              className="absolute left-3.5 text-text-soft pointer-events-none z-[1]"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-text-soft pointer-events-none z-[1]"
             >
               <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
             </svg>

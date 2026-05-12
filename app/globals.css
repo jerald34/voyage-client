@@ -248,39 +248,38 @@ body::before {
   a {
     color: inherit;
   }
-}
+  /* ═══════════════════════════════════════════════════
+     FORM INPUTS
+     ═══════════════════════════════════════════════════ */
 
-/* ═══════════════════════════════════════════════════
-   FORM INPUTS
-   ═══════════════════════════════════════════════════ */
+  :where(input[type="email"],
+  input[type="text"],
+  input[type="password"]) {
+    width: 100%;
+    padding: 15px 18px;
+    border: 1px solid rgb(var(--color-border-rgb) / 0.12);
+    border-radius: 18px;
+    background: rgb(var(--color-surface-rgb) / 0.88);
+    color: rgb(var(--color-text-rgb));
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease;
+  }
 
-:where(input[type="email"],
-input[type="text"],
-input[type="password"]) {
-  width: 100%;
-  padding: 15px 18px;
-  border: 1px solid rgb(var(--color-border-rgb) / 0.12);
-  border-radius: 18px;
-  background: rgb(var(--color-surface-rgb) / 0.88);
-  color: rgb(var(--color-text-rgb));
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
-  transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease;
-}
+  input[type="email"]::placeholder,
+  input[type="text"]::placeholder,
+  input[type="password"]::placeholder {
+    color: rgb(var(--color-text-soft-rgb));
+  }
 
-input[type="email"]::placeholder,
-input[type="text"]::placeholder,
-input[type="password"]::placeholder {
-  color: rgb(var(--color-text-soft-rgb));
-}
-
-input[type="email"]:focus,
-input[type="text"]:focus,
-input[type="password"]:focus {
-  outline: none;
-  border-color: rgb(var(--color-secondary-rgb) / 0.6);
-  box-shadow: 0 0 0 4px rgb(var(--color-secondary-rgb) / 0.12);
+  input[type="email"]:focus,
+  input[type="text"]:focus,
+  input[type="password"]:focus {
+    outline: none;
+    border-color: rgb(var(--color-secondary-rgb) / 0.6);
+    box-shadow: 0 0 0 4px rgb(var(--color-secondary-rgb) / 0.12);
+  }
 }
 
 /* ═══════════════════════════════════════════════════
