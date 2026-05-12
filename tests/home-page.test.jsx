@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import HomePage from "../app/components/trip-dashboard/HomePage.jsx";
+import HomePage, { getAgencyMapFallbackFromUser } from "../app/components/trip-dashboard/HomePage.jsx";
 import { useTripDashboard } from "../app/hooks/useTripDashboard.js";
 
 const mocks = vi.hoisted(() => ({
@@ -310,6 +310,27 @@ describe("Agency portfolio HomePage", () => {
 
   beforeEach(() => {
     resetApiMocks();
+  });
+
+  it("derives the map fallback from the signed-in agency registration location", () => {
+    expect(
+      getAgencyMapFallbackFromUser({
+        memberships: [
+          {
+            agencyId: "agency-1",
+            agency: {
+              name: "Voyage Baguio",
+              city: "Baguio",
+              country: "Philippines",
+            },
+          },
+        ],
+      }),
+    ).toEqual({
+      name: "Voyage Baguio",
+      city: "Baguio",
+      country: "Philippines",
+    });
   });
 
   it("renders the Agent-centered agency portfolio dashboard", () => {
