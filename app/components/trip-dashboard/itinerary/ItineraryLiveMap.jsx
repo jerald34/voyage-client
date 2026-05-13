@@ -17,6 +17,26 @@ const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "a1950eb4eae71842fa
 
 const EMPTY_MAP_CENTER = { lat: 0, lng: 0 };
 
+export function normalizeAgencyFallbackLocation(agencyLocation) {
+  if (!agencyLocation) return null;
+
+  const city = String(agencyLocation.city ?? "").trim();
+  const country = String(agencyLocation.country ?? "").trim();
+  const query = [city, country].filter(Boolean).join(", ");
+  if (!query) return null;
+
+  const label = String(agencyLocation.name ?? "").trim() || query;
+  const rawLat = Number(agencyLocation.lat ?? agencyLocation.latitude);
+  const rawLng = Number(agencyLocation.lng ?? agencyLocation.longitude);
+
+  return {
+    id: "agency-location",
+    label,
+    query,
+    ...(Number.isFinite(rawLat) && Number.isFinite(rawLng) ? { lat: rawLat, lng: rawLng } : {}),
+  };
+}
+
 function mapItemToPoint(item, index) {
   const rawLat = Number(item?.lat ?? item?.latitude ?? item?.placeSnapshot?.latitude);
   const rawLng = Number(item?.lng ?? item?.longitude ?? item?.placeSnapshot?.longitude);
@@ -91,7 +111,7 @@ function decodeEncodedPolyline(polyline) {
   return coordinates;
 }
 
-function normalizeRoutePolyline(polyline) {
+export function normalizeRoutePolyline(polyline) {
   if (!polyline) return [];
 
   if (typeof polyline === "string") {
@@ -136,6 +156,54 @@ function normalizeRoutePolyline(polyline) {
       return null;
     })
     .filter(Boolean);
+}
+
+export function buildRouteSegmentsFromItems(items = []) {
+  if (!Array.isArray(items)) return [];
+
+  return items
+    .map((item, index) => {
+      const routeFromPrevious = item?.routeFromPrevious;
+      const polyline = normalizeRoutePolyline(
+        routeFromPrevious?.polyline ?? routeFromPrevious?.encodedPolyline ?? routeFromPrevious?.path ?? routeFromPrevious,
+      );
+
+      if (polyline.length <= 1) {
+        return null;
+      }
+
+      return {
+        id: `route-${item?.id || item?.__placeEntityId || index}`,
+        points: polyline,
+      };
+    })
+    .filter(Boolean);
+}
+
+export function shouldFitViewportBounds(points = [], isAgencyFallback = false) {
+  if (!Array.isArray(points) || points.length === 0) return false;
+  return !isAgencyFallback;
+}
+
+export function shouldRequestClientRoute({
+  pointCount = 0,
+  routeSegmentCount = 0,
+  latestRoutePointCount = 0,
+} = {}) {
+  return pointCount > 1 && routeSegmentCount === 0 && latestRoutePointCount <= 1;
+}
+
+export function shouldShowPlannedPathFallback({
+  pointCount = 0,
+  routeSegmentCount = 0,
+  latestRoutePointCount = 0,
+  clientRouteStatus = "idle",
+} = {}) {
+  if (shouldRequestClientRoute({ pointCount, routeSegmentCount, latestRoutePointCount })) {
+    return false;
+  }
+
+  return pointCount > 1 && routeSegmentCount === 0 && latestRoutePointCount <= 1;
 }
 
 /**
@@ -245,6 +313,150 @@ function FocusSelectedPlace({ selectedPlace, sidebarWidth }) {
   return null;
 }
 
+function pointToLatLngLiteral(point) {
+  return { lat: point.lat, lng: point.lng };
+}
+
+function latLngToPoint(latLng) {
+  if (!latLng) return null;
+
+  const lat = typeof latLng.lat === "function" ? latLng.lat() : Number(latLng.lat);
+  const lng = typeof latLng.lng === "function" ? latLng.lng() : Number(latLng.lng);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  return { lat, lng };
+}
+
+function ResolveClientRoute({ points, enabled, onRoute }) {
+  const routes = useMapsLibrary("routes");
+
+  useEffect(() => {
+    if (!enabled || !Array.isArray(points) || points.length <= 1) {
+      onRoute([], "idle");
+      return;
+    }
+
+    const DirectionsService = routes?.DirectionsService ?? globalThis.google?.maps?.DirectionsService;
+    const TravelMode = routes?.TravelMode ?? globalThis.google?.maps?.TravelMode;
+    const DirectionsStatus = routes?.DirectionsStatus ?? globalThis.google?.maps?.DirectionsStatus;
+
+    if (!DirectionsService || !TravelMode) {
+      onRoute([], routes ? "unavailable" : "loading");
+      return;
+    }
+
+    let cancelled = false;
+    onRoute([], "loading");
+
+    const origin = pointToLatLngLiteral(points[0]);
+    const destination = pointToLatLngLiteral(points[points.length - 1]);
+    const waypointPoints = points.slice(1, -1).slice(0, 23);
+    const waypoints = waypointPoints.map((point) => ({
+      location: pointToLatLngLiteral(point),
+      stopover: true,
+    }));
+
+    const service = new DirectionsService();
+    service.route(
+      {
+        origin,
+        destination,
+        waypoints,
+        optimizeWaypoints: false,
+        travelMode: TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (cancelled) return;
+
+        const okStatus = DirectionsStatus?.OK ?? "OK";
+        const overviewPath = result?.routes?.[0]?.overview_path;
+        if (status !== okStatus || !Array.isArray(overviewPath) || overviewPath.length <= 1) {
+          onRoute([], "failed");
+          return;
+        }
+
+        onRoute(overviewPath.map(latLngToPoint).filter(Boolean), "ready");
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, onRoute, points, routes]);
+
+  return null;
+}
+
+function ResolveAgencyFallbackPoint({ fallback, enabled, onResolved }) {
+  const map = useMap();
+  const geocoding = useMapsLibrary("geocoding");
+
+  useEffect(() => {
+    if (!enabled || !fallback) {
+      onResolved(null);
+      return;
+    }
+
+    if (Number.isFinite(fallback.lat) && Number.isFinite(fallback.lng)) {
+      const point = {
+        id: fallback.id,
+        name: fallback.label,
+        title: fallback.label,
+        description: "Agency registered location",
+        formattedAddress: fallback.query,
+        lat: fallback.lat,
+        lng: fallback.lng,
+        source: "agency",
+      };
+      onResolved(point);
+      if (map) {
+        map.panTo({ lat: point.lat, lng: point.lng });
+        map.setZoom(11);
+      }
+      return;
+    }
+
+    if (!geocoding || !fallback.query) return;
+
+    let cancelled = false;
+    const geocoder = new geocoding.Geocoder();
+    geocoder.geocode({ address: fallback.query }, (results, status) => {
+      if (cancelled) return;
+      if (status !== "OK" || !Array.isArray(results) || !results[0]?.geometry?.location) {
+        onResolved(null);
+        return;
+      }
+
+      const location = results[0].geometry.location;
+      const point = {
+        id: fallback.id,
+        name: fallback.label,
+        title: fallback.label,
+        description: "Agency registered location",
+        formattedAddress: results[0].formatted_address || fallback.query,
+        lat: location.lat(),
+        lng: location.lng(),
+        source: "agency",
+      };
+
+      onResolved(point);
+      if (map) {
+        map.panTo({ lat: point.lat, lng: point.lng });
+        map.setZoom(11);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, fallback, geocoding, map, onResolved]);
+
+  return null;
+}
+
 function PlaceDetailPanel({ place, onClose }) {
   if (!place) return null;
 
@@ -316,6 +528,7 @@ function MapHandler({ selectedPlaceId, viewportPoints, setSelectedPoint, sidebar
 // Triggering rebuild to clear stale map hook state
 export default function ItineraryLiveMap({
   items = [],
+  agencyLocation = null,
   liveMarkers = [],
   routeEstimates = [],
   activeIndex = -1,
@@ -327,6 +540,9 @@ export default function ItineraryLiveMap({
   sidebarWidth = 520,
 }) {
   const [selectedPoint, setSelectedPoint] = useState(null);
+  const [agencyFallbackPoint, setAgencyFallbackPoint] = useState(null);
+  const [clientRoutePolyline, setClientRoutePolyline] = useState([]);
+  const [clientRouteStatus, setClientRouteStatus] = useState("idle");
   const isDark = theme === "dark";
 
   const points = useMemo(() => items.map((item, index) => mapItemToPoint(item, index)).filter(Boolean), [items]);
@@ -342,8 +558,20 @@ export default function ItineraryLiveMap({
     const latestRoute = routeEstimates[routeEstimates.length - 1];
     return normalizeRoutePolyline(latestRoute?.polyline);
   }, [routeEstimates]);
+  const routeSegments = useMemo(() => buildRouteSegmentsFromItems(items), [items]);
+  const agencyFallback = useMemo(() => normalizeAgencyFallbackLocation(agencyLocation), [agencyLocation]);
+  const shouldResolveClientRoute = shouldRequestClientRoute({
+    pointCount: points.length,
+    routeSegmentCount: routeSegments.length,
+    latestRoutePointCount: latestRoutePolyline.length,
+  });
 
-  const viewportPoints = useMemo(() => [...points, ...liveMarkerPoints], [points, liveMarkerPoints]);
+  const resolvedViewportPoints = useMemo(() => [...points, ...liveMarkerPoints], [points, liveMarkerPoints]);
+  const shouldUseAgencyFallback = resolvedViewportPoints.length === 0 && Boolean(agencyFallbackPoint);
+  const viewportPoints = useMemo(
+    () => (shouldUseAgencyFallback ? [agencyFallbackPoint] : resolvedViewportPoints),
+    [agencyFallbackPoint, resolvedViewportPoints, shouldUseAgencyFallback],
+  );
   const center = viewportPoints[0] || EMPTY_MAP_CENTER;
 
   useEffect(() => {
@@ -364,6 +592,10 @@ export default function ItineraryLiveMap({
     setSelectedPoint(point);
     onSelectPlace?.(point.id);
   }, [onSelectPlace]);
+  const handleClientRoute = useCallback((polyline, status) => {
+    setClientRoutePolyline(polyline);
+    setClientRouteStatus(status);
+  }, []);
 
   return (
     <div className={`absolute inset-0 ${isDark ? "bg-[#111827]" : "bg-[#f8fafc]"}`}>
@@ -387,13 +619,30 @@ export default function ItineraryLiveMap({
             setSelectedPoint={setSelectedPoint}
             sidebarWidth={sidebarWidth}
           />
-          {viewportPoints.length > 0 && <FitBounds points={viewportPoints} sidebarWidth={sidebarWidth} />}
+          <ResolveAgencyFallbackPoint
+            fallback={agencyFallback}
+            enabled={resolvedViewportPoints.length === 0}
+            onResolved={setAgencyFallbackPoint}
+          />
+          <ResolveClientRoute
+            points={points}
+            enabled={shouldResolveClientRoute}
+            onRoute={handleClientRoute}
+          />
+          {shouldFitViewportBounds(viewportPoints, shouldUseAgencyFallback) && (
+            <FitBounds points={viewportPoints} sidebarWidth={sidebarWidth} />
+          )}
           <FocusActiveStop points={points} activeIndex={activeIndex} sidebarWidth={sidebarWidth} />
           <FocusLiveMarker liveMarkers={liveMarkerPoints} />
           <FocusSelectedPlace selectedPlace={selectedPlace} sidebarWidth={sidebarWidth} />
 
-          {/* Planned path */}
-          {points.length > 1 && (
+          {/* Planned path fallback */}
+          {shouldShowPlannedPathFallback({
+            pointCount: points.length,
+            routeSegmentCount: routeSegments.length,
+            latestRoutePointCount: latestRoutePolyline.length,
+            clientRouteStatus,
+          }) && (
             <Polyline
               points={points}
               color="#3b82f6"
@@ -402,6 +651,27 @@ export default function ItineraryLiveMap({
               dashArray={true}
             />
           )}
+
+          {/* Client-side road route fallback */}
+          {clientRoutePolyline.length > 1 && (
+            <Polyline
+              points={clientRoutePolyline}
+              color="#d77a61"
+              weight={5}
+              opacity={0.9}
+            />
+          )}
+
+          {/* Stored per-stop route paths */}
+          {routeSegments.map((segment) => (
+            <Polyline
+              key={segment.id}
+              points={segment.points}
+              color="#d77a61"
+              weight={5}
+              opacity={0.9}
+            />
+          ))}
 
           {/* Actual route estimates */}
           {latestRoutePolyline.length > 1 && (
@@ -453,6 +723,22 @@ export default function ItineraryLiveMap({
               />
             </AdvancedMarker>
           ))}
+
+          {/* Agency fallback marker */}
+          {shouldUseAgencyFallback && (
+            <AdvancedMarker
+              key={agencyFallbackPoint.id}
+              position={{ lat: agencyFallbackPoint.lat, lng: agencyFallbackPoint.lng }}
+              onClick={() => handleMarkerClick(agencyFallbackPoint)}
+            >
+              <Pin
+                background="#0f3440"
+                borderColor="#ffffff"
+                glyphColor="#ffffff"
+                scale={1.1}
+              />
+            </AdvancedMarker>
+          )}
 
           {/* Info Window */}
           {selectedPoint && (

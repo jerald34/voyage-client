@@ -35,6 +35,7 @@ export default function AgentCommandCenter({
   user,
   activeToolLabel = null,
   itinerary = null,
+  streamingItinerary = null,
   placeEntities = [],
   selectedPlaceId = "",
   onPlaceSelect,
@@ -50,11 +51,15 @@ export default function AgentCommandCenter({
   }, [messages]);
 
 
+  const liveStreamingItinerary = streamingItinerary ?? null;
   const hasStreamingBubble =
     isStreaming &&
-    typeof assistantMessage === "string" &&
-    assistantMessage.trim().length > 0 &&
-    displayedMessages[displayedMessages.length - 1]?.content !== assistantMessage;
+    (
+      (typeof assistantMessage === "string" &&
+        assistantMessage.trim().length > 0 &&
+        displayedMessages[displayedMessages.length - 1]?.content !== assistantMessage) ||
+      Boolean(liveStreamingItinerary?.id)
+    );
 
   const activeToolCalls = useMemo(() => {
     if (!isStreaming) {
@@ -191,12 +196,16 @@ export default function AgentCommandCenter({
 
         {hasStreamingBubble && (
           <ChatMessage
-            message={{ id: "streaming", role: "assistant", content: assistantMessage }}
+            message={{
+              id: "streaming",
+              role: "assistant",
+              content: assistantMessage || "Working on that now."
+            }}
             isUser={false}
             userName={userName}
             userInitials={userInitials}
-            itinerary={itinerary}
-            renderAsItinerary={false}
+            itinerary={liveStreamingItinerary ?? itinerary}
+            renderAsItinerary={Boolean(liveStreamingItinerary?.id)}
             placeEntities={placeEntities}
             selectedPlaceId={selectedPlaceId}
             onPlaceSelect={onPlaceSelect}

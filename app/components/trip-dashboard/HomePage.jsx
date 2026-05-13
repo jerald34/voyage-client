@@ -60,6 +60,23 @@ const getRunStatusLabel = (runStatus, streamError) => {
   return "Ready";
 };
 
+export function getAgencyMapFallbackFromUser(user) {
+  const agency = Array.isArray(user?.memberships)
+    ? user.memberships.find((membership) => membership?.agency)?.agency
+    : null;
+  if (!agency) return null;
+
+  const city = String(agency.city ?? "").trim();
+  const country = String(agency.country ?? "").trim();
+  if (!city && !country) return null;
+
+  return {
+    name: agency.name,
+    city,
+    country,
+  };
+}
+
 export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp = [], onContinue, onOpenTrip, onNewItinerary }) {
   const { theme } = useTheme();
   const { logout } = useAuth();
@@ -381,6 +398,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
     () => buildPlaceEntities({ itinerary: activeTripState?.itinerary ?? null, liveMarkers: visibleMapMarkers }),
     [activeTripState?.itinerary, visibleMapMarkers],
   );
+  const agencyMapFallback = useMemo(() => getAgencyMapFallbackFromUser(user), [user]);
 
   useEffect(() => {
     setSelectedPlaceId("");
@@ -554,6 +572,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
               <div className="absolute inset-0 z-0 opacity-90 transition-opacity duration-700 hover:opacity-100">
                 <ItineraryLiveMap
                   theme={theme}
+                  agencyLocation={agencyMapFallback}
                   items={activeTripState?.itinerary?.days?.reduce((acc, day) => {
                     (day?.items || []).forEach((item, idx) => acc.push({
                       ...item,
@@ -581,6 +600,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                     assistantMessage={isVisible ? assistantMessage : ""}
                     toolCalls={isVisible ? toolCalls : []}
                     activeToolLabel={isVisible ? activeToolLabel : null}
+                    streamingItinerary={isVisible ? streamingItinerary : null}
                     dispatchAgentMessage={(prompt) => dispatchMessage(prompt, startStream)}
                     composerInput={composerInput}
                     setComposerInput={setComposerInput}

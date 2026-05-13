@@ -182,7 +182,7 @@ function LoginForm() {
   return (
     <div className={`grid grid-cols-2 min-h-[calc(100vh-100px)] gap-0 rounded-lg overflow-hidden border border-border shadow-strong transition-all duration-650 ${mounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-6 scale-[0.985]"}`}>
       {/* LEFT: Brand showcase panel */}
-      <div className="relative flex flex-col justify-center p-[clamp(40px,5vw,72px)] bg-gradient-to-br from-primary via-[#1a2e38] to-[#2d3436] overflow-hidden">
+      <div className="relative flex flex-col justify-center p-[clamp(40px,5vw,72px)] bg-gradient-to-br from-[#223843] via-[#1a2e38] to-[#2d3436] overflow-hidden">
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <FloatingOrb delay="0s" size="320px" left="-80px" top="-60px" />
           <FloatingOrb delay="2.4s" size="200px" left="60%" top="55%" />
@@ -215,7 +215,7 @@ function LoginForm() {
       </div>
 
       {/* RIGHT: Auth form */}
-      <div className="flex flex-col p-[clamp(28px,4vw,56px)] bg-gradient-to-b from-[rgba(255,255,255,0.98)] to-[rgba(239,241,243,0.94)] overflow-y-auto">
+      <div className="flex flex-col p-[clamp(28px,4vw,56px)] bg-gradient-to-b from-[rgba(255,255,255,0.98)] to-[rgba(239,241,243,0.94)] dark:from-[rgba(26,29,33,0.98)] dark:to-[rgba(17,20,22,0.94)] overflow-y-auto">
         <div className="mb-8">
           <Link href="/" className="inline-flex items-center gap-2 text-text-muted text-xs font-bold no-underline transition-colors duration-160 hover:text-secondary">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -228,7 +228,7 @@ function LoginForm() {
         <div className="flex-1 flex flex-col justify-center max-w-[440px] w-full mx-auto">
           {/* Mode toggle */}
           {!isAuthenticated && (
-            <div className="relative grid grid-cols-2 p-1 mb-9 bg-[rgba(34,56,67,0.05)] border border-border rounded-pill">
+            <div className="relative grid grid-cols-2 p-1 mb-9 bg-[rgba(34,56,67,0.05)] dark:bg-[rgba(255,255,255,0.05)] border border-border rounded-pill">
               <button
                 className={`relative z-[2] px-0 py-3 bg-none border-none font-extrabold text-xs cursor-pointer transition-colors duration-240 ${mode === "login" ? "text-text-primary" : "text-text-muted"}`}
                 onClick={() => handleModeSwitch("login")}
@@ -244,7 +244,7 @@ function LoginForm() {
                 Create account
               </button>
               <div
-                className="absolute top-1 left-1 rounded-pill bg-white shadow-md transition-transform duration-320"
+                className="absolute top-1 left-1 rounded-pill bg-white dark:bg-surface-elevated shadow-md transition-transform duration-320"
                 style={{
                   width: "calc(50% - 5px)",
                   height: "calc(100% - 10px)",
@@ -271,7 +271,7 @@ function LoginForm() {
                   {socialProviders.map((provider) => (
                     <button
                       key={provider.id}
-                      className="flex items-center justify-center gap-2.5 px-4 py-3.5 bg-white border border-border rounded-md text-text-primary text-xs font-bold cursor-pointer transition-all duration-160 hover:border-border-strong hover:shadow-[0_4px_16px_rgba(34,56,67,0.08)] hover:-translate-y-0.5"
+                      className="flex items-center justify-center gap-2.5 px-4 py-3.5 bg-white dark:bg-surface-elevated border border-border rounded-md text-text-primary text-xs font-bold cursor-pointer transition-all duration-160 hover:border-border-strong hover:shadow-[0_4px_16px_rgba(34,56,67,0.08)] hover:-translate-y-0.5"
                       type="button"
                       onClick={() => auth.startOAuth(provider.id)}
                     >
@@ -295,7 +295,7 @@ function LoginForm() {
                         <rect x="2" y="4" width="20" height="16" rx="2" />
                         <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                       </svg>
-                      <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
                   </div>
 
@@ -309,7 +309,7 @@ function LoginForm() {
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
-                      <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" className="w-full !pl-[46px] !pr-14 py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" className="w-full !pl-[46px] !pr-14 py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                       <button type="button" className="absolute right-3.5 flex items-center justify-center w-8.5 h-8.5 bg-none border-none text-text-soft cursor-pointer rounded-sm transition-all duration-160 hover:text-secondary hover:bg-[rgba(215,122,97,0.06)]" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>
                         {showPassword ? (
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
@@ -341,7 +341,7 @@ function LoginForm() {
                   {socialProviders.map((provider) => (
                     <button
                       key={provider.id}
-                      className="flex items-center justify-center gap-2.5 px-4 py-3.5 bg-white border border-border rounded-md text-text-primary text-xs font-bold cursor-pointer transition-all duration-160 hover:border-border-strong hover:shadow-[0_4px_16px_rgba(34,56,67,0.08)] hover:-translate-y-0.5"
+                      className="flex items-center justify-center gap-2.5 px-4 py-3.5 bg-white dark:bg-surface-elevated border border-border rounded-md text-text-primary text-xs font-bold cursor-pointer transition-all duration-160 hover:border-border-strong hover:shadow-[0_4px_16px_rgba(34,56,67,0.08)] hover:-translate-y-0.5"
                       type="button"
                       onClick={() => auth.startOAuth(provider.id)}
                     >
@@ -364,7 +364,7 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
                       </svg>
-                      <input id="auth-fullname" type="text" placeholder="Your full name" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-fullname" type="text" placeholder="Your full name" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
                     {step1Errors.fullName && <span className="text-[0.8rem] text-status-danger mt-0.5">{step1Errors.fullName}</span>}
                   </div>
@@ -375,7 +375,7 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                       </svg>
-                      <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
                     {step1Errors.email && <span className="text-[0.8rem] text-status-danger mt-0.5">{step1Errors.email}</span>}
                   </div>
@@ -386,7 +386,7 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
-                      <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" className="w-full !pl-[46px] !pr-14 py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" className="w-full !pl-[46px] !pr-14 py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                       <button type="button" className="absolute right-3.5 flex items-center justify-center w-8.5 h-8.5 bg-none border-none text-text-soft cursor-pointer rounded-sm transition-all duration-160 hover:text-secondary hover:bg-[rgba(215,122,97,0.06)]" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>
                         {showPassword ? (
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
@@ -404,7 +404,7 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                       </svg>
-                      <input id="auth-confirm-password" type="password" placeholder="Repeat your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-confirm-password" type="password" placeholder="Repeat your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
                     {step1Errors.confirmPassword && <span className="text-[0.8rem] text-status-danger mt-0.5">{step1Errors.confirmPassword}</span>}
                   </div>
@@ -447,7 +447,7 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
                       </svg>
-                      <input id="auth-agency-name" type="text" placeholder="e.g. Wanderlust Travel Co." value={agencyName} onChange={(e) => setAgencyName(e.target.value)} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-agency-name" type="text" placeholder="e.g. Wanderlust Travel Co." value={agencyName} onChange={(e) => setAgencyName(e.target.value)} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
                   </div>
 
@@ -457,7 +457,7 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                       </svg>
-                      <input id="auth-business-phone" type="tel" placeholder="+1 (555) 123-4567" value={businessPhone} onChange={(e) => setBusinessPhone(e.target.value)} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-business-phone" type="tel" placeholder="+1 (555) 123-4567" value={businessPhone} onChange={(e) => setBusinessPhone(e.target.value)} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
                   </div>
 
@@ -469,7 +469,7 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                       </svg>
-                      <input id="auth-business-email" type="email" placeholder="info@youragency.com" value={businessEmail} onChange={(e) => setBusinessEmail(e.target.value)} className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-business-email" type="email" placeholder="info@youragency.com" value={businessEmail} onChange={(e) => setBusinessEmail(e.target.value)} className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
                   </div>
 
@@ -480,7 +480,7 @@ function LoginForm() {
                         <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                         </svg>
-                        <input id="auth-country" type="text" placeholder="Philippines" value={country} onChange={(e) => setCountry(e.target.value)} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                        <input id="auth-country" type="text" placeholder="Philippines" value={country} onChange={(e) => setCountry(e.target.value)} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                       </div>
                     </div>
 
@@ -490,7 +490,7 @@ function LoginForm() {
                         <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
                         </svg>
-                        <input id="auth-city" type="text" placeholder="Manila" value={city} onChange={(e) => setCity(e.target.value)} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                        <input id="auth-city" type="text" placeholder="Manila" value={city} onChange={(e) => setCity(e.target.value)} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                       </div>
                     </div>
                   </div>
