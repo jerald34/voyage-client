@@ -176,6 +176,10 @@ export async function fetchPublicItinerary(token) {
   return data;
 }
 
+export async function cancelAgentRun(agencyId, runId) {
+  return fetchApi(`/agencies/${agencyId}/agent/runs/${runId}/cancel`, { method: "POST" });
+}
+
 export async function postPublicComment(token, payload) {
   const url = `${API_URL}/shared/${token}/comments`;
   const response = await fetch(url, {

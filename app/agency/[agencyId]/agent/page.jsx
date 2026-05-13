@@ -31,7 +31,8 @@ export default function AgencyAgentPage({ params }) {
     activeToolLabel,
     lastItineraryUpdate,
     error,
-    startStream
+    startStream,
+    stopStream,
   } = useAgentRunStream(agencyId);
 
   useEffect(() => {
@@ -80,11 +81,14 @@ export default function AgencyAgentPage({ params }) {
   return (
     <AgencyAgentWorkspace
       chatPanel={
-        <AgentChatPanel 
-          messages={messages} 
-          onSend={handleSend} 
-          isLoading={isStreaming} 
-          streamingMessage={assistantMessage} 
+        <AgentChatPanel
+          messages={messages}
+          onSend={handleSend}
+          isLoading={isStreaming}
+          streamingMessage={assistantMessage}
+          activeToolLabel={activeToolLabel}
+          toolCalls={toolCalls}
+          onStop={stopStream}
         />
       }
       liveWorkPanel={

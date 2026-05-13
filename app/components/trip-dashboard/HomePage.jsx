@@ -156,6 +156,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
     streamingItinerary,
     error: streamError,
     startStream,
+    stopStream,
   } = useAgentRunStream(agencyId ?? "");
 
   // Load user
@@ -611,6 +612,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                     placeEntities={placeEntities}
                     selectedPlaceId={selectedPlaceId}
                     onPlaceSelect={setSelectedPlaceId}
+                    onStop={isVisible ? stopStream : undefined}
                   />
                 </div>
                 
