@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "../theme/ThemeProvider";
 import { useAuth } from "../../hooks/useAuth.js";
 import { useAgentRunStream } from "../../hooks/useAgentRunStream.js";
@@ -10,6 +10,8 @@ import {
   fetchItineraryDraft,
   listAgencyTrips,
   fetchPendingCount,
+  updateAgencySettings,
+  updateCurrentUserProfile,
 } from "../../lib/api.js";
 import {
   getAgencyPortfolioSummary,
@@ -24,6 +26,7 @@ import AgentCommandCenter from "./command-center/AgentCommandCenter.jsx";
 import ItineraryDraftPanel from "./itinerary/ItineraryDraftPanel.jsx";
 const ItineraryLiveMap = dynamic(() => import("./itinerary/ItineraryLiveMap.jsx"), { ssr: false });
 import ClientItineraryPage from "./pages/ClientItineraryPage.jsx";
+import SettingsPage from "./pages/SettingsPage.jsx";
 import ApproveItineraryModal from "./modals/ApproveItineraryModal.jsx";
 import DashboardHeader from "./layout/DashboardHeader.jsx";
 import DashboardSidebar from "./layout/DashboardSidebar.jsx";
@@ -169,6 +172,41 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
 
   // Load initial data
   useEffect(() => { if (agencyId) loadInitialThreads(); }, [agencyId]);
+
+  const persistUser = useCallback((nextUser) => {
+    setUser(nextUser);
+    if (typeof window !== "undefined" && nextUser) {
+      localStorage.setItem("voyage-user", JSON.stringify(nextUser));
+    }
+  }, []);
+
+  const handleUserProfileUpdate = useCallback(async (payload) => {
+    const result = await updateCurrentUserProfile(payload);
+    if (result?.user) {
+      persistUser(result.user);
+    }
+    return result;
+  }, [persistUser]);
+
+  const handleAgencySettingsUpdate = useCallback(async (payload) => {
+    if (!agencyId) {
+      throw new Error("Missing agency context. Refresh and log in again.");
+    }
+    const result = await updateAgencySettings(agencyId, payload);
+    const updatedAgency = result?.agency;
+    if (updatedAgency) {
+      const nextUser = {
+        ...user,
+        memberships: (user?.memberships || []).map((membership) => (
+          membership?.agencyId === agencyId
+            ? { ...membership, agency: { ...membership.agency, ...updatedAgency } }
+            : membership
+        )),
+      };
+      persistUser(nextUser);
+    }
+    return result;
+  }, [agencyId, persistUser, user]);
 
   useEffect(() => {
     if (!agencyId) return;
@@ -400,6 +438,12 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
     [activeTripState?.itinerary, visibleMapMarkers],
   );
   const agencyMapFallback = useMemo(() => getAgencyMapFallbackFromUser(user), [user]);
+  const activeMembership = useMemo(() => (
+    Array.isArray(user?.memberships)
+      ? user.memberships.find((membership) => membership?.agencyId === agencyId)
+      : null
+  ), [agencyId, user]);
+  const activeAgency = activeMembership?.agency ?? null;
 
   useEffect(() => {
     setSelectedPlaceId("");
@@ -630,6 +674,15 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                   setTripStates(prev => { const next = { ...prev }; delete next[tripId]; return next; });
                 }
               }}
+            />
+          ) : activeTab === "settings" ? (
+            <SettingsPage
+              user={user}
+              agency={activeAgency}
+              membership={activeMembership}
+              logout={logout}
+              onUpdateProfile={handleUserProfileUpdate}
+              onUpdateAgency={handleAgencySettingsUpdate}
             />
           ) : activeTab === "admin" && user?.role === "ADMIN" ? (
             <AdminAgenciesPage onPendingCountChange={refreshPendingCount} />
