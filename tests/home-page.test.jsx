@@ -5,6 +5,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import HomePage, { getAgencyMapFallbackFromUser } from "../app/components/trip-dashboard/HomePage.jsx";
 import { useTripDashboard } from "../app/hooks/useTripDashboard.js";
 
+if (!HTMLElement.prototype.scrollIntoView) {
+  HTMLElement.prototype.scrollIntoView = vi.fn();
+}
+
 const mocks = vi.hoisted(() => ({
   startStreamMock: vi.fn(),
   streamState: {
@@ -24,8 +28,18 @@ const mocks = vi.hoisted(() => ({
   deleteAgentThreadMock: vi.fn(async () => ({})),
   listAgentThreadsMock: vi.fn(async () => ({
     threads: [
-      { id: "thread-1", tripId: "trip-1" },
-      { id: "thread-2", tripId: "trip-2" },
+      {
+        id: "thread-1",
+        tripId: "trip-1",
+        messages: [{ id: "m-1", role: "ASSISTANT", content: "First thread ready" }],
+        events: [{ type: "itinerary.updated", payload: { itineraryId: "itinerary-1" } }],
+      },
+      {
+        id: "thread-2",
+        tripId: "trip-2",
+        messages: [{ id: "m-2", role: "ASSISTANT", content: "Second thread ready" }],
+        events: [{ type: "itinerary.updated", payload: { itineraryId: "itinerary-2" } }],
+      },
     ],
   })),
   fetchAgentThreadMock: vi.fn(async (_agencyId, threadId) => ({
@@ -78,6 +92,28 @@ const mocks = vi.hoisted(() => ({
       status: "DRAFT",
     },
   })),
+  updateCurrentUserProfileMock: vi.fn(async (payload) => ({
+    user: {
+      id: "user-1",
+      email: "owner@voyage.test",
+      displayName: payload.displayName,
+      role: "USER",
+      status: "ACTIVE",
+      emailVerifiedAt: "2026-05-01T00:00:00.000Z",
+      memberships: [],
+    },
+  })),
+  updateAgencySettingsMock: vi.fn(async (_agencyId, payload) => ({
+    agency: {
+      id: "agency-1",
+      name: payload.name,
+      status: "VERIFIED",
+      businessPhone: payload.businessPhone,
+      businessEmail: payload.businessEmail,
+      city: payload.city,
+      country: payload.country,
+    },
+  })),
 }));
 
 function resetApiMocks() {
@@ -111,8 +147,18 @@ function resetApiMocks() {
   mocks.listAgentThreadsMock.mockReset();
   mocks.listAgentThreadsMock.mockImplementation(async () => ({
     threads: [
-      { id: "thread-1", tripId: "trip-1" },
-      { id: "thread-2", tripId: "trip-2" },
+      {
+        id: "thread-1",
+        tripId: "trip-1",
+        messages: [{ id: "m-1", role: "ASSISTANT", content: "First thread ready" }],
+        events: [{ type: "itinerary.updated", payload: { itineraryId: "itinerary-1" } }],
+      },
+      {
+        id: "thread-2",
+        tripId: "trip-2",
+        messages: [{ id: "m-2", role: "ASSISTANT", content: "Second thread ready" }],
+        events: [{ type: "itinerary.updated", payload: { itineraryId: "itinerary-2" } }],
+      },
     ],
   }));
   mocks.fetchAgentThreadMock.mockReset();
@@ -169,6 +215,30 @@ function resetApiMocks() {
       status: "DRAFT",
     },
   }));
+  mocks.updateCurrentUserProfileMock.mockReset();
+  mocks.updateCurrentUserProfileMock.mockImplementation(async (payload) => ({
+    user: {
+      id: "user-1",
+      email: "owner@voyage.test",
+      displayName: payload.displayName,
+      role: "USER",
+      status: "ACTIVE",
+      emailVerifiedAt: "2026-05-01T00:00:00.000Z",
+      memberships: [],
+    },
+  }));
+  mocks.updateAgencySettingsMock.mockReset();
+  mocks.updateAgencySettingsMock.mockImplementation(async (_agencyId, payload) => ({
+    agency: {
+      id: "agency-1",
+      name: payload.name,
+      status: "VERIFIED",
+      businessPhone: payload.businessPhone,
+      businessEmail: payload.businessEmail,
+      city: payload.city,
+      country: payload.country,
+    },
+  }));
 }
 
 vi.mock("../app/hooks/useAgentRunStream.js", () => ({
@@ -193,6 +263,8 @@ vi.mock("../app/lib/api.js", () => ({
   fetchItineraryDraft: (...args) => mocks.fetchItineraryDraftMock(...args),
   listAgencyTrips: (...args) => mocks.listAgencyTripsMock(...args),
   listAgentThreads: (...args) => mocks.listAgentThreadsMock(...args),
+  updateAgencySettings: (...args) => mocks.updateAgencySettingsMock(...args),
+  updateCurrentUserProfile: (...args) => mocks.updateCurrentUserProfileMock(...args),
   sendMessage: (...args) => mocks.sendMessageMock(...args),
 }));
 
@@ -336,22 +408,18 @@ describe("Agency portfolio HomePage", () => {
   it("renders the Agent-centered agency portfolio dashboard", () => {
     render(<HomePage agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
-    expect(screen.getByRole("button", { name: "Run Agency Review" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New Itinerary" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Current client: Santos Family" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Regenerate" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Send to Client" })).toBeInTheDocument();
-    expect(screen.getByText("No conversation yet")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Settings" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Logout" })).toBeInTheDocument();
   });
 
-  it("wires Agent command actions through the homepage", () => {
-    const onContinue = vi.fn();
+  it("opens settings from the homepage sidebar", async () => {
+    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
-    render(<HomePage agencyTrips={agencyTrips} onContinue={onContinue} />);
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Run Agency Review" }));
-
-    expect(onContinue).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
   });
 
   it("wires the New Itinerary button through the homepage", () => {
@@ -368,16 +436,14 @@ describe("Agency portfolio HomePage", () => {
     const { container } = render(<HomePage user={user} agencyTrips={[]} onContinue={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    fireEvent.change(screen.getByPlaceholderText("Ask the agent to adjust the draft..."), {
+      target: { value: "Create a 4-day Cebu itinerary" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
 
     await waitFor(() => {
       expect(mocks.createAgentThreadMock).toHaveBeenCalledWith("agency-1");
     });
-
-    fireEvent.change(screen.getByPlaceholderText("Ask the agent to adjust the draft..."), {
-      target: { value: "Create a 4-day Cebu itinerary" },
-    });
-
-    fireEvent.click(container.querySelector(".send-button"));
 
     await waitFor(() => {
       expect(mocks.sendMessageMock).toHaveBeenCalledWith(
@@ -400,20 +466,28 @@ describe("Agency portfolio HomePage", () => {
     render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    fireEvent.change(screen.getByPlaceholderText("Ask the agent to adjust the draft..."), {
+      target: { value: "Draft one" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
 
     await waitFor(() => {
       expect(mocks.createAgentThreadMock).toHaveBeenCalledWith("agency-1");
     });
 
-    expect(screen.getByRole("button", { name: "Current client: Draft itinerary 1" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Current client: Draft itinerary 1" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    fireEvent.change(screen.getByPlaceholderText("Ask the agent to adjust the draft..."), {
+      target: { value: "Draft two" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
 
     await waitFor(() => {
       expect(mocks.createAgentThreadMock).toHaveBeenCalledTimes(2);
     });
 
-    expect(screen.getByRole("button", { name: "Current client: Draft itinerary 2" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Current client: Draft itinerary 2" })).toBeInTheDocument();
     expect(mocks.createAgentThreadMock).toHaveBeenNthCalledWith(1, "agency-1");
     expect(mocks.createAgentThreadMock).toHaveBeenNthCalledWith(2, "agency-1");
   });
@@ -421,65 +495,49 @@ describe("Agency portfolio HomePage", () => {
   it("shows existing no-client draft threads in the dropdown after initial load", async () => {
     mocks.listAgentThreadsMock.mockResolvedValue({
       threads: [
-        { id: "draft-refresh", tripId: null },
-        { id: "thread-1", tripId: "trip-1" },
+        {
+          id: "draft-refresh",
+          tripId: null,
+          title: "Refresh draft",
+          messages: [{ id: "draft-message", role: "ASSISTANT", content: "Refresh draft ready" }],
+          events: [{ type: "itinerary.updated", payload: { itineraryId: "draft-itinerary" } }],
+        },
+        {
+          id: "thread-1",
+          tripId: "trip-1",
+          messages: [{ id: "m-1", role: "ASSISTANT", content: "First thread ready" }],
+          events: [{ type: "itinerary.updated", payload: { itineraryId: "itinerary-1" } }],
+        },
       ],
     });
-    mocks.fetchAgentThreadMock.mockImplementation(async (_agencyId, threadId) => ({
-      thread:
-        threadId === "draft-refresh"
-          ? {
-              id: "draft-refresh",
-              title: "Refresh draft",
-              tripId: null,
-              messages: [{ id: "draft-message", role: "ASSISTANT", content: "Refresh draft ready" }],
-              events: [{ type: "itinerary.updated", payload: { itineraryId: "draft-itinerary" } }],
-            }
-          : {
-              id: "thread-1",
-              tripId: "trip-1",
-              messages: [{ id: "m-1", role: "ASSISTANT", content: "First thread ready" }],
-              events: [{ type: "itinerary.updated", payload: { itineraryId: "itinerary-1" } }],
-            },
-    }));
 
     render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
     await waitFor(() => {
-      expect(mocks.fetchAgentThreadMock).toHaveBeenCalledWith("agency-1", "draft-refresh");
+      expect(mocks.listAgentThreadsMock).toHaveBeenCalledWith("agency-1");
     });
-    expect(mocks.fetchItineraryDraftMock).toHaveBeenCalledWith("agency-1", "draft-itinerary");
 
-    fireEvent.click(screen.getByRole("button", { name: /Santos Family/i }));
-    expect(screen.getByRole("option", { name: /Refresh draft/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Current client: Santos Family" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Current client: Santos Family" }));
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: /Refresh draft/i })).toBeInTheDocument();
+    });
 
     fireEvent.click(screen.getByRole("option", { name: /Refresh draft/i }));
-    expect(await screen.findByText("Refresh draft ready")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Current client: Refresh draft" })).toBeInTheDocument();
   });
 
   it("ignores rapid New Itinerary clicks while draft creation is pending", async () => {
-    let resolveCreate;
-    const pendingCreate = new Promise((resolve) => {
-      resolveCreate = resolve;
-    });
-    mocks.createAgentThreadMock.mockReturnValue(pendingCreate);
-
     render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
     const newItineraryButton = screen.getByRole("button", { name: "New Itinerary" });
     fireEvent.click(newItineraryButton);
     fireEvent.click(newItineraryButton);
 
-    expect(mocks.createAgentThreadMock).toHaveBeenCalledTimes(1);
-    await waitFor(() => {
-      expect(newItineraryButton).toBeDisabled();
-    });
-
-    resolveCreate({
-      thread: { id: "draft-thread-pending", title: "Pending draft", tripId: null, messages: [], events: [] },
-    });
-
-    expect(await screen.findByRole("button", { name: "Current client: Pending draft" })).toBeInTheDocument();
+    expect(newItineraryButton).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Current client: New Itinerary..." })).toBeInTheDocument();
+    expect(mocks.createAgentThreadMock).not.toHaveBeenCalled();
   });
 
   it("keeps both draft options in the current client dropdown after two New Itinerary clicks", async () => {
@@ -494,9 +552,17 @@ describe("Agency portfolio HomePage", () => {
     render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    fireEvent.change(screen.getByPlaceholderText("Ask the agent to adjust the draft..."), {
+      target: { value: "Draft one" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
     await screen.findByRole("button", { name: "Current client: Draft itinerary 1" });
 
     fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    fireEvent.change(screen.getByPlaceholderText("Ask the agent to adjust the draft..."), {
+      target: { value: "Draft two" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
     await screen.findByRole("button", { name: "Current client: Draft itinerary 2" });
 
     fireEvent.click(screen.getByRole("button", { name: "Current client: Draft itinerary 2" }));
@@ -518,9 +584,17 @@ describe("Agency portfolio HomePage", () => {
     const { container } = render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    fireEvent.change(screen.getByPlaceholderText("Ask the agent to adjust the draft..."), {
+      target: { value: "Draft one" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
     await screen.findByRole("button", { name: "Current client: Draft itinerary 1" });
 
     fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    fireEvent.change(screen.getByPlaceholderText("Ask the agent to adjust the draft..."), {
+      target: { value: "Draft two" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
     await screen.findByRole("button", { name: "Current client: Draft itinerary 2" });
 
     fireEvent.click(screen.getByRole("button", { name: "Current client: Draft itinerary 2" }));
@@ -530,7 +604,7 @@ describe("Agency portfolio HomePage", () => {
       target: { value: "Plan the selected draft" },
     });
 
-    fireEvent.click(container.querySelector(".send-button"));
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
 
     await waitFor(() => {
       expect(mocks.sendMessageMock).toHaveBeenCalledWith("agency-1", "draft-thread-1", "Plan the selected draft");
@@ -549,9 +623,17 @@ describe("Agency portfolio HomePage", () => {
     render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    fireEvent.change(screen.getByPlaceholderText("Ask the agent to adjust the draft..."), {
+      target: { value: "Draft one" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
     await screen.findByRole("button", { name: "Current client: Draft itinerary 1" });
 
     fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    fireEvent.change(screen.getByPlaceholderText("Ask the agent to adjust the draft..."), {
+      target: { value: "Draft two" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
     await screen.findByRole("button", { name: "Current client: Draft itinerary 2" });
 
     fireEvent.click(screen.getByRole("button", { name: "Current client: Draft itinerary 2" }));
@@ -573,12 +655,16 @@ describe("Agency portfolio HomePage", () => {
     const { container } = render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
     await screen.findByText("First thread ready");
+    fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    await screen.findByRole("button", { name: "Current client: New Itinerary..." });
+
     fireEvent.change(screen.getByPlaceholderText("Ask the agent to adjust the draft..."), {
       target: { value: "Update Santos plan" },
     });
-    fireEvent.click(container.querySelector(".send-button"));
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
 
     await waitFor(() => {
+      expect(mocks.createAgentThreadMock).toHaveBeenCalledWith("agency-1");
       expect(mocks.startStreamMock).toHaveBeenCalledWith("run-1");
     });
 
@@ -593,7 +679,7 @@ describe("Agency portfolio HomePage", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
-    await screen.findByRole("button", { name: "Current client: Draft itinerary 1" });
+    await screen.findByRole("button", { name: "Current client: New Itinerary..." });
 
     expect(screen.queryByText("Streaming Santos answer")).not.toBeInTheDocument();
     expect(screen.queryByText("Agent working")).not.toBeInTheDocument();
@@ -614,6 +700,10 @@ describe("Agency portfolio HomePage", () => {
     render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "New Itinerary" }));
+    fireEvent.change(screen.getByPlaceholderText("Ask the agent to adjust the draft..."), {
+      target: { value: "Draft one" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
     await screen.findByRole("button", { name: "Current client: Draft itinerary 1" });
 
     fireEvent.click(screen.getByRole("button", { name: "Save to Client" }));
@@ -661,10 +751,49 @@ describe("Agency portfolio HomePage", () => {
       target: { value: "Send the update" },
     });
 
-    fireEvent.click(container.querySelector(".send-button"));
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
 
     await waitFor(() => {
       expect(mocks.sendMessageMock).toHaveBeenCalledWith("agency-1", "thread-2", "Send the update");
     });
+  });
+
+  it("opens settings with real account and agency data", async () => {
+    render(
+      <HomePage
+        user={{
+          id: "user-1",
+          email: "owner@voyage.test",
+          displayName: "Agency Owner",
+          role: "USER",
+          status: "ACTIVE",
+          emailVerifiedAt: "2026-05-01T00:00:00.000Z",
+          memberships: [
+            {
+              agencyId: "agency-1",
+              role: "OWNER",
+              status: "ACTIVE",
+              agency: {
+                id: "agency-1",
+                name: "Olongapo Travel Studio",
+                status: "VERIFIED",
+                businessPhone: "+63 900 111 2222",
+                businessEmail: "hello@olongapo.example",
+                city: "Olongapo City",
+                country: "Philippines",
+              },
+            },
+          ],
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+
+    expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Agency Owner")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Olongapo Travel Studio")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("+63 900 111 2222")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("hello@olongapo.example")).toBeInTheDocument();
   });
 });

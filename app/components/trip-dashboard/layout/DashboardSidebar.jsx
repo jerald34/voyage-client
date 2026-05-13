@@ -72,7 +72,11 @@ export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, acti
             </button>
           )}
 
-          <button type="button" className={navItemBase}>
+          <button
+            type="button"
+            className={`${navItemBase} ${activeTab === "settings" ? navItemActive : ""}`}
+            onClick={() => setActiveTab("settings")}
+          >
             <span className="inline-flex items-center justify-center relative" aria-hidden="true">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <circle cx="12" cy="12" r="3" />
