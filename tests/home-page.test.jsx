@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import HomePage from "../app/components/trip-dashboard/HomePage.jsx";
+import HomePage, { getAgencyMapFallbackFromUser } from "../app/components/trip-dashboard/HomePage.jsx";
 import { useTripDashboard } from "../app/hooks/useTripDashboard.js";
 
 const mocks = vi.hoisted(() => ({
@@ -55,6 +55,7 @@ const mocks = vi.hoisted(() => ({
       days: [],
     },
   })),
+  listAgencyTripsMock: vi.fn(async () => ({ trips: [] })),
   approveAgentThreadItineraryMock: vi.fn(async (_agencyId, threadId, payload) => ({
     thread: {
       id: threadId,
@@ -143,6 +144,8 @@ function resetApiMocks() {
       days: [],
     },
   }));
+  mocks.listAgencyTripsMock.mockReset();
+  mocks.listAgencyTripsMock.mockImplementation(async () => ({ trips: [] }));
   mocks.approveAgentThreadItineraryMock.mockReset();
   mocks.approveAgentThreadItineraryMock.mockImplementation(async (_agencyId, threadId, payload) => ({
     thread: {
@@ -188,6 +191,7 @@ vi.mock("../app/lib/api.js", () => ({
   deleteAgentThread: (...args) => mocks.deleteAgentThreadMock(...args),
   fetchAgentThread: (...args) => mocks.fetchAgentThreadMock(...args),
   fetchItineraryDraft: (...args) => mocks.fetchItineraryDraftMock(...args),
+  listAgencyTrips: (...args) => mocks.listAgencyTripsMock(...args),
   listAgentThreads: (...args) => mocks.listAgentThreadsMock(...args),
   sendMessage: (...args) => mocks.sendMessageMock(...args),
 }));
@@ -308,6 +312,27 @@ describe("Agency portfolio HomePage", () => {
     resetApiMocks();
   });
 
+  it("derives the map fallback from the signed-in agency registration location", () => {
+    expect(
+      getAgencyMapFallbackFromUser({
+        memberships: [
+          {
+            agencyId: "agency-1",
+            agency: {
+              name: "Voyage Baguio",
+              city: "Baguio",
+              country: "Philippines",
+            },
+          },
+        ],
+      }),
+    ).toEqual({
+      name: "Voyage Baguio",
+      city: "Baguio",
+      country: "Philippines",
+    });
+  });
+
   it("renders the Agent-centered agency portfolio dashboard", () => {
     render(<HomePage agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
@@ -317,7 +342,6 @@ describe("Agency portfolio HomePage", () => {
     expect(screen.getByRole("button", { name: "Regenerate" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Send to Client" })).toBeInTheDocument();
     expect(screen.getByText("No conversation yet")).toBeInTheDocument();
-    expect(screen.getByText("Live Itinerary")).toBeInTheDocument();
   });
 
   it("wires Agent command actions through the homepage", () => {

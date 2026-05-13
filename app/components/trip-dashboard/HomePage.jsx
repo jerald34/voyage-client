@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import "./HomePage.css";
+import { useTheme } from "../theme/ThemeProvider";
 import { useAuth } from "../../hooks/useAuth.js";
 import { useAgentRunStream } from "../../hooks/useAgentRunStream.js";
 import { useTripPlanning } from "../../hooks/useTripPlanning.js";
 import {
   approveAgentThreadItinerary,
   deleteAgentThread,
+  deleteAgencyTrip,
   fetchItineraryDraft,
+  listAgencyTrips,
+  fetchPendingCount,
 } from "../../lib/api.js";
 import {
   getAgencyPortfolioSummary,
@@ -14,20 +17,41 @@ import {
   getApprovalBlockers,
   getUrgentDepartures,
 } from "../../lib/agency-dashboard/selectors.js";
-import { buildPlaceEntities } from "../../lib/trip-dashboard/placeEntities.js";
+import { buildPlaceEntities, getItineraryPlaceEntityId } from "../../lib/trip-dashboard/placeEntities.js";
 
+import dynamic from "next/dynamic";
 import AgentCommandCenter from "./command-center/AgentCommandCenter.jsx";
 import ItineraryDraftPanel from "./itinerary/ItineraryDraftPanel.jsx";
+const ItineraryLiveMap = dynamic(() => import("./itinerary/ItineraryLiveMap.jsx"), { ssr: false });
 import ClientItineraryPage from "./pages/ClientItineraryPage.jsx";
 import ApproveItineraryModal from "./modals/ApproveItineraryModal.jsx";
 import DashboardHeader from "./layout/DashboardHeader.jsx";
 import DashboardSidebar from "./layout/DashboardSidebar.jsx";
+import AdminAgenciesPage from "../admin/AdminAgenciesPage.jsx";
 
 // Minimal UI helpers
 const getInitials = (name) => {
   const parts = String(name ?? "").trim().split(/\s+/).filter(Boolean);
   return parts.length === 0 ? "VP" : parts.slice(0, 2).map(p => p[0]?.toUpperCase() ?? "").join("");
 };
+
+function mapTripStatus(dbStatus) {
+  const s = String(dbStatus ?? "").toUpperCase();
+  if (s === "APPROVED_INTERNAL") return "Approved";
+  if (s === "IN_REVIEW") return "Awaiting itinerary approval";
+  if (s === "ARCHIVED") return "Archived";
+  return "Draft";
+}
+
+function formatTripDates(startDate, endDate) {
+  if (!startDate) return "Dates pending";
+  const fmt = (d) => {
+    const date = new Date(d);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+  if (!endDate) return fmt(startDate);
+  return `${fmt(startDate)} - ${fmt(endDate)}`;
+}
 
 const getRunStatusLabel = (runStatus, streamError) => {
   if (streamError) return "Needs attention";
@@ -36,10 +60,31 @@ const getRunStatusLabel = (runStatus, streamError) => {
   return "Ready";
 };
 
-export default function HomePage({ user: userProp, agencyTrips = [], onContinue, onOpenTrip, onNewItinerary }) {
+export function getAgencyMapFallbackFromUser(user) {
+  const agency = Array.isArray(user?.memberships)
+    ? user.memberships.find((membership) => membership?.agency)?.agency
+    : null;
+  if (!agency) return null;
+
+  const city = String(agency.city ?? "").trim();
+  const country = String(agency.country ?? "").trim();
+  if (!city && !country) return null;
+
+  return {
+    name: agency.name,
+    city,
+    country,
+  };
+}
+
+export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp = [], onContinue, onOpenTrip, onNewItinerary }) {
+  const { theme } = useTheme();
   const { logout } = useAuth();
   const [user, setUser] = useState(userProp || null);
   const agencyId = user?.memberships?.[0]?.agencyId ?? null;
+  const [fetchedTrips, setFetchedTrips] = useState(null);
+  const agencyTrips = agencyTripsProp;
+  const savedTripsForPortfolio = fetchedTrips ?? [];
 
   const {
     activeContext,
@@ -71,9 +116,30 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   const [activeTab, setActiveTab] = useState("command-center");
   const [selectedPlaceId, setSelectedPlaceId] = useState("");
   const [isClientMenuOpen, setIsClientMenuOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
   const clientMenuRef = useRef(null);
   const completedAssistantMessageRef = useRef(null);
 
+  // Poll pending count for admin users
+  useEffect(() => {
+    if (user?.role !== "ADMIN") return;
+    let cancelled = false;
+    const load = () => {
+      fetchPendingCount()
+        .then((data) => { if (!cancelled) setPendingCount(data.count || 0); })
+        .catch(() => {});
+    };
+    load();
+    const interval = setInterval(load, 60000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [user?.role]);
+
+  const refreshPendingCount = () => {
+    if (user?.role !== "ADMIN") return;
+    fetchPendingCount()
+      .then((data) => setPendingCount(data.count || 0))
+      .catch(() => {});
+  };
 
   const itineraryFetchSequenceRef = useRef(0);
 
@@ -87,6 +153,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     routeEstimates,
     activeToolLabel,
     lastItineraryUpdate,
+    streamingItinerary,
     error: streamError,
     startStream,
   } = useAgentRunStream(agencyId ?? "");
@@ -102,16 +169,49 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   // Load initial data
   useEffect(() => { if (agencyId) loadInitialThreads(); }, [agencyId]);
 
+  useEffect(() => {
+    if (!agencyId) return;
+    let cancelled = false;
+    listAgencyTrips(agencyId)
+      .then((res) => {
+        if (cancelled) return;
+        const trips = Array.isArray(res?.trips) ? res.trips : [];
+        setFetchedTrips(
+          trips.map((t) => {
+            const firstItinerary = Array.isArray(t.itineraries) ? t.itineraries[0] : null;
+            return {
+              id: t.id,
+              clientName: t.clientName ?? t.title,
+              destination: t.destinationSummary ?? t.title,
+              travelWindow: formatTripDates(t.startDate, t.endDate),
+              status: t.status?.toLowerCase() === "archived" ? "archived" : "active",
+              approvalStatus: mapTripStatus(t.status),
+              itineraryId: firstItinerary?.id ?? null,
+              itineraryVersion: firstItinerary?.version ?? null,
+            };
+          })
+        );
+      })
+      .catch((err) => console.error("Failed to load agency trips:", err));
+    return () => { cancelled = true; };
+  }, [agencyId]);
+
   // Context management
   useEffect(() => {
-    if (!Array.isArray(agencyTrips) || agencyTrips.length === 0) {
+    const hasPropTrips = Array.isArray(agencyTrips) && agencyTrips.length > 0;
+    const hasThreadTrips = Object.keys(tripStates).length > 0;
+    if (!hasPropTrips && !hasThreadTrips) {
       if (activeContext?.type === "trip") setActiveContext(null);
       return;
     }
     if (activeContext?.type === "draft") return;
-    const hasCurrent = agencyTrips.some(t => t?.id === activeContext?.id);
-    if (!hasCurrent) setActiveContext(createPlanningContext("trip", agencyTrips[0]?.id ?? null));
-  }, [activeContext, agencyTrips]);
+    if (activeContext?.type === "trip") {
+      const existsInProp = agencyTrips.some(t => t?.id === activeContext?.id);
+      const existsInStates = Boolean(tripStates[activeContext?.id]);
+      if (existsInProp || existsInStates) return;
+    }
+    if (hasPropTrips) setActiveContext(createPlanningContext("trip", agencyTrips[0]?.id ?? null));
+  }, [activeContext, agencyTrips, tripStates]);
 
   useEffect(() => {
     if (!agencyId || activeContext?.type !== "trip" || !activeContext.id) return;
@@ -165,6 +265,36 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     else setTripStates(update);
   }, [runStatus, completedMessageContent, assistantMessage, lastItineraryUpdate]);
 
+  // While the agent is streaming granular events, mirror the in-flight itinerary into the active
+  // trip/draft state so RichItineraryMessage and ItineraryDraftPanel re-render in real time.
+  // The post-completion fetch below still runs for the canonical, place-snapshot-enriched copy.
+  useEffect(() => {
+    if (!streamingItinerary || !runTargetRef.current) return;
+    const targetKey = runTargetRef.current;
+    const runTarget = parseRunTargetKey(targetKey);
+    if (!runTarget) return;
+
+    const update = (prev) => {
+      const current = prev[runTarget.id] || {};
+      // Preserve any nested trip context the renderer expects, but replace days/title/summary as they stream.
+      const merged = {
+        ...(current.itinerary ?? {}),
+        ...streamingItinerary,
+      };
+      return {
+        ...prev,
+        [runTarget.id]: {
+          ...current,
+          itinerary: merged,
+          loaded: true,
+          messages: current.messages || [],
+        },
+      };
+    };
+    if (runTarget.type === "draft") setDraftThreadStates(update);
+    else setTripStates(update);
+  }, [streamingItinerary]);
+
   useEffect(() => {
     if (!agencyId || !lastItineraryUpdate || !runTargetRef.current) return;
     itineraryFetchSequenceRef.current += 1;
@@ -212,7 +342,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
   // UI state derivation
   const safeTrips = Array.isArray(agencyTrips) ? agencyTrips : [];
   const activeTrip = activeContext?.type === "trip" ? safeTrips.find(t => t?.id === activeContext.id) : null;
-  const activeTripState = activeContext?.type === "draft" ? draftThreadStates[activeContext.id] : (activeTrip?.id ? tripStates[activeTrip.id] : null);
+  const activeTripState = activeContext?.type === "draft" ? draftThreadStates[activeContext.id] : (activeContext?.type === "trip" && activeContext.id ? tripStates[activeContext.id] : null);
 
   const planningOptions = useMemo(() => {
     const drafts = draftThreadOrder.map((id, i) => {
@@ -222,11 +352,40 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
       return { type: "draft", id, clientName: label, label, destination: s.itinerary?.trip?.destination || "Planning draft", statusLabel: "Draft itinerary", threadId: id };
     }).filter(Boolean);
 
+    const propTripIds = new Set(safeTrips.map(t => t.id));
     const trips = safeTrips.map(t => ({
       type: "trip", id: t.id, clientName: t.clientName, label: t.clientName, destination: t.destination, statusLabel: t.approvalStatus || t.status || "Client trip", tripId: t.id, threadId: tripStates[t.id]?.threadId ?? null, assignedOrganizer: t.assignedOrganizer
     }));
-    return [...drafts, ...trips];
-  }, [draftThreadOrder, draftThreadStates, safeTrips, tripStates]);
+
+    const threadOnlyTrips = Object.entries(tripStates)
+      .filter(([tripId]) => !propTripIds.has(tripId))
+      .map(([tripId, state]) => {
+        const title = state.title || state.itinerary?.title || state.itinerary?.trip?.clientName || "Client trip";
+        const dest = state.itinerary?.trip?.destination || state.itinerary?.trip?.destinationSummary || "";
+        return { type: "trip", id: tripId, clientName: title, label: title, destination: dest, statusLabel: "Approved", tripId, threadId: state.threadId ?? null };
+      });
+
+    const options = [...drafts, ...trips, ...threadOnlyTrips];
+
+    // If we are currently creating a draft thread, and activeContext is set to that pending ID,
+    // add it to the options list so the switcher can identify it.
+    if (activeContext?.type === "draft" && String(activeContext.id).startsWith("pending-")) {
+      const isAlreadyInDrafts = drafts.some(d => d.id === activeContext.id);
+      if (!isAlreadyInDrafts) {
+        options.unshift({
+          type: "draft",
+          id: activeContext.id,
+          clientName: "New Itinerary...",
+          label: "New Itinerary...",
+          destination: "Planning",
+          statusLabel: "Creating...",
+          threadId: null
+        });
+      }
+    }
+
+    return options;
+  }, [draftThreadOrder, draftThreadStates, safeTrips, tripStates, activeContext]);
 
   const activeOption = useMemo(() => activeContext ? planningOptions.find(o => o.type === activeContext.type && o.id === activeContext.id) : planningOptions[0], [activeContext, planningOptions]);
 
@@ -239,6 +398,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     () => buildPlaceEntities({ itinerary: activeTripState?.itinerary ?? null, liveMarkers: visibleMapMarkers }),
     [activeTripState?.itinerary, visibleMapMarkers],
   );
+  const agencyMapFallback = useMemo(() => getAgencyMapFallbackFromUser(user), [user]);
 
   useEffect(() => {
     setSelectedPlaceId("");
@@ -263,7 +423,19 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
 
 
   // Actions
-  const handleNewItinerary = () => { onNewItinerary?.(); setActiveContext(null); /* useTripPlanning handles creation when message sent */ };
+  const handleNewItinerary = async () => {
+    // Reset to "command-center" tab so user sees the new draft being created
+    setActiveTab("command-center");
+    
+    // Set a placeholder context to immediately transition the UI to a "creating" state
+    // and avoid race conditions where the UI might try to render a null context.
+    const placeholderId = `pending-${Date.now()}`;
+    setActiveContext({ type: "draft", id: placeholderId });
+    
+    if (onNewItinerary) {
+      await onNewItinerary();
+    }
+  };
 
   const handleDeleteOption = async (option) => {
     const threadId = option?.threadId;
@@ -296,13 +468,52 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
     try {
       const res = await approveAgentThreadItinerary(agencyId, threadId, { itineraryId, ...fields });
       const approved = res?.thread || res?.trip || {};
-      setDraftThreadStates(prev => ({ ...prev, [threadId]: { ...(prev[threadId] || {}), title: approved.title || approved.clientName || fields.clientName, tripId: approved.tripId || approved.id } }));
+      const tripId = approved.tripId || approved.id;
+      const draftState = draftThreadStates[threadId] || {};
+
+      if (tripId) {
+        setTripStates(prev => ({
+          ...prev,
+          [tripId]: {
+            ...draftState,
+            threadId,
+            title: approved.title || approved.clientName || fields.clientName,
+            tripId,
+            loaded: true,
+          },
+        }));
+        setDraftThreadStates(prev => { const next = { ...prev }; delete next[threadId]; return next; });
+        setDraftThreadOrder(prev => prev.filter(id => id !== threadId));
+        setActiveContext(createPlanningContext("trip", tripId));
+      }
+
+      listAgencyTrips(agencyId)
+        .then((r) => {
+          const trips = Array.isArray(r?.trips) ? r.trips : [];
+          setFetchedTrips(
+            trips.map((t) => {
+              const firstItinerary = Array.isArray(t.itineraries) ? t.itineraries[0] : null;
+              return {
+                id: t.id,
+                clientName: t.clientName ?? t.title,
+                destination: t.destinationSummary ?? t.title,
+                travelWindow: formatTripDates(t.startDate, t.endDate),
+                status: t.status?.toLowerCase() === "archived" ? "archived" : "active",
+                approvalStatus: mapTripStatus(t.status),
+                itineraryId: firstItinerary?.id ?? null,
+                itineraryVersion: firstItinerary?.version ?? null,
+              };
+            })
+          );
+        })
+        .catch((err) => console.error("Failed to refresh agency trips:", err));
+
       setIsApprovalModalOpen(false);
     } catch (e) { setApprovalError(e.message); } finally { setIsApprovingDraft(false); }
   };
 
   return (
-    <div className="voyage-dashboard-layout">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-background text-text-primary font-sans">
       {isApprovalModalOpen && activeContext?.type === "draft" && (
         <ApproveItineraryModal
           itinerary={activeTripState?.itinerary ?? null}
@@ -322,6 +533,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
         getInitials={getInitials}
         displayName={user?.displayName || "Traveler"}
         agencyId={agencyId}
+        activeTab={activeTab}
         onNewItinerary={handleNewItinerary}
         isCreatingDraftThread={isCreatingDraftThread}
         isClientMenuOpen={isClientMenuOpen}
@@ -333,7 +545,7 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
         activeTripOrganizerInitials={activeTripOrganizerInitials}
         clientMenuEmptyTitle={clientMenuEmptyTitle}
         clientMenuEmptyBody={clientMenuEmptyBody}
-        safeOptions={planningOptions}
+        safeOptions={activeTab === "itineraries" ? planningOptions.filter(o => o.type !== "draft") : planningOptions}
         activeOption={activeOption}
         onPlanningOptionDelete={handleDeleteOption}
         deletingThreadId={deletingThreadId}
@@ -342,53 +554,83 @@ export default function HomePage({ user: userProp, agencyTrips = [], onContinue,
         onApproveDraft={() => { setApprovalError(""); setIsApprovalModalOpen(true); }}
       />
 
-      <div className="voyage-body">
+      <div className="flex flex-1 overflow-hidden relative">
         <DashboardSidebar
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           logout={logout}
+          user={user}
+          pendingCount={pendingCount}
         />
 
-        <main className="voyage-main-content">
+        <main className="flex-1 overflow-y-auto p-2 flex flex-col gap-2">
           {activeTab === "command-center" ? (
-            <section className="hero-stack">
-              <div className="agentic-surface">
-                <AgentCommandCenter
-                  messages={activeTripState?.messages ?? []}
-                  isStreaming={isVisible ? isStreaming : false}
-                  assistantMessage={isVisible ? assistantMessage : ""}
-                  toolCalls={isVisible ? toolCalls : []}
-                  activeToolLabel={isVisible ? activeToolLabel : null}
-                  dispatchAgentMessage={(prompt) => dispatchMessage(prompt, startStream)}
-                  composerInput={composerInput}
-                  setComposerInput={setComposerInput}
-                  isSending={isSending}
-                  agentError={agentError}
-                  user={user}
-                  itinerary={activeTripState?.itinerary ?? null}
-                  placeEntities={placeEntities}
-                  selectedPlaceId={selectedPlaceId}
-                  onPlaceSelect={setSelectedPlaceId}
-                />
-                <ItineraryDraftPanel
-                  itinerary={activeTripState?.itinerary ?? null}
-                  draftDays={Array.isArray(activeTripState?.itinerary?.days) ? activeTripState.itinerary.days : []}
-                  draftVersion={activeTripState?.itinerary?.version ? `Draft v${activeTripState.itinerary.version}` : "Draft unavailable"}
-                  tripSummary={activeTripState?.itinerary?.trip ?? null}
-                  mapMarkers={visibleMapMarkers}
+            <section className="relative flex flex-1 min-h-0 overflow-hidden rounded-[24px] border border-border/10 shadow-inner">
+              {/* Immersive Map Background */}
+              <div className="absolute inset-0 z-0 opacity-90 transition-opacity duration-700 hover:opacity-100">
+                <ItineraryLiveMap
+                  theme={theme}
+                  agencyLocation={agencyMapFallback}
+                  items={activeTripState?.itinerary?.days?.reduce((acc, day) => {
+                    (day?.items || []).forEach((item, idx) => acc.push({
+                      ...item,
+                      __dayNumber: day?.dayNumber,
+                      __dayTitle: day?.title,
+                      __itemIndex: idx,
+                      __placeEntityId: getItineraryPlaceEntityId(item, day, idx),
+                    }));
+                    return acc;
+                  }, []) ?? []}
+                  liveMarkers={visibleMapMarkers}
                   routeEstimates={visibleRouteEstimates}
                   placeEntities={placeEntities}
                   selectedPlaceId={selectedPlaceId}
-                  onPlaceSelect={setSelectedPlaceId}
-                  onContinue={onContinue}
-                  dispatchAgentMessage={(prompt) => dispatchMessage(prompt, startStream)}
+                  onSelectPlace={setSelectedPlaceId}
                 />
+              </div>
+
+              {/* Floating Glass Panels Layer */}
+              <div className="relative z-10 flex gap-6 p-2 w-full h-full pointer-events-none overflow-hidden">
+                <div className="w-[520px] h-full pointer-events-auto transition-all duration-500 ease-in-out">
+                  <AgentCommandCenter
+                    messages={activeTripState?.messages ?? []}
+                    isStreaming={isVisible ? isStreaming : false}
+                    assistantMessage={isVisible ? assistantMessage : ""}
+                    toolCalls={isVisible ? toolCalls : []}
+                    activeToolLabel={isVisible ? activeToolLabel : null}
+                    streamingItinerary={isVisible ? streamingItinerary : null}
+                    dispatchAgentMessage={(prompt) => dispatchMessage(prompt, startStream)}
+                    composerInput={composerInput}
+                    setComposerInput={setComposerInput}
+                    isSending={isSending}
+                    agentError={agentError}
+                    user={user}
+                    itinerary={activeTripState?.itinerary ?? null}
+                    placeEntities={placeEntities}
+                    selectedPlaceId={selectedPlaceId}
+                    onPlaceSelect={setSelectedPlaceId}
+                  />
+                </div>
+                
+                {/* ItineraryDraftPanel removed as requested - the itinerary is now focused in the command center or itineraries tab */}
               </div>
             </section>
           ) : activeTab === "itineraries" ? (
-            <ClientItineraryPage agencyTrips={agencyTrips} agencyId={agencyId} />
+            <ClientItineraryPage
+              agencyTrips={savedTripsForPortfolio}
+              agencyId={agencyId}
+              onDeleteTrip={async (aid, tripId) => {
+                await deleteAgencyTrip(aid, tripId);
+                setFetchedTrips(prev => (prev || []).filter(t => t.id !== tripId));
+                if (tripStates[tripId]) {
+                  setTripStates(prev => { const next = { ...prev }; delete next[tripId]; return next; });
+                }
+              }}
+            />
+          ) : activeTab === "admin" && user?.role === "ADMIN" ? (
+            <AdminAgenciesPage onPendingCountChange={refreshPendingCount} />
           ) : null}
         </main>
       </div>

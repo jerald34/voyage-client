@@ -73,7 +73,7 @@ function getThreadItineraryId(thread) {
   const events = Array.isArray(thread?.events) ? thread.events : [];
   const itineraryUpdateEvent = [...events]
     .reverse()
-    .find((event) => event?.type === "itinerary.updated" && event?.payload?.itineraryId);
+    .find((event) => (event?.type === "itinerary.updated" || event?.type === "itinerary.created") && event?.payload?.itineraryId);
 
   return itineraryUpdateEvent?.payload?.itineraryId ?? null;
 }
@@ -281,7 +281,7 @@ export function useTripPlanning(agencyId) {
       let currentContext = activeContextRef.current;
       let ensuredState = null;
 
-      if (!currentContext) {
+      if (!currentContext || (currentContext.type === "draft" && String(currentContext.id).startsWith("pending-"))) {
         ensuredState = await createDraftThread();
         currentContext = createPlanningContext("draft", ensuredState?.threadId ?? null);
         setActiveContext(currentContext);

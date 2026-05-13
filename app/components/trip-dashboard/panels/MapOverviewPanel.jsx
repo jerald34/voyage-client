@@ -199,35 +199,42 @@ export default function MapOverviewPanel({ tripBrief, mapHighlights }) {
   }, [hasApiKey, routePoints]);
 
   return (
-    <section className="trip-map-panel frame-panel">
+    <section className="sticky top-[110px] grid gap-5 p-5">
       <div>
-        <span className="frame-label">Route overview</span>
+        <span className="inline-flex items-center gap-2.5 text-secondary text-xs font-extrabold tracking-[0.18em] uppercase">
+          <span className="w-11 h-px bg-current opacity-55" />
+          Route overview
+        </span>
         <h2>Route overview</h2>
-        <p className="lede">A fast visual pass across the neighborhoods shaping {destination}.</p>
+        <p className="text-[1.08rem] text-text-muted mb-6">A fast visual pass across the neighborhoods shaping {destination}.</p>
       </div>
 
       {hasApiKey && routePoints.length > 0 ? (
-        <div className="trip-map-canvas has-live-map">
-          <div ref={mapNodeRef} className="trip-map-live" aria-label="Google map route overview" />
+        <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border border-border shadow-soft">
+          <div
+            ref={mapNodeRef}
+            className="absolute inset-0 w-full h-full"
+            aria-label="Google map route overview"
+          />
 
           {mapStatus === "loading" && (
-            <div className="trip-map-overlay">
-              <strong>Loading map...</strong>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface/[0.88] backdrop-blur-sm gap-3 z-[1]">
+              <strong className="text-text-primary text-sm font-bold">Loading map...</strong>
             </div>
           )}
 
           {mapStatus === "error" && (
-            <div className="trip-map-overlay">
-              <strong>Map unavailable</strong>
-              <span>{mapError || "Please verify your Google Maps API key restrictions."}</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface/[0.88] backdrop-blur-sm gap-3 z-[1] px-5 text-center">
+              <strong className="text-text-primary text-sm font-bold">Map unavailable</strong>
+              <span className="text-text-soft text-xs">{mapError || "Please verify your Google Maps API key restrictions."}</span>
             </div>
           )}
         </div>
       ) : (
-        <div className="trip-map-canvas">
-          <div className="trip-map-empty">
-            <span>Route coordinates pending</span>
-            <strong>Map preview appears after resolved locations are available.</strong>
+        <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border border-border shadow-soft bg-background">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-text-soft text-center px-5">
+            <span className="text-xs text-text-muted">Route coordinates pending</span>
+            <strong className="text-sm font-bold text-text-primary">Map preview appears after resolved locations are available.</strong>
           </div>
         </div>
       )}

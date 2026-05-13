@@ -1,7 +1,6 @@
 "use client";
 
 import React from 'react';
-import './AgentMarkdown.css';
 
 function isBlankLine(line) {
   return !line || !line.trim();
@@ -80,7 +79,6 @@ function renderInline(text, keyPrefix = 'inline', options = {}) {
   const nodes = [];
   let tokenIndex = 0;
 
-  // Fallback renderer below uses a simple left-to-right scan with safe token detection.
   const tokenRegex = /(`[^`\n]+`|\*\*[^*\n]+?\*\*|__[^_\n]+?__|\*[^*\s][^*\n]*?[^*\s]\*|_[^_\s][^_\n]*?[^_\s]_|\[[^\]\n]+\]\((?:https?:\/\/|\/)[^) \n]+\))/g;
   let lastIndex = 0;
   let match;
@@ -94,7 +92,10 @@ function renderInline(text, keyPrefix = 'inline', options = {}) {
 
     if (token.startsWith('`')) {
       nodes.push(
-        <code key={createKey(keyPrefix, tokenIndex)} className="inline-code">
+        <code
+          key={createKey(keyPrefix, tokenIndex)}
+          className="px-[0.35em] py-[0.15em] rounded-md bg-black/[0.06] font-mono text-[0.92em]"
+        >
           {token.slice(1, -1)}
         </code>
       );
@@ -122,7 +123,7 @@ function renderInline(text, keyPrefix = 'inline', options = {}) {
           href={href}
           target="_blank"
           rel="noreferrer noopener"
-          className="markdown-link"
+          className="text-secondary underline underline-offset-2 break-words hover:text-primary font-semibold"
         >
           {renderInline(label, `${keyPrefix}-link-${tokenIndex}`, options)}
         </a>
@@ -144,7 +145,7 @@ function renderParagraph(text, index, options) {
   const lines = text.split('\n');
 
   return (
-    <p key={createKey('paragraph', index)} className="markdown-paragraph">
+    <p key={createKey('paragraph', index)} className="m-0">
       {lines.map((line, lineIndex) => (
         <React.Fragment key={createKey(`paragraph-line-${index}`, lineIndex)}>
           {lineIndex > 0 ? <br /> : null}
@@ -157,7 +158,10 @@ function renderParagraph(text, index, options) {
 
 function renderBlockQuote(lines, index, options) {
   return (
-    <blockquote key={createKey('blockquote', index)} className="markdown-blockquote">
+    <blockquote
+      key={createKey('blockquote', index)}
+      className="m-0 py-2 px-3 border-l-[3px] border-secondary bg-black/[0.03] rounded-[0_10px_10px_0] text-text-soft italic"
+    >
       {lines.map((line, lineIndex) => (
         <div key={createKey(`blockquote-line-${index}`, lineIndex)}>
           {renderInline(stripQuotePrefix(line), `blockquote-${index}-line-${lineIndex}`, options)}
@@ -173,8 +177,16 @@ function renderCodeBlock(lines, startIndex, endIndex) {
   const code = lines.slice(startIndex + 1, endIndex).join('\n');
 
   return (
-    <pre key={createKey('code', startIndex)} className="markdown-code-block">
-      <code data-language={language || undefined}>{code}</code>
+    <pre
+      key={createKey('code', startIndex)}
+      className="m-0 p-3 rounded-xl bg-[rgba(24,27,31,0.96)] text-[#f6f7f9] overflow-x-auto max-w-full whitespace-pre-wrap break-all text-xs leading-[1.5]"
+    >
+      <code
+        data-language={language || undefined}
+        className="font-mono"
+      >
+        {code}
+      </code>
     </pre>
   );
 }
@@ -183,9 +195,14 @@ function renderList(items, ordered, index, options) {
   const ListTag = ordered ? 'ol' : 'ul';
 
   return (
-    <ListTag key={createKey('list', index)} className={`markdown-list ${ordered ? 'ordered' : 'unordered'}`}>
+    <ListTag
+      key={createKey('list', index)}
+      className={`m-0 pl-5 flex flex-col gap-1 ${ordered ? 'list-decimal' : 'list-disc'}`}
+    >
       {items.map((item, itemIndex) => (
-        <li key={createKey(`list-item-${index}`, itemIndex)}>{renderInline(item, `list-${index}-item-${itemIndex}`, options)}</li>
+        <li key={createKey(`list-item-${index}`, itemIndex)}>
+          {renderInline(item, `list-${index}-item-${itemIndex}`, options)}
+        </li>
       ))}
     </ListTag>
   );
@@ -194,7 +211,6 @@ function renderList(items, ordered, index, options) {
 /* ── Detect whether the current position starts a GFM table ──── */
 
 function tryParseTable(lines, startIndex) {
-  // We need at least 2 lines: header + separator
   if (startIndex + 1 >= lines.length) return null;
 
   const headerLine = lines[startIndex];
@@ -202,7 +218,6 @@ function tryParseTable(lines, startIndex) {
 
   if (!isTableRow(headerLine) || !isTableSeparator(sepLine)) return null;
 
-  // Gather body rows (continue while lines contain pipes)
   const bodyLines = [];
   let j = startIndex + 2;
   while (j < lines.length && !isBlankLine(lines[j]) && isTableRow(lines[j])) {
@@ -247,8 +262,19 @@ export function renderMarkdownContent(content, options = {}) {
     if (headingMatch) {
       const level = headingMatch[1].length;
       const HeadingTag = `h${level}`;
+      const headingSizeMap = {
+        1: 'text-[22px]',
+        2: 'text-[18px]',
+        3: 'text-[16px]',
+        4: 'text-[14px]',
+        5: 'text-[14px]',
+        6: 'text-[14px]',
+      };
       blocks.push(
-        <HeadingTag key={createKey('heading', blockIndex)} className={`markdown-heading level-${level}`}>
+        <HeadingTag
+          key={createKey('heading', blockIndex)}
+          className={`m-0 leading-tight font-bold tracking-[-0.01em] ${headingSizeMap[level] || 'text-sm'}`}
+        >
           {renderInline(headingMatch[2], `heading-${blockIndex}`, options)}
         </HeadingTag>
       );
@@ -328,14 +354,15 @@ function renderTable(headerLine, separatorLine, bodyLines, blockIndex, options) 
   const rows = bodyLines.map(splitTableRow);
 
   return (
-    <div key={createKey('table-wrap', blockIndex)} className="markdown-table-wrapper">
-      <table className="markdown-table">
+    <div key={createKey('table-wrap', blockIndex)} className="overflow-x-auto my-3 rounded-xl border border-border/20 bg-surface">
+      <table className="w-full border-collapse text-[13px]">
         <thead>
           <tr>
             {headers.map((cell, ci) => (
               <th
                 key={createKey(`th-${blockIndex}`, ci)}
                 style={alignments[ci] ? { textAlign: alignments[ci] } : undefined}
+                className="px-3.5 py-2.5 border-b border-border/20 text-left bg-background font-bold text-[11px] uppercase tracking-[0.05em] text-primary"
               >
                 {renderInline(cell, `th-${blockIndex}-${ci}`, options)}
               </th>
@@ -344,11 +371,12 @@ function renderTable(headerLine, separatorLine, bodyLines, blockIndex, options) 
         </thead>
         <tbody>
           {rows.map((row, ri) => (
-            <tr key={createKey(`tr-${blockIndex}`, ri)}>
+            <tr key={createKey(`tr-${blockIndex}`, ri)} className="even:bg-[#fafafa] hover:bg-secondary/[0.04]">
               {headers.map((_, ci) => (
                 <td
                   key={createKey(`td-${blockIndex}-${ri}`, ci)}
                   style={alignments[ci] ? { textAlign: alignments[ci] } : undefined}
+                  className="px-3.5 py-2.5 border-b border-border/20 last:[&]:border-b-0 text-left"
                 >
                   {renderInline(row[ci] ?? '', `td-${blockIndex}-${ri}-${ci}`, options)}
                 </td>

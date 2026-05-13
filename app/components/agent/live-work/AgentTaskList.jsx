@@ -3,91 +3,33 @@
 export default function AgentTaskList({ tasks = [] }) {
   if (tasks.length === 0) return null;
 
+  const getStatusDot = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'running':
+        return 'w-1.5 h-1.5 rounded-full bg-secondary animate-pulse shadow-[0_0_8px_rgb(var(--color-secondary))]';
+      case 'completed':
+        return 'w-1.5 h-1.5 rounded-full bg-[#2c7a7b]';
+      default:
+        return 'w-1.5 h-1.5 rounded-full bg-border';
+    }
+  };
+
   return (
-    <div className="agent-task-list">
-      <h3 className="section-title">Execution Steps</h3>
-      <ul className="task-items">
+    <div className="px-4 py-4 border-b border-border">
+      <h3 className="text-[10px] uppercase tracking-[0.1em] text-text-soft font-extrabold mb-3">
+        Execution Steps
+      </h3>
+      <ul className="list-none p-0 m-0 flex flex-col gap-2">
         {tasks.map((task, index) => (
-          <li key={index} className={`task-item ${task.status.toLowerCase()}`}>
-            <span className="status-indicator"></span>
-            <span className="task-label">{task.label}</span>
-            <span className="task-status">{task.status}</span>
+          <li key={index} className="flex items-center gap-2.5 text-xs text-text-muted">
+            <span className={getStatusDot(task.status)}></span>
+            <span className={`flex-grow ${task.status?.toLowerCase() === 'completed' ? 'line-through opacity-50' : ''}`}>
+              {task.label}
+            </span>
+            <span className="text-[10px] font-bold uppercase opacity-60">{task.status}</span>
           </li>
         ))}
       </ul>
-
-      <style jsx>{`
-        .agent-task-list {
-          padding: 16px;
-          border-bottom: 1px solid var(--voyage-border);
-        }
-
-        .section-title {
-          font-size: 10px;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          color: var(--voyage-text-soft);
-          font-weight: 800;
-          margin-bottom: 12px;
-        }
-
-        .task-items {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .task-item {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-size: 12px;
-          color: var(--voyage-text-muted);
-        }
-
-        .status-indicator {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: var(--voyage-border-strong);
-        }
-
-        .task-label {
-          flex-grow: 1;
-        }
-
-        .task-status {
-          font-size: 10px;
-          font-weight: 700;
-          text-transform: uppercase;
-          opacity: 0.6;
-        }
-
-        /* Status Colors */
-        .task-item.running .status-indicator {
-          background: var(--voyage-secondary);
-          box-shadow: 0 0 8px var(--voyage-secondary);
-          animation: pulse 1.5s infinite;
-        }
-
-        .task-item.completed .status-indicator {
-          background: #2c7a7b;
-        }
-
-        .task-item.completed .task-label {
-          text-decoration: line-through;
-          opacity: 0.5;
-        }
-
-        @keyframes pulse {
-          0% { opacity: 0.4; }
-          50% { opacity: 1; }
-          100% { opacity: 0.4; }
-        }
-      `}</style>
     </div>
   );
 }

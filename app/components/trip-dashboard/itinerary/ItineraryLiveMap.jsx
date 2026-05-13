@@ -17,6 +17,26 @@ const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "a1950eb4eae71842fa
 
 const EMPTY_MAP_CENTER = { lat: 0, lng: 0 };
 
+export function normalizeAgencyFallbackLocation(agencyLocation) {
+  if (!agencyLocation) return null;
+
+  const city = String(agencyLocation.city ?? "").trim();
+  const country = String(agencyLocation.country ?? "").trim();
+  const query = [city, country].filter(Boolean).join(", ");
+  if (!query) return null;
+
+  const label = String(agencyLocation.name ?? "").trim() || query;
+  const rawLat = Number(agencyLocation.lat ?? agencyLocation.latitude);
+  const rawLng = Number(agencyLocation.lng ?? agencyLocation.longitude);
+
+  return {
+    id: "agency-location",
+    label,
+    query,
+    ...(Number.isFinite(rawLat) && Number.isFinite(rawLng) ? { lat: rawLat, lng: rawLng } : {}),
+  };
+}
+
 function mapItemToPoint(item, index) {
   const rawLat = Number(item?.lat ?? item?.latitude ?? item?.placeSnapshot?.latitude);
   const rawLng = Number(item?.lng ?? item?.longitude ?? item?.placeSnapshot?.longitude);
@@ -91,7 +111,7 @@ function decodeEncodedPolyline(polyline) {
   return coordinates;
 }
 
-function normalizeRoutePolyline(polyline) {
+export function normalizeRoutePolyline(polyline) {
   if (!polyline) return [];
 
   if (typeof polyline === "string") {
@@ -138,6 +158,54 @@ function normalizeRoutePolyline(polyline) {
     .filter(Boolean);
 }
 
+export function buildRouteSegmentsFromItems(items = []) {
+  if (!Array.isArray(items)) return [];
+
+  return items
+    .map((item, index) => {
+      const routeFromPrevious = item?.routeFromPrevious;
+      const polyline = normalizeRoutePolyline(
+        routeFromPrevious?.polyline ?? routeFromPrevious?.encodedPolyline ?? routeFromPrevious?.path ?? routeFromPrevious,
+      );
+
+      if (polyline.length <= 1) {
+        return null;
+      }
+
+      return {
+        id: `route-${item?.id || item?.__placeEntityId || index}`,
+        points: polyline,
+      };
+    })
+    .filter(Boolean);
+}
+
+export function shouldFitViewportBounds(points = [], isAgencyFallback = false) {
+  if (!Array.isArray(points) || points.length === 0) return false;
+  return !isAgencyFallback;
+}
+
+export function shouldRequestClientRoute({
+  pointCount = 0,
+  routeSegmentCount = 0,
+  latestRoutePointCount = 0,
+} = {}) {
+  return pointCount > 1 && routeSegmentCount === 0 && latestRoutePointCount <= 1;
+}
+
+export function shouldShowPlannedPathFallback({
+  pointCount = 0,
+  routeSegmentCount = 0,
+  latestRoutePointCount = 0,
+  clientRouteStatus = "idle",
+} = {}) {
+  if (shouldRequestClientRoute({ pointCount, routeSegmentCount, latestRoutePointCount })) {
+    return false;
+  }
+
+  return pointCount > 1 && routeSegmentCount === 0 && latestRoutePointCount <= 1;
+}
+
 /**
  * Custom Polyline component for react-google-maps
  */
@@ -177,7 +245,7 @@ function Polyline({ points, color = "#3b82f6", weight = 3, opacity = 0.5, dashAr
   return null;
 }
 
-function FitBounds({ points }) {
+function FitBounds({ points, sidebarWidth }) {
   const map = useMap();
 
   useEffect(() => {
@@ -185,32 +253,33 @@ function FitBounds({ points }) {
 
     const bounds = new google.maps.LatLngBounds();
     points.forEach((point) => bounds.extend(point));
-    
+
     map.fitBounds(bounds, {
-      top: 36,
-      right: 36,
-      bottom: 36,
-      left: 36,
+      top: 60,
+      right: 60,
+      bottom: 60,
+      left: sidebarWidth > 0 ? sidebarWidth + 40 : 60,
     });
-  }, [map, points]);
+  }, [map, points, sidebarWidth]);
 
   return null;
 }
 
-function FocusActiveStop({ points, activeIndex }) {
+function FocusActiveStop({ points, activeIndex, sidebarWidth }) {
   const map = useMap();
 
   useEffect(() => {
     if (!map || !Number.isInteger(activeIndex) || activeIndex < 0 || activeIndex >= points.length) return;
     const activePoint = points[activeIndex];
     if (!activePoint) return;
-    
+
     map.panTo(activePoint);
+    if (sidebarWidth > 0) map.panBy(-(sidebarWidth / 2), 0);
     const currentZoom = map.getZoom();
     if (currentZoom < 14) {
       map.setZoom(14);
     }
-  }, [activeIndex, map, points]);
+  }, [activeIndex, map, points, sidebarWidth]);
 
   return null;
 }
@@ -228,17 +297,162 @@ function FocusLiveMarker({ liveMarkers }) {
   return null;
 }
 
-function FocusSelectedPlace({ selectedPlace }) {
+function FocusSelectedPlace({ selectedPlace, sidebarWidth }) {
   const map = useMap();
 
   useEffect(() => {
     if (!map || !selectedPlace) return;
     map.panTo({ lat: selectedPlace.lat, lng: selectedPlace.lng });
+    if (sidebarWidth > 0) map.panBy(-(sidebarWidth / 2), 0);
     const currentZoom = map.getZoom();
     if (!currentZoom || currentZoom < 15) {
       map.setZoom(15);
     }
-  }, [map, selectedPlace]);
+  }, [map, selectedPlace, sidebarWidth]);
+
+  return null;
+}
+
+function pointToLatLngLiteral(point) {
+  return { lat: point.lat, lng: point.lng };
+}
+
+function latLngToPoint(latLng) {
+  if (!latLng) return null;
+
+  const lat = typeof latLng.lat === "function" ? latLng.lat() : Number(latLng.lat);
+  const lng = typeof latLng.lng === "function" ? latLng.lng() : Number(latLng.lng);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  return { lat, lng };
+}
+
+function ResolveClientRoute({ points, enabled, onRoute }) {
+  const routes = useMapsLibrary("routes");
+
+  useEffect(() => {
+    if (!enabled || !Array.isArray(points) || points.length <= 1) {
+      onRoute([], "idle");
+      return;
+    }
+
+    const DirectionsService = routes?.DirectionsService ?? globalThis.google?.maps?.DirectionsService;
+    const TravelMode = routes?.TravelMode ?? globalThis.google?.maps?.TravelMode;
+    const DirectionsStatus = routes?.DirectionsStatus ?? globalThis.google?.maps?.DirectionsStatus;
+
+    if (!DirectionsService || !TravelMode) {
+      onRoute([], routes ? "unavailable" : "loading");
+      return;
+    }
+
+    let cancelled = false;
+    onRoute([], "loading");
+
+    const origin = pointToLatLngLiteral(points[0]);
+    const destination = pointToLatLngLiteral(points[points.length - 1]);
+    const waypointPoints = points.slice(1, -1).slice(0, 23);
+    const waypoints = waypointPoints.map((point) => ({
+      location: pointToLatLngLiteral(point),
+      stopover: true,
+    }));
+
+    const service = new DirectionsService();
+    service.route(
+      {
+        origin,
+        destination,
+        waypoints,
+        optimizeWaypoints: false,
+        travelMode: TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (cancelled) return;
+
+        const okStatus = DirectionsStatus?.OK ?? "OK";
+        const overviewPath = result?.routes?.[0]?.overview_path;
+        if (status !== okStatus || !Array.isArray(overviewPath) || overviewPath.length <= 1) {
+          onRoute([], "failed");
+          return;
+        }
+
+        onRoute(overviewPath.map(latLngToPoint).filter(Boolean), "ready");
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, onRoute, points, routes]);
+
+  return null;
+}
+
+function ResolveAgencyFallbackPoint({ fallback, enabled, onResolved }) {
+  const map = useMap();
+  const geocoding = useMapsLibrary("geocoding");
+
+  useEffect(() => {
+    if (!enabled || !fallback) {
+      onResolved(null);
+      return;
+    }
+
+    if (Number.isFinite(fallback.lat) && Number.isFinite(fallback.lng)) {
+      const point = {
+        id: fallback.id,
+        name: fallback.label,
+        title: fallback.label,
+        description: "Agency registered location",
+        formattedAddress: fallback.query,
+        lat: fallback.lat,
+        lng: fallback.lng,
+        source: "agency",
+      };
+      onResolved(point);
+      if (map) {
+        map.panTo({ lat: point.lat, lng: point.lng });
+        map.setZoom(11);
+      }
+      return;
+    }
+
+    if (!geocoding || !fallback.query) return;
+
+    let cancelled = false;
+    const geocoder = new geocoding.Geocoder();
+    geocoder.geocode({ address: fallback.query }, (results, status) => {
+      if (cancelled) return;
+      if (status !== "OK" || !Array.isArray(results) || !results[0]?.geometry?.location) {
+        onResolved(null);
+        return;
+      }
+
+      const location = results[0].geometry.location;
+      const point = {
+        id: fallback.id,
+        name: fallback.label,
+        title: fallback.label,
+        description: "Agency registered location",
+        formattedAddress: results[0].formatted_address || fallback.query,
+        lat: location.lat(),
+        lng: location.lng(),
+        source: "agency",
+      };
+
+      onResolved(point);
+      if (map) {
+        map.panTo({ lat: point.lat, lng: point.lng });
+        map.setZoom(11);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, fallback, geocoding, map, onResolved]);
 
   return null;
 }
@@ -249,18 +463,35 @@ function PlaceDetailPanel({ place, onClose }) {
   const mapsUrl = getGoogleMapsPlaceUrl(place);
 
   return (
-    <aside className="map-place-detail" aria-live="polite">
-      <div className="map-place-detail-header">
+    <aside
+      className="absolute left-[18px] bottom-[18px] z-[520] grid gap-2 w-[min(360px,calc(100%-36px))] p-4 rounded-[18px] bg-[rgba(15,23,42,0.92)] text-white shadow-[0_18px_40px_rgba(15,23,42,0.28)] backdrop-blur-[12px]"
+      aria-live="polite"
+    >
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <span>{place.source === "live" ? "Live map result" : place.dayLabel || "Itinerary stop"}</span>
-          <h3>{place.name}</h3>
+          <span className="text-[11px] font-bold tracking-[0.04em] uppercase text-white/60">
+            {place.source === "live" ? "Live map result" : place.dayLabel || "Itinerary stop"}
+          </span>
+          <h3 className="mt-0.5 text-xl leading-tight text-white font-serif">{place.name}</h3>
         </div>
-        <button type="button" onClick={onClose} aria-label="Close place detail">x</button>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close place detail"
+          className="w-8 h-8 border-0 rounded-full bg-white/10 text-white cursor-pointer text-xl leading-none hover:bg-white/20 transition-colors"
+        >
+          ×
+        </button>
       </div>
-      {place.formattedAddress ? <p>{place.formattedAddress}</p> : null}
-      {place.timeLabel ? <small>{place.timeLabel}</small> : null}
+      {place.formattedAddress ? <p className="m-0 text-[13px] leading-[1.45] text-white/70">{place.formattedAddress}</p> : null}
+      {place.timeLabel ? <small className="text-[11px] font-bold tracking-[0.04em] uppercase text-white/60">{place.timeLabel}</small> : null}
       {mapsUrl ? (
-        <a href={mapsUrl} target="_blank" rel="noreferrer noopener">
+        <a
+          href={mapsUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="inline-flex justify-center mt-1 rounded-full bg-[#dbeafe] text-[#0f3f86] py-[9px] px-3 text-[13px] font-extrabold no-underline hover:opacity-90 transition-opacity"
+        >
           Open in Google Maps
         </a>
       ) : null}
@@ -268,8 +499,36 @@ function PlaceDetailPanel({ place, onClose }) {
   );
 }
 
+function MapHandler({ selectedPlaceId, viewportPoints, setSelectedPoint, sidebarWidth }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!selectedPlaceId) {
+      setSelectedPoint(null);
+      return;
+    }
+
+    const point = viewportPoints.find((p) => p.id === selectedPlaceId);
+    if (point) {
+      setSelectedPoint(point);
+      if (map) {
+        map.panTo({ lat: point.lat, lng: point.lng });
+        if (sidebarWidth > 0) map.panBy(-(sidebarWidth / 2), 0);
+        const currentZoom = map.getZoom();
+        if (!currentZoom || currentZoom < 14) {
+          map.setZoom(14);
+        }
+      }
+    }
+  }, [selectedPlaceId, viewportPoints, map, setSelectedPoint, sidebarWidth]);
+
+  return null;
+}
+
+// Triggering rebuild to clear stale map hook state
 export default function ItineraryLiveMap({
   items = [],
+  agencyLocation = null,
   liveMarkers = [],
   routeEstimates = [],
   activeIndex = -1,
@@ -277,8 +536,14 @@ export default function ItineraryLiveMap({
   selectedPlaceId = "",
   selectedPlace = null,
   onSelectPlace,
+  theme = "light",
+  sidebarWidth = 520,
 }) {
   const [selectedPoint, setSelectedPoint] = useState(null);
+  const [agencyFallbackPoint, setAgencyFallbackPoint] = useState(null);
+  const [clientRoutePolyline, setClientRoutePolyline] = useState([]);
+  const [clientRouteStatus, setClientRouteStatus] = useState("idle");
+  const isDark = theme === "dark";
 
   const points = useMemo(() => items.map((item, index) => mapItemToPoint(item, index)).filter(Boolean), [items]);
   const liveMarkerPoints = useMemo(
@@ -293,8 +558,20 @@ export default function ItineraryLiveMap({
     const latestRoute = routeEstimates[routeEstimates.length - 1];
     return normalizeRoutePolyline(latestRoute?.polyline);
   }, [routeEstimates]);
+  const routeSegments = useMemo(() => buildRouteSegmentsFromItems(items), [items]);
+  const agencyFallback = useMemo(() => normalizeAgencyFallbackLocation(agencyLocation), [agencyLocation]);
+  const shouldResolveClientRoute = shouldRequestClientRoute({
+    pointCount: points.length,
+    routeSegmentCount: routeSegments.length,
+    latestRoutePointCount: latestRoutePolyline.length,
+  });
 
-  const viewportPoints = useMemo(() => [...points, ...liveMarkerPoints], [points, liveMarkerPoints]);
+  const resolvedViewportPoints = useMemo(() => [...points, ...liveMarkerPoints], [points, liveMarkerPoints]);
+  const shouldUseAgencyFallback = resolvedViewportPoints.length === 0 && Boolean(agencyFallbackPoint);
+  const viewportPoints = useMemo(
+    () => (shouldUseAgencyFallback ? [agencyFallbackPoint] : resolvedViewportPoints),
+    [agencyFallbackPoint, resolvedViewportPoints, shouldUseAgencyFallback],
+  );
   const center = viewportPoints[0] || EMPTY_MAP_CENTER;
 
   useEffect(() => {
@@ -310,35 +587,62 @@ export default function ItineraryLiveMap({
     });
   }, [selectedPlace]);
 
-  useEffect(() => {
-    if (!selectedPlaceId) {
-      setSelectedPoint(null);
-    }
-  }, [selectedPlaceId]);
 
   const handleMarkerClick = useCallback((point) => {
     setSelectedPoint(point);
     onSelectPlace?.(point.id);
   }, [onSelectPlace]);
+  const handleClientRoute = useCallback((polyline, status) => {
+    setClientRoutePolyline(polyline);
+    setClientRouteStatus(status);
+  }, []);
 
   return (
-    <div className="itinerary-live-map-shell">
+    <div className={`absolute inset-0 ${isDark ? "bg-[#111827]" : "bg-[#f8fafc]"}`}>
       <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
         <Map
           defaultCenter={center}
           defaultZoom={center.lat !== 0 ? 13 : 2}
-          mapId={MAP_ID}
-          className="itinerary-live-map"
+          mapId={isDark ? "dark_map_id_placeholder" : MAP_ID}
+          colorScheme={isDark ? "DARK" : "LIGHT"}
+          style={{ width: "100%", height: "100%" }}
           disableDefaultUI={false}
           gestureHandling="greedy"
+          mapTypeControlOptions={{ position: 3 }}
+          fullscreenControlOptions={{ position: 3 }}
+          streetViewControlOptions={{ position: 9 }}
+          zoomControlOptions={{ position: 9 }}
         >
-          {viewportPoints.length > 0 && <FitBounds points={viewportPoints} />}
-          <FocusActiveStop points={points} activeIndex={activeIndex} />
+          <MapHandler
+            selectedPlaceId={selectedPlaceId}
+            viewportPoints={viewportPoints}
+            setSelectedPoint={setSelectedPoint}
+            sidebarWidth={sidebarWidth}
+          />
+          <ResolveAgencyFallbackPoint
+            fallback={agencyFallback}
+            enabled={resolvedViewportPoints.length === 0}
+            onResolved={setAgencyFallbackPoint}
+          />
+          <ResolveClientRoute
+            points={points}
+            enabled={shouldResolveClientRoute}
+            onRoute={handleClientRoute}
+          />
+          {shouldFitViewportBounds(viewportPoints, shouldUseAgencyFallback) && (
+            <FitBounds points={viewportPoints} sidebarWidth={sidebarWidth} />
+          )}
+          <FocusActiveStop points={points} activeIndex={activeIndex} sidebarWidth={sidebarWidth} />
           <FocusLiveMarker liveMarkers={liveMarkerPoints} />
-          <FocusSelectedPlace selectedPlace={selectedPlace} />
+          <FocusSelectedPlace selectedPlace={selectedPlace} sidebarWidth={sidebarWidth} />
 
-          {/* Planned path */}
-          {points.length > 1 && (
+          {/* Planned path fallback */}
+          {shouldShowPlannedPathFallback({
+            pointCount: points.length,
+            routeSegmentCount: routeSegments.length,
+            latestRoutePointCount: latestRoutePolyline.length,
+            clientRouteStatus,
+          }) && (
             <Polyline
               points={points}
               color="#3b82f6"
@@ -347,6 +651,27 @@ export default function ItineraryLiveMap({
               dashArray={true}
             />
           )}
+
+          {/* Client-side road route fallback */}
+          {clientRoutePolyline.length > 1 && (
+            <Polyline
+              points={clientRoutePolyline}
+              color="#d77a61"
+              weight={5}
+              opacity={0.9}
+            />
+          )}
+
+          {/* Stored per-stop route paths */}
+          {routeSegments.map((segment) => (
+            <Polyline
+              key={segment.id}
+              points={segment.points}
+              color="#d77a61"
+              weight={5}
+              opacity={0.9}
+            />
+          ))}
 
           {/* Actual route estimates */}
           {latestRoutePolyline.length > 1 && (
@@ -399,6 +724,22 @@ export default function ItineraryLiveMap({
             </AdvancedMarker>
           ))}
 
+          {/* Agency fallback marker */}
+          {shouldUseAgencyFallback && (
+            <AdvancedMarker
+              key={agencyFallbackPoint.id}
+              position={{ lat: agencyFallbackPoint.lat, lng: agencyFallbackPoint.lng }}
+              onClick={() => handleMarkerClick(agencyFallbackPoint)}
+            >
+              <Pin
+                background="#0f3440"
+                borderColor="#ffffff"
+                glyphColor="#ffffff"
+                scale={1.1}
+              />
+            </AdvancedMarker>
+          )}
+
           {/* Info Window */}
           {selectedPoint && (
             <InfoWindow
@@ -421,128 +762,19 @@ export default function ItineraryLiveMap({
       </APIProvider>
 
       {!viewportPoints.length ? (
-        <div className="empty-map-content">
-          <strong>Map coordinates pending</strong>
-          <span>Locations will appear after the backend resolves itinerary places.</span>
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 grid gap-1.5 w-[min(320px,calc(100%-48px))] text-center p-6 border border-[rgba(226,232,240,0.8)] rounded-[20px] bg-white/95 backdrop-blur-[8px] text-[#0f172a] z-[500] shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),_0_8px_10px_-6px_rgba(0,0,0,0.1)] pointer-events-none">
+          <strong className="text-base font-semibold">
+            {GOOGLE_MAPS_API_KEY ? "Map coordinates pending" : "Map unavailable"}
+          </strong>
+          <span className="text-[#64748b] text-[13px] leading-[1.5]">
+            {GOOGLE_MAPS_API_KEY
+              ? "Locations will appear after the backend resolves itinerary places."
+              : "Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your .env to enable the map."}
+          </span>
         </div>
       ) : null}
 
       <PlaceDetailPanel place={selectedPlace} onClose={() => onSelectPlace?.("")} />
-
-      <style jsx>{`
-        .itinerary-live-map-shell {
-          position: absolute;
-          inset: 0;
-          background: #f8fafc;
-        }
-
-        .itinerary-live-map {
-          width: 100%;
-          height: 100%;
-        }
-
-        .empty-map-content {
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          display: grid;
-          gap: 6px;
-          width: min(320px, calc(100% - 48px));
-          text-align: center;
-          padding: 24px;
-          border: 1px solid rgba(226, 232, 240, 0.8);
-          border-radius: 20px;
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(8px);
-          color: #0f172a;
-          z-index: 500;
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-          pointer-events: none;
-        }
-
-        .empty-map-content strong {
-          font-size: 16px;
-          font-weight: 600;
-        }
-
-        .empty-map-content span {
-          color: #64748b;
-          font-size: 13px;
-          line-height: 1.5;
-        }
-
-        .map-place-detail {
-          position: absolute;
-          left: 18px;
-          bottom: 18px;
-          z-index: 520;
-          display: grid;
-          gap: 8px;
-          width: min(360px, calc(100% - 36px));
-          padding: 16px;
-          border-radius: 18px;
-          background: rgba(15, 23, 42, 0.92);
-          color: white;
-          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.28);
-          backdrop-filter: blur(12px);
-        }
-
-        .map-place-detail-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 12px;
-        }
-
-        .map-place-detail-header span,
-        .map-place-detail small {
-          color: rgba(255, 255, 255, 0.62);
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-        }
-
-        .map-place-detail h3 {
-          margin: 2px 0 0;
-          color: white;
-          font-size: 20px;
-          line-height: 1.2;
-        }
-
-        .map-place-detail p {
-          margin: 0;
-          color: rgba(255, 255, 255, 0.72);
-          font-size: 13px;
-          line-height: 1.45;
-        }
-
-        .map-place-detail button {
-          width: 32px;
-          height: 32px;
-          border: none;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, 0.12);
-          color: white;
-          cursor: pointer;
-          font-size: 20px;
-          line-height: 1;
-        }
-
-        .map-place-detail a {
-          display: inline-flex;
-          justify-content: center;
-          margin-top: 4px;
-          border-radius: 999px;
-          background: #dbeafe;
-          color: #0f3f86;
-          padding: 9px 12px;
-          font-size: 13px;
-          font-weight: 800;
-          text-decoration: none;
-        }
-      `}</style>
     </div>
   );
 }
