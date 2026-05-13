@@ -70,6 +70,8 @@ function normalizeRouteEstimate(payload, index) {
     destination: payload?.destination ?? null,
     distanceMeters: toNumber(payload?.distanceMeters),
     durationSeconds: toNumber(payload?.durationSeconds),
+    staticDurationSeconds: toNumber(payload?.staticDurationSeconds),
+    travelMode: payload?.travelMode ?? null,
     polyline: payload?.polyline ?? null,
   };
 }

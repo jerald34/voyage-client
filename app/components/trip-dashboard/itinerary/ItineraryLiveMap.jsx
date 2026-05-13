@@ -73,6 +73,82 @@ function normalizeLiveMarker(marker, index) {
   };
 }
 
+export function getMapPinGlyph(index) {
+  return String(index + 1);
+}
+
+function getRouteCoordinate(point) {
+  const lat = Number(point?.lat ?? point?.latitude);
+  const lng = Number(point?.lng ?? point?.longitude);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  return { lat, lng };
+}
+
+function getRoutePointLabel(point, fallback) {
+  return String(point?.name || point?.title || point?.formattedAddress || point?.address || fallback).trim();
+}
+
+function getRoutePointQuery(point) {
+  const label = getRoutePointLabel(point, "");
+  if (label) return label;
+
+  const coordinate = getRouteCoordinate(point);
+  return coordinate ? `${coordinate.lat},${coordinate.lng}` : "";
+}
+
+export function buildRouteEndpointPoints(route) {
+  const originCoordinate = getRouteCoordinate(route?.origin);
+  const destinationCoordinate = getRouteCoordinate(route?.destination);
+
+  if (!originCoordinate || !destinationCoordinate) {
+    return [];
+  }
+
+  return [
+    {
+      id: "route-origin",
+      glyph: "A",
+      ...originCoordinate,
+      name: getRoutePointLabel(route.origin, "Point A"),
+      title: getRoutePointLabel(route.origin, "Point A"),
+      formattedAddress: route.origin?.formattedAddress || route.origin?.address || "",
+      source: "route",
+    },
+    {
+      id: "route-destination",
+      glyph: "B",
+      ...destinationCoordinate,
+      name: getRoutePointLabel(route.destination, "Point B"),
+      title: getRoutePointLabel(route.destination, "Point B"),
+      formattedAddress: route.destination?.formattedAddress || route.destination?.address || "",
+      source: "route",
+    },
+  ];
+}
+
+function routeTravelModeForMaps(value) {
+  const mode = String(value || "").toUpperCase();
+  if (mode === "WALK") return "walking";
+  if (mode === "BICYCLE") return "bicycling";
+  if (mode === "TRANSIT") return "transit";
+  return "driving";
+}
+
+export function buildDirectionsUrl(route) {
+  const origin = getRoutePointQuery(route?.origin);
+  const destination = getRoutePointQuery(route?.destination);
+
+  if (!origin || !destination) {
+    return "";
+  }
+
+  return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=${routeTravelModeForMaps(route?.travelMode)}`;
+}
+
 function decodeEncodedPolyline(polyline) {
   const coordinates = [];
   let index = 0;
@@ -188,28 +264,18 @@ export function shouldFitViewportBounds(points = [], isAgencyFallback = false) {
 export function shouldRequestClientRoute({
   pointCount = 0,
   routeSegmentCount = 0,
-  latestRoutePointCount = 0,
 } = {}) {
-  return pointCount > 1 && routeSegmentCount === 0 && latestRoutePointCount <= 1;
+  return pointCount > 1 && routeSegmentCount === 0;
 }
 
-export function shouldShowPlannedPathFallback({
-  pointCount = 0,
-  routeSegmentCount = 0,
-  latestRoutePointCount = 0,
-  clientRouteStatus = "idle",
-} = {}) {
-  if (shouldRequestClientRoute({ pointCount, routeSegmentCount, latestRoutePointCount })) {
-    return false;
-  }
-
-  return pointCount > 1 && routeSegmentCount === 0 && latestRoutePointCount <= 1;
+export function shouldShowPlannedPathFallback() {
+  return false;
 }
 
 /**
  * Custom Polyline component for react-google-maps
  */
-function Polyline({ points, color = "#3b82f6", weight = 3, opacity = 0.5, dashArray }) {
+function Polyline({ points, color = "#3b82f6", weight = 3, opacity = 0.5, dashArray, zIndex }) {
   const map = useMap();
   const maps = useMapsLibrary("maps");
   const polylineRef = useRef(null);
@@ -227,6 +293,7 @@ function Polyline({ points, color = "#3b82f6", weight = 3, opacity = 0.5, dashAr
       strokeColor: color,
       strokeOpacity: opacity,
       strokeWeight: weight,
+      zIndex,
       icons: dashArray ? [{
         icon: { path: "M 0,-1 0,1", strokeOpacity: 1, scale: 2 },
         offset: "0",
@@ -240,7 +307,7 @@ function Polyline({ points, color = "#3b82f6", weight = 3, opacity = 0.5, dashAr
     return () => {
       polyline.setMap(null);
     };
-  }, [map, maps, points, color, weight, opacity, dashArray]);
+  }, [map, maps, points, color, weight, opacity, dashArray, zIndex]);
 
   return null;
 }
@@ -499,6 +566,57 @@ function PlaceDetailPanel({ place, onClose }) {
   );
 }
 
+function formatRouteDistance(meters) {
+  const value = Number(meters);
+  if (!Number.isFinite(value)) return "";
+  if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)} km`;
+  return `${Math.round(value)} m`;
+}
+
+function formatRouteDuration(seconds) {
+  const value = Number(seconds);
+  if (!Number.isFinite(value)) return "";
+  const minutes = Math.max(1, Math.round(value / 60));
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return remainder ? `${hours} hr ${remainder} min` : `${hours} hr`;
+}
+
+function RouteSummaryPanel({ route }) {
+  if (!route?.origin || !route?.destination) return null;
+
+  const directionsUrl = buildDirectionsUrl(route);
+  const originLabel = getRoutePointLabel(route.origin, "Point A");
+  const destinationLabel = getRoutePointLabel(route.destination, "Point B");
+  const distance = formatRouteDistance(route.distanceMeters);
+  const duration = formatRouteDuration(route.durationSeconds);
+
+  return (
+    <aside className="absolute right-[18px] bottom-[18px] z-[520] grid gap-2 w-[min(360px,calc(100%-36px))] p-4 rounded-[18px] bg-[rgba(15,23,42,0.92)] text-white shadow-[0_18px_40px_rgba(15,23,42,0.28)] backdrop-blur-[12px]">
+      <span className="text-[11px] font-bold tracking-[0.04em] uppercase text-white/60">Latest route</span>
+      <strong className="text-[15px] leading-snug">
+        {originLabel} to {destinationLabel}
+      </strong>
+      {(distance || duration) && (
+        <span className="text-[13px] text-white/70">
+          {[distance, duration].filter(Boolean).join(" | ")}
+        </span>
+      )}
+      {directionsUrl ? (
+        <a
+          href={directionsUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="inline-flex justify-center mt-1 rounded-full bg-[#dbeafe] text-[#0f3f86] py-[9px] px-3 text-[13px] font-extrabold no-underline hover:opacity-90 transition-opacity"
+        >
+          Open route in Google Maps
+        </a>
+      ) : null}
+    </aside>
+  );
+}
+
 function MapHandler({ selectedPlaceId, viewportPoints, setSelectedPoint, sidebarWidth }) {
   const map = useMap();
 
@@ -550,23 +668,24 @@ export default function ItineraryLiveMap({
     () => (Array.isArray(liveMarkers) ? liveMarkers.map((marker, index) => normalizeLiveMarker(marker, index)).filter(Boolean) : []),
     [liveMarkers],
   );
+  const latestRouteEstimate = useMemo(() => (
+    Array.isArray(routeEstimates) && routeEstimates.length > 0 ? routeEstimates[routeEstimates.length - 1] : null
+  ), [routeEstimates]);
   const latestRoutePolyline = useMemo(() => {
-    if (!Array.isArray(routeEstimates) || routeEstimates.length === 0) {
-      return [];
-    }
-
-    const latestRoute = routeEstimates[routeEstimates.length - 1];
-    return normalizeRoutePolyline(latestRoute?.polyline);
-  }, [routeEstimates]);
+    return normalizeRoutePolyline(latestRouteEstimate?.polyline);
+  }, [latestRouteEstimate]);
+  const latestRouteEndpointPoints = useMemo(() => buildRouteEndpointPoints(latestRouteEstimate), [latestRouteEstimate]);
   const routeSegments = useMemo(() => buildRouteSegmentsFromItems(items), [items]);
   const agencyFallback = useMemo(() => normalizeAgencyFallbackLocation(agencyLocation), [agencyLocation]);
   const shouldResolveClientRoute = shouldRequestClientRoute({
     pointCount: points.length,
     routeSegmentCount: routeSegments.length,
-    latestRoutePointCount: latestRoutePolyline.length,
   });
 
-  const resolvedViewportPoints = useMemo(() => [...points, ...liveMarkerPoints], [points, liveMarkerPoints]);
+  const resolvedViewportPoints = useMemo(
+    () => [...points, ...liveMarkerPoints, ...latestRouteEndpointPoints],
+    [points, liveMarkerPoints, latestRouteEndpointPoints],
+  );
   const shouldUseAgencyFallback = resolvedViewportPoints.length === 0 && Boolean(agencyFallbackPoint);
   const viewportPoints = useMemo(
     () => (shouldUseAgencyFallback ? [agencyFallbackPoint] : resolvedViewportPoints),
@@ -640,7 +759,6 @@ export default function ItineraryLiveMap({
           {shouldShowPlannedPathFallback({
             pointCount: points.length,
             routeSegmentCount: routeSegments.length,
-            latestRoutePointCount: latestRoutePolyline.length,
             clientRouteStatus,
           }) && (
             <Polyline
@@ -658,7 +776,8 @@ export default function ItineraryLiveMap({
               points={clientRoutePolyline}
               color="#d77a61"
               weight={5}
-              opacity={0.9}
+              opacity={0.82}
+              zIndex={20}
             />
           )}
 
@@ -669,17 +788,19 @@ export default function ItineraryLiveMap({
               points={segment.points}
               color="#d77a61"
               weight={5}
-              opacity={0.9}
+              opacity={0.82}
+              zIndex={20}
             />
           ))}
 
-          {/* Actual route estimates */}
+          {/* Latest route estimate overlay */}
           {latestRoutePolyline.length > 1 && (
             <Polyline
               points={latestRoutePolyline}
-              color="#d77a61"
-              weight={5}
-              opacity={0.9}
+              color="#2563eb"
+              weight={6}
+              opacity={0.95}
+              zIndex={40}
             />
           )}
 
@@ -700,10 +821,9 @@ export default function ItineraryLiveMap({
                   background={isActive ? "#2563eb" : "#ffffff"}
                   borderColor={isActive ? "#1e3a8a" : "#1e293b"}
                   glyphColor={isActive ? "#ffffff" : "#1e293b"}
+                  glyph={getMapPinGlyph(index)}
                   scale={isActive ? 1.2 : 1.0}
-                >
-                  <span style={{ fontSize: "10px", fontWeight: "bold" }}>{index + 1}</span>
-                </Pin>
+                />
               </AdvancedMarker>
             );
           })}
@@ -720,6 +840,23 @@ export default function ItineraryLiveMap({
                 borderColor="#b05b45"
                 glyphColor="#ffffff"
                 scale={selectedPlaceId === marker.id ? 1.22 : 1.1}
+              />
+            </AdvancedMarker>
+          ))}
+
+          {/* Latest route endpoints */}
+          {latestRouteEndpointPoints.map((point) => (
+            <AdvancedMarker
+              key={point.id}
+              position={{ lat: point.lat, lng: point.lng }}
+              onClick={() => handleMarkerClick(point)}
+            >
+              <Pin
+                background="#2563eb"
+                borderColor="#1e3a8a"
+                glyphColor="#ffffff"
+                glyph={point.glyph}
+                scale={1.15}
               />
             </AdvancedMarker>
           ))}
@@ -775,6 +912,7 @@ export default function ItineraryLiveMap({
       ) : null}
 
       <PlaceDetailPanel place={selectedPlace} onClose={() => onSelectPlace?.("")} />
+      <RouteSummaryPanel route={latestRouteEstimate} />
     </div>
   );
 }

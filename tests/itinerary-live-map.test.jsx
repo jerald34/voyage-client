@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildDirectionsUrl,
+  buildRouteEndpointPoints,
   buildRouteSegmentsFromItems,
+  getMapPinGlyph,
   normalizeAgencyFallbackLocation,
   shouldFitViewportBounds,
   shouldRequestClientRoute,
@@ -8,6 +11,11 @@ import {
 } from "../app/components/trip-dashboard/itinerary/ItineraryLiveMap.jsx";
 
 describe("ItineraryLiveMap route segments", () => {
+  it("numbers itinerary marker glyphs by stop order", () => {
+    expect(getMapPinGlyph(0)).toBe("1");
+    expect(getMapPinGlyph(11)).toBe("12");
+  });
+
   it("uses per-item routeFromPrevious polylines as drawable route segments", () => {
     const segments = buildRouteSegmentsFromItems([
       {
@@ -82,6 +90,32 @@ describe("ItineraryLiveMap route segments", () => {
         clientRouteStatus: "failed",
       }),
     ).toBe(false);
+  });
+
+  it("keeps the itinerary road route request active while a latest A-to-B route is visible", () => {
+    expect(
+      shouldRequestClientRoute({
+        pointCount: 8,
+        routeSegmentCount: 0,
+        latestRoutePointCount: 30,
+      }),
+    ).toBe(true);
+  });
+
+  it("builds route endpoint markers and a Google Maps directions URL", () => {
+    const route = {
+      origin: { name: "Camayan Beach", lat: 14.763, lng: 120.223 },
+      destination: { name: "Ocean Adventure", latitude: 14.775, longitude: 120.236 },
+      travelMode: "DRIVE",
+    };
+
+    expect(buildRouteEndpointPoints(route)).toEqual([
+      expect.objectContaining({ id: "route-origin", glyph: "A", name: "Camayan Beach" }),
+      expect.objectContaining({ id: "route-destination", glyph: "B", name: "Ocean Adventure" }),
+    ]);
+    expect(buildDirectionsUrl(route)).toBe(
+      "https://www.google.com/maps/dir/?api=1&origin=Camayan%20Beach&destination=Ocean%20Adventure&travelmode=driving",
+    );
   });
 });
 
