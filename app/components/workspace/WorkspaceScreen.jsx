@@ -339,7 +339,7 @@ export default function WorkspaceScreen({
 
             {/* Review CTA */}
             <button
-              className="w-full bg-accent text-white rounded-pill py-3.5 font-extrabold text-sm shadow-soft hover:-translate-y-0.5 transition-all duration-150 mt-2"
+              className="w-full bg-secondary text-white rounded-pill py-3.5 font-extrabold text-sm shadow-soft hover:-translate-y-0.5 transition-all duration-150 mt-2"
               onClick={onReviewTrip}
             >
               Review & Export
@@ -417,7 +417,7 @@ export default function WorkspaceScreen({
         {/* Final Review CTA */}
         <div className="mt-auto">
           <button
-            className="w-full bg-accent text-white rounded-pill py-3 font-extrabold text-sm shadow-soft hover:-translate-y-0.5 transition-all duration-150"
+            className="w-full bg-secondary text-white rounded-pill py-3 font-extrabold text-sm shadow-soft hover:-translate-y-0.5 transition-all duration-150"
             onClick={onReviewTrip}
           >
             Final Review

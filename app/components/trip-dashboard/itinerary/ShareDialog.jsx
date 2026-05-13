@@ -286,10 +286,10 @@ export default function ShareDialog({
                 <div className="flex flex-col gap-1.5">
                   <label
                     htmlFor="share-client-name"
-                    className="text-[12px] font-bold text-text-muted flex items-center gap-1.5"
+                    className="text-[12px] font-bold text-text-primary flex items-center gap-1.5"
                   >
                     Client Name
-                    <span className="text-[10px] font-semibold text-text-soft lowercase tracking-normal">
+                    <span className="text-[10px] font-semibold text-text-muted lowercase tracking-normal">
                       optional
                     </span>
                   </label>
@@ -301,9 +301,9 @@ export default function ShareDialog({
                     onChange={(e) => setClientName(e.target.value)}
                     className="
                       w-full px-3.5 py-2.5
-                      rounded-md border border-border/30
+                      rounded-md border border-border/40
                       bg-surface text-[14px] text-text-primary
-                      placeholder:text-border
+                      placeholder:text-text-soft/60
                       focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/14 focus:bg-surface-elevated
                       transition-[border-color,box-shadow] duration-150
                       box-border
@@ -315,10 +315,10 @@ export default function ShareDialog({
                 <div className="flex flex-col gap-1.5">
                   <label
                     htmlFor="share-client-email"
-                    className="text-[12px] font-bold text-text-muted flex items-center gap-1.5"
+                    className="text-[12px] font-bold text-text-primary flex items-center gap-1.5"
                   >
                     Client Email
-                    <span className="text-[10px] font-semibold text-text-soft lowercase tracking-normal">
+                    <span className="text-[10px] font-semibold text-text-muted lowercase tracking-normal">
                       optional
                     </span>
                   </label>
@@ -330,9 +330,9 @@ export default function ShareDialog({
                     onChange={(e) => setClientEmail(e.target.value)}
                     className="
                       w-full px-3.5 py-2.5
-                      rounded-md border border-border/30
+                      rounded-md border border-border/40
                       bg-surface text-[14px] text-text-primary
-                      placeholder:text-border
+                      placeholder:text-text-soft/60
                       focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/14 focus:bg-surface-elevated
                       transition-[border-color,box-shadow] duration-150
                       box-border
@@ -344,10 +344,10 @@ export default function ShareDialog({
                 <div className="flex flex-col gap-1.5">
                   <label
                     htmlFor="share-expires"
-                    className="text-[12px] font-bold text-text-muted flex items-center gap-1.5"
+                    className="text-[12px] font-bold text-text-primary flex items-center gap-1.5"
                   >
                     Expiration Date
-                    <span className="text-[10px] font-semibold text-text-soft lowercase tracking-normal">
+                    <span className="text-[10px] font-semibold text-text-muted lowercase tracking-normal">
                       optional
                     </span>
                   </label>
@@ -359,9 +359,9 @@ export default function ShareDialog({
                     onChange={(e) => setExpiresAt(e.target.value)}
                     className="
                       w-full px-3.5 py-2.5
-                      rounded-md border border-border/30
+                      rounded-md border border-border/40
                       bg-surface text-[14px] text-text-primary
-                      placeholder:text-border
+                      placeholder:text-text-soft/60
                       focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/14 focus:bg-surface-elevated
                       transition-[border-color,box-shadow] duration-150
                       box-border
@@ -384,12 +384,12 @@ export default function ShareDialog({
                   w-full inline-flex items-center justify-center gap-2
                   px-5 py-3
                   border-0 rounded-md
-                  bg-primary text-white text-[14px] font-bold
-                  shadow-[0_8px_20px_rgba(34,56,67,0.22)]
+                  bg-secondary text-white text-[14px] font-bold
+                  shadow-strong
                   cursor-pointer
-                  hover:not-disabled:-translate-y-px hover:not-disabled:shadow-[0_12px_24px_rgba(34,56,67,0.28)]
+                  hover:not-disabled:-translate-y-px hover:not-disabled:shadow-lg
                   disabled:opacity-60 disabled:cursor-not-allowed
-                  transition-[transform,box-shadow] duration-150
+                  transition-[transform,box-shadow,background] duration-150
                 "
                 onClick={handleGenerate}
                 disabled={isGenerating}
@@ -580,8 +580,8 @@ export default function ShareDialog({
                         flex items-start justify-between gap-3
                         px-3.5 py-3
                         rounded-[14px]
-                        bg-background border border-border/20
-                        hover:bg-border/8
+                        bg-surface border border-border/20
+                        hover:bg-surface-elevated
                         transition-colors duration-150
                         sm:flex-row flex-col sm:gap-3 gap-2.5
                       "
