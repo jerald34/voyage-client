@@ -12,8 +12,10 @@ export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, acti
   return (
     <>
       {isSidebarOpen && (
-        <div
+        <button
+          type="button"
           className="absolute inset-0 bg-black/40 backdrop-blur-[4px] z-[45] hidden max-[900px]:block"
+          aria-label="Close sidebar"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -25,6 +27,7 @@ export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, acti
           <button
             type="button"
             className={`${navItemBase} ${activeTab === "command-center" ? navItemActive : ""}`}
+            aria-current={activeTab === "command-center" ? "page" : undefined}
             onClick={() => setActiveTab("command-center")}
           >
             <span className="inline-flex items-center justify-center relative" aria-hidden="true">
@@ -38,6 +41,7 @@ export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, acti
           <button
             type="button"
             className={`${navItemBase} ${activeTab === "itineraries" ? navItemActive : ""}`}
+            aria-current={activeTab === "itineraries" ? "page" : undefined}
             onClick={() => setActiveTab("itineraries")}
           >
             <span className="inline-flex items-center justify-center relative" aria-hidden="true">
@@ -56,6 +60,7 @@ export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, acti
             <button
               type="button"
               className={`${navItemBase} ${activeTab === "admin" ? navItemActive : ""}`}
+              aria-current={activeTab === "admin" ? "page" : undefined}
               onClick={() => setActiveTab("admin")}
             >
               <span className="inline-flex items-center justify-center relative" aria-hidden="true">
@@ -75,6 +80,7 @@ export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, acti
           <button
             type="button"
             className={`${navItemBase} ${activeTab === "settings" ? navItemActive : ""}`}
+            aria-current={activeTab === "settings" ? "page" : undefined}
             onClick={() => setActiveTab("settings")}
           >
             <span className="inline-flex items-center justify-center relative" aria-hidden="true">

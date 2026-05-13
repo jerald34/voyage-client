@@ -833,11 +833,17 @@ describe("Agency portfolio HomePage", () => {
         membership={{ role: "OWNER", status: "ACTIVE" }}
         logout={vi.fn()}
         onUpdateProfile={vi.fn()}
-        onUpdateAgency={onUpdateAgency}
+      onUpdateAgency={onUpdateAgency}
       />,
     );
 
     fireEvent.change(screen.getByLabelText("Agency name"), { target: { value: "  Voyage Travel Co  " } });
+    fireEvent.change(screen.getByLabelText("Business phone"), { target: { value: "  +63 900 111 2222  " } });
+    fireEvent.change(screen.getByLabelText("Business email"), { target: { value: "  hello@voyage.example  " } });
+    fireEvent.change(screen.getByLabelText("City"), { target: { value: "  Olongapo City  " } });
+    fireEvent.change(screen.getByLabelText("Country"), { target: { value: "  Philippines  " } });
+
+    expect(screen.getByRole("button", { name: "Save workspace changes" })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "Save workspace changes" }));
 
     await waitFor(() => {
@@ -851,6 +857,10 @@ describe("Agency portfolio HomePage", () => {
     });
 
     expect(screen.getByLabelText("Agency name")).toHaveValue("Voyage Travel Co");
+    expect(screen.getByLabelText("Business phone")).toHaveValue("+63 900 111 2222");
+    expect(screen.getByLabelText("Business email")).toHaveValue("hello@voyage.example");
+    expect(screen.getByLabelText("City")).toHaveValue("Olongapo City");
+    expect(screen.getByLabelText("Country")).toHaveValue("Philippines");
     expect(screen.getByLabelText("Agency name")).not.toHaveValue("  Voyage Travel Co  ");
     expect(screen.getByRole("button", { name: "Save workspace changes" })).toBeDisabled();
   });
