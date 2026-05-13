@@ -173,11 +173,16 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   // Load initial data
   useEffect(() => { if (agencyId) loadInitialThreads(); }, [agencyId]);
 
-  const persistUser = useCallback((nextUser) => {
-    setUser(nextUser);
-    if (typeof window !== "undefined" && nextUser) {
-      localStorage.setItem("voyage-user", JSON.stringify(nextUser));
-    }
+  const persistUser = useCallback((nextUserOrUpdater) => {
+    setUser((currentUser) => {
+      const nextUser = typeof nextUserOrUpdater === "function"
+        ? nextUserOrUpdater(currentUser)
+        : nextUserOrUpdater;
+      if (typeof window !== "undefined" && nextUser) {
+        localStorage.setItem("voyage-user", JSON.stringify(nextUser));
+      }
+      return nextUser;
+    });
   }, []);
 
   const handleUserProfileUpdate = useCallback(async (payload) => {
@@ -195,18 +200,20 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
     const result = await updateAgencySettings(agencyId, payload);
     const updatedAgency = result?.agency;
     if (updatedAgency) {
-      const nextUser = {
-        ...user,
-        memberships: (user?.memberships || []).map((membership) => (
-          membership?.agencyId === agencyId
-            ? { ...membership, agency: { ...membership.agency, ...updatedAgency } }
-            : membership
-        )),
-      };
-      persistUser(nextUser);
+      persistUser((currentUser) => {
+        if (!currentUser) return currentUser;
+        return {
+          ...currentUser,
+          memberships: (currentUser?.memberships || []).map((membership) => (
+            membership?.agencyId === agencyId
+              ? { ...membership, agency: { ...membership.agency, ...updatedAgency } }
+              : membership
+          )),
+        };
+      });
     }
     return result;
-  }, [agencyId, persistUser, user]);
+  }, [agencyId, persistUser]);
 
   useEffect(() => {
     if (!agencyId) return;
