@@ -3,6 +3,8 @@ import {
   buildRouteSegmentsFromItems,
   normalizeAgencyFallbackLocation,
   shouldFitViewportBounds,
+  shouldRequestClientRoute,
+  shouldShowPlannedPathFallback,
 } from "../app/components/trip-dashboard/itinerary/ItineraryLiveMap.jsx";
 
 describe("ItineraryLiveMap route segments", () => {
@@ -42,6 +44,44 @@ describe("ItineraryLiveMap route segments", () => {
         ]
       }
     ]);
+  });
+
+  it("hides the straight planned-path fallback when a live route exists", () => {
+    expect(
+      shouldShowPlannedPathFallback({
+        pointCount: 3,
+        routeSegmentCount: 0,
+        latestRoutePointCount: 4,
+      }),
+    ).toBe(false);
+  });
+
+  it("requests a client-side road route before allowing a straight fallback", () => {
+    expect(
+      shouldRequestClientRoute({
+        pointCount: 3,
+        routeSegmentCount: 0,
+        latestRoutePointCount: 0,
+      }),
+    ).toBe(true);
+
+    expect(
+      shouldShowPlannedPathFallback({
+        pointCount: 3,
+        routeSegmentCount: 0,
+        latestRoutePointCount: 0,
+        clientRouteStatus: "loading",
+      }),
+    ).toBe(false);
+
+    expect(
+      shouldShowPlannedPathFallback({
+        pointCount: 3,
+        routeSegmentCount: 0,
+        latestRoutePointCount: 0,
+        clientRouteStatus: "failed",
+      }),
+    ).toBe(false);
   });
 });
 

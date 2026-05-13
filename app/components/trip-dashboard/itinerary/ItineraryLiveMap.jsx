@@ -185,6 +185,27 @@ export function shouldFitViewportBounds(points = [], isAgencyFallback = false) {
   return !isAgencyFallback;
 }
 
+export function shouldRequestClientRoute({
+  pointCount = 0,
+  routeSegmentCount = 0,
+  latestRoutePointCount = 0,
+} = {}) {
+  return pointCount > 1 && routeSegmentCount === 0 && latestRoutePointCount <= 1;
+}
+
+export function shouldShowPlannedPathFallback({
+  pointCount = 0,
+  routeSegmentCount = 0,
+  latestRoutePointCount = 0,
+  clientRouteStatus = "idle",
+} = {}) {
+  if (shouldRequestClientRoute({ pointCount, routeSegmentCount, latestRoutePointCount })) {
+    return false;
+  }
+
+  return pointCount > 1 && routeSegmentCount === 0 && latestRoutePointCount <= 1;
+}
+
 /**
  * Custom Polyline component for react-google-maps
  */
@@ -288,6 +309,83 @@ function FocusSelectedPlace({ selectedPlace, sidebarWidth }) {
       map.setZoom(15);
     }
   }, [map, selectedPlace, sidebarWidth]);
+
+  return null;
+}
+
+function pointToLatLngLiteral(point) {
+  return { lat: point.lat, lng: point.lng };
+}
+
+function latLngToPoint(latLng) {
+  if (!latLng) return null;
+
+  const lat = typeof latLng.lat === "function" ? latLng.lat() : Number(latLng.lat);
+  const lng = typeof latLng.lng === "function" ? latLng.lng() : Number(latLng.lng);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  return { lat, lng };
+}
+
+function ResolveClientRoute({ points, enabled, onRoute }) {
+  const routes = useMapsLibrary("routes");
+
+  useEffect(() => {
+    if (!enabled || !Array.isArray(points) || points.length <= 1) {
+      onRoute([], "idle");
+      return;
+    }
+
+    const DirectionsService = routes?.DirectionsService ?? globalThis.google?.maps?.DirectionsService;
+    const TravelMode = routes?.TravelMode ?? globalThis.google?.maps?.TravelMode;
+    const DirectionsStatus = routes?.DirectionsStatus ?? globalThis.google?.maps?.DirectionsStatus;
+
+    if (!DirectionsService || !TravelMode) {
+      onRoute([], routes ? "unavailable" : "loading");
+      return;
+    }
+
+    let cancelled = false;
+    onRoute([], "loading");
+
+    const origin = pointToLatLngLiteral(points[0]);
+    const destination = pointToLatLngLiteral(points[points.length - 1]);
+    const waypointPoints = points.slice(1, -1).slice(0, 23);
+    const waypoints = waypointPoints.map((point) => ({
+      location: pointToLatLngLiteral(point),
+      stopover: true,
+    }));
+
+    const service = new DirectionsService();
+    service.route(
+      {
+        origin,
+        destination,
+        waypoints,
+        optimizeWaypoints: false,
+        travelMode: TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (cancelled) return;
+
+        const okStatus = DirectionsStatus?.OK ?? "OK";
+        const overviewPath = result?.routes?.[0]?.overview_path;
+        if (status !== okStatus || !Array.isArray(overviewPath) || overviewPath.length <= 1) {
+          onRoute([], "failed");
+          return;
+        }
+
+        onRoute(overviewPath.map(latLngToPoint).filter(Boolean), "ready");
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, onRoute, points, routes]);
 
   return null;
 }
@@ -443,6 +541,8 @@ export default function ItineraryLiveMap({
 }) {
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [agencyFallbackPoint, setAgencyFallbackPoint] = useState(null);
+  const [clientRoutePolyline, setClientRoutePolyline] = useState([]);
+  const [clientRouteStatus, setClientRouteStatus] = useState("idle");
   const isDark = theme === "dark";
 
   const points = useMemo(() => items.map((item, index) => mapItemToPoint(item, index)).filter(Boolean), [items]);
@@ -460,6 +560,11 @@ export default function ItineraryLiveMap({
   }, [routeEstimates]);
   const routeSegments = useMemo(() => buildRouteSegmentsFromItems(items), [items]);
   const agencyFallback = useMemo(() => normalizeAgencyFallbackLocation(agencyLocation), [agencyLocation]);
+  const shouldResolveClientRoute = shouldRequestClientRoute({
+    pointCount: points.length,
+    routeSegmentCount: routeSegments.length,
+    latestRoutePointCount: latestRoutePolyline.length,
+  });
 
   const resolvedViewportPoints = useMemo(() => [...points, ...liveMarkerPoints], [points, liveMarkerPoints]);
   const shouldUseAgencyFallback = resolvedViewportPoints.length === 0 && Boolean(agencyFallbackPoint);
@@ -487,6 +592,10 @@ export default function ItineraryLiveMap({
     setSelectedPoint(point);
     onSelectPlace?.(point.id);
   }, [onSelectPlace]);
+  const handleClientRoute = useCallback((polyline, status) => {
+    setClientRoutePolyline(polyline);
+    setClientRouteStatus(status);
+  }, []);
 
   return (
     <div className={`absolute inset-0 ${isDark ? "bg-[#111827]" : "bg-[#f8fafc]"}`}>
@@ -515,6 +624,11 @@ export default function ItineraryLiveMap({
             enabled={resolvedViewportPoints.length === 0}
             onResolved={setAgencyFallbackPoint}
           />
+          <ResolveClientRoute
+            points={points}
+            enabled={shouldResolveClientRoute}
+            onRoute={handleClientRoute}
+          />
           {shouldFitViewportBounds(viewportPoints, shouldUseAgencyFallback) && (
             <FitBounds points={viewportPoints} sidebarWidth={sidebarWidth} />
           )}
@@ -523,13 +637,28 @@ export default function ItineraryLiveMap({
           <FocusSelectedPlace selectedPlace={selectedPlace} sidebarWidth={sidebarWidth} />
 
           {/* Planned path fallback */}
-          {routeSegments.length === 0 && points.length > 1 && (
+          {shouldShowPlannedPathFallback({
+            pointCount: points.length,
+            routeSegmentCount: routeSegments.length,
+            latestRoutePointCount: latestRoutePolyline.length,
+            clientRouteStatus,
+          }) && (
             <Polyline
               points={points}
               color="#3b82f6"
               weight={3}
               opacity={0.4}
               dashArray={true}
+            />
+          )}
+
+          {/* Client-side road route fallback */}
+          {clientRoutePolyline.length > 1 && (
+            <Polyline
+              points={clientRoutePolyline}
+              color="#d77a61"
+              weight={5}
+              opacity={0.9}
             />
           )}
 
