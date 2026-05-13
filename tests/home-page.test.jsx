@@ -3,6 +3,7 @@ import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import HomePage, { getAgencyMapFallbackFromUser } from "../app/components/trip-dashboard/HomePage.jsx";
+import SettingsPage from "../app/components/trip-dashboard/pages/SettingsPage.jsx";
 import { useTripDashboard } from "../app/hooks/useTripDashboard.js";
 
 if (!HTMLElement.prototype.scrollIntoView) {
@@ -795,5 +796,62 @@ describe("Agency portfolio HomePage", () => {
     expect(screen.getByDisplayValue("Olongapo Travel Studio")).toBeInTheDocument();
     expect(screen.getByDisplayValue("+63 900 111 2222")).toBeInTheDocument();
     expect(screen.getByDisplayValue("hello@olongapo.example")).toBeInTheDocument();
+  });
+
+  it("normalizes saved workspace fields after a successful agency update", async () => {
+    const onUpdateAgency = vi.fn(async () => ({
+      agency: {
+        id: "agency-1",
+        name: "Voyage Travel Co",
+        status: "VERIFIED",
+        businessPhone: "+63 900 111 2222",
+        businessEmail: "hello@voyage.example",
+        city: "Olongapo City",
+        country: "Philippines",
+      },
+    }));
+
+    render(
+      <SettingsPage
+        user={{
+          id: "user-1",
+          email: "owner@voyage.test",
+          displayName: "Agency Owner",
+          role: "USER",
+          status: "ACTIVE",
+          emailVerifiedAt: "2026-05-01T00:00:00.000Z",
+        }}
+        agency={{
+          id: "agency-1",
+          name: "Voyage Travel Studio",
+          status: "VERIFIED",
+          businessPhone: "+63 900 111 2222",
+          businessEmail: "hello@voyage.example",
+          city: "Olongapo City",
+          country: "Philippines",
+        }}
+        membership={{ role: "OWNER", status: "ACTIVE" }}
+        logout={vi.fn()}
+        onUpdateProfile={vi.fn()}
+        onUpdateAgency={onUpdateAgency}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Agency name"), { target: { value: "  Voyage Travel Co  " } });
+    fireEvent.click(screen.getByRole("button", { name: "Save workspace changes" }));
+
+    await waitFor(() => {
+      expect(onUpdateAgency).toHaveBeenCalledWith({
+        name: "Voyage Travel Co",
+        businessPhone: "+63 900 111 2222",
+        businessEmail: "hello@voyage.example",
+        city: "Olongapo City",
+        country: "Philippines",
+      });
+    });
+
+    expect(screen.getByLabelText("Agency name")).toHaveValue("Voyage Travel Co");
+    expect(screen.getByLabelText("Agency name")).not.toHaveValue("  Voyage Travel Co  ");
+    expect(screen.getByRole("button", { name: "Save workspace changes" })).toBeDisabled();
   });
 });

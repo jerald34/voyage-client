@@ -169,24 +169,27 @@ export default function SettingsPage({ user, agency, membership, logout, onUpdat
     event.preventDefault();
     if (!canEditWorkspace) return;
 
-    const nextAgencyName = agencyName.trim();
-    const nextBusinessPhone = businessPhone.trim();
-    const nextCity = city.trim();
-    const nextCountry = country.trim();
+    const normalizedAgencyValues = {
+      name: agencyName.trim(),
+      businessPhone: businessPhone.trim(),
+      businessEmail: businessEmail.trim(),
+      city: city.trim(),
+      country: country.trim(),
+    };
 
-    if (!nextAgencyName) {
+    if (!normalizedAgencyValues.name) {
       setWorkspaceError("Agency name is required.");
       return;
     }
-    if (!nextBusinessPhone) {
+    if (!normalizedAgencyValues.businessPhone) {
       setWorkspaceError("Business phone is required.");
       return;
     }
-    if (!nextCity) {
+    if (!normalizedAgencyValues.city) {
       setWorkspaceError("City is required.");
       return;
     }
-    if (!nextCountry) {
+    if (!normalizedAgencyValues.country) {
       setWorkspaceError("Country is required.");
       return;
     }
@@ -195,18 +198,17 @@ export default function SettingsPage({ user, agency, membership, logout, onUpdat
     setWorkspaceError("");
     setIsSavingWorkspace(true);
     try {
-      await onUpdateAgency?.({
-        name: nextAgencyName,
-        businessPhone: nextBusinessPhone,
-        businessEmail: businessEmail.trim(),
-        city: nextCity,
-        country: nextCountry,
-      });
-      setSavedAgencyName(nextAgencyName);
-      setSavedBusinessPhone(nextBusinessPhone);
-      setSavedBusinessEmail(businessEmail.trim());
-      setSavedCity(nextCity);
-      setSavedCountry(nextCountry);
+      await onUpdateAgency?.(normalizedAgencyValues);
+      setAgencyName(normalizedAgencyValues.name);
+      setBusinessPhone(normalizedAgencyValues.businessPhone);
+      setBusinessEmail(normalizedAgencyValues.businessEmail);
+      setCity(normalizedAgencyValues.city);
+      setCountry(normalizedAgencyValues.country);
+      setSavedAgencyName(normalizedAgencyValues.name);
+      setSavedBusinessPhone(normalizedAgencyValues.businessPhone);
+      setSavedBusinessEmail(normalizedAgencyValues.businessEmail);
+      setSavedCity(normalizedAgencyValues.city);
+      setSavedCountry(normalizedAgencyValues.country);
     } catch (error) {
       setWorkspaceError(error?.message || "Unable to update workspace details.");
     } finally {
