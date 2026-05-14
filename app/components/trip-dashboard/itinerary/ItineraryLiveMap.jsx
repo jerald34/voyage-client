@@ -10,6 +10,7 @@ import {
   InfoWindow,
   useMapsLibrary,
 } from "@vis.gl/react-google-maps";
+import { getReadablePlaceType } from "../../../lib/trip-dashboard/richItinerary.js";
 import { getGoogleMapsPlaceUrl } from "../../../lib/trip-dashboard/placeEntities.js";
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
@@ -38,16 +39,22 @@ export function normalizeAgencyFallbackLocation(agencyLocation) {
 }
 
 function mapItemToPoint(item, index) {
+  const snapshot = item?.placeSnapshot ?? null;
   const rawLat = Number(item?.lat ?? item?.latitude ?? item?.placeSnapshot?.latitude);
   const rawLng = Number(item?.lng ?? item?.longitude ?? item?.placeSnapshot?.longitude);
   if (Number.isFinite(rawLat) && Number.isFinite(rawLng)) {
+    const rating = snapshot?.rating ?? snapshot?.metadata?.rating ?? null;
+    const userRatingCount = Number(snapshot?.metadata?.userRatingCount);
     return {
       id: item?.__placeEntityId || `point-${index}`,
       lat: rawLat,
       lng: rawLng,
-      title: item?.placeSnapshot?.name || item?.placeName || item?.title || `Itinerary item ${index + 1}`,
-      description: item?.description || item?.type || "",
-      formattedAddress: item?.placeSnapshot?.formattedAddress || "",
+      title: snapshot?.name || item?.placeName || item?.title || `Itinerary item ${index + 1}`,
+      description: item?.description || snapshot?.formattedAddress || item?.type || "",
+      formattedAddress: snapshot?.formattedAddress || "",
+      placeType: getReadablePlaceType(snapshot) || item?.type || "",
+      rating: rating ? String(rating) : "",
+      userRatingCount: Number.isFinite(userRatingCount) ? userRatingCount : null,
       dayLabel: item?.__dayNumber ? `Day ${item.__dayNumber}` : "",
       timeLabel: item?.startTime && item?.endTime ? `${item.startTime} - ${item.endTime}` : item?.startTime || "",
     };
@@ -71,6 +78,82 @@ function normalizeLiveMarker(marker, index) {
     lat: rawLat,
     lng: rawLng,
   };
+}
+
+export function getMapPinGlyph(index) {
+  return String(index + 1);
+}
+
+function getRouteCoordinate(point) {
+  const lat = Number(point?.lat ?? point?.latitude);
+  const lng = Number(point?.lng ?? point?.longitude);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  return { lat, lng };
+}
+
+function getRoutePointLabel(point, fallback) {
+  return String(point?.name || point?.title || point?.formattedAddress || point?.address || fallback).trim();
+}
+
+function getRoutePointQuery(point) {
+  const label = getRoutePointLabel(point, "");
+  if (label) return label;
+
+  const coordinate = getRouteCoordinate(point);
+  return coordinate ? `${coordinate.lat},${coordinate.lng}` : "";
+}
+
+export function buildRouteEndpointPoints(route) {
+  const originCoordinate = getRouteCoordinate(route?.origin);
+  const destinationCoordinate = getRouteCoordinate(route?.destination);
+
+  if (!originCoordinate || !destinationCoordinate) {
+    return [];
+  }
+
+  return [
+    {
+      id: "route-origin",
+      glyph: "A",
+      ...originCoordinate,
+      name: getRoutePointLabel(route.origin, "Point A"),
+      title: getRoutePointLabel(route.origin, "Point A"),
+      formattedAddress: route.origin?.formattedAddress || route.origin?.address || "",
+      source: "route",
+    },
+    {
+      id: "route-destination",
+      glyph: "B",
+      ...destinationCoordinate,
+      name: getRoutePointLabel(route.destination, "Point B"),
+      title: getRoutePointLabel(route.destination, "Point B"),
+      formattedAddress: route.destination?.formattedAddress || route.destination?.address || "",
+      source: "route",
+    },
+  ];
+}
+
+function routeTravelModeForMaps(value) {
+  const mode = String(value || "").toUpperCase();
+  if (mode === "WALK") return "walking";
+  if (mode === "BICYCLE") return "bicycling";
+  if (mode === "TRANSIT") return "transit";
+  return "driving";
+}
+
+export function buildDirectionsUrl(route) {
+  const origin = getRoutePointQuery(route?.origin);
+  const destination = getRoutePointQuery(route?.destination);
+
+  if (!origin || !destination) {
+    return "";
+  }
+
+  return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=${routeTravelModeForMaps(route?.travelMode)}`;
 }
 
 function decodeEncodedPolyline(polyline) {
@@ -188,28 +271,18 @@ export function shouldFitViewportBounds(points = [], isAgencyFallback = false) {
 export function shouldRequestClientRoute({
   pointCount = 0,
   routeSegmentCount = 0,
-  latestRoutePointCount = 0,
 } = {}) {
-  return pointCount > 1 && routeSegmentCount === 0 && latestRoutePointCount <= 1;
+  return pointCount > 1 && routeSegmentCount === 0;
 }
 
-export function shouldShowPlannedPathFallback({
-  pointCount = 0,
-  routeSegmentCount = 0,
-  latestRoutePointCount = 0,
-  clientRouteStatus = "idle",
-} = {}) {
-  if (shouldRequestClientRoute({ pointCount, routeSegmentCount, latestRoutePointCount })) {
-    return false;
-  }
-
-  return pointCount > 1 && routeSegmentCount === 0 && latestRoutePointCount <= 1;
+export function shouldShowPlannedPathFallback() {
+  return false;
 }
 
 /**
  * Custom Polyline component for react-google-maps
  */
-function Polyline({ points, color = "#3b82f6", weight = 3, opacity = 0.5, dashArray }) {
+function Polyline({ points, color = "#3b82f6", weight = 3, opacity = 0.5, dashArray, zIndex }) {
   const map = useMap();
   const maps = useMapsLibrary("maps");
   const polylineRef = useRef(null);
@@ -227,6 +300,7 @@ function Polyline({ points, color = "#3b82f6", weight = 3, opacity = 0.5, dashAr
       strokeColor: color,
       strokeOpacity: opacity,
       strokeWeight: weight,
+      zIndex,
       icons: dashArray ? [{
         icon: { path: "M 0,-1 0,1", strokeOpacity: 1, scale: 2 },
         offset: "0",
@@ -240,12 +314,12 @@ function Polyline({ points, color = "#3b82f6", weight = 3, opacity = 0.5, dashAr
     return () => {
       polyline.setMap(null);
     };
-  }, [map, maps, points, color, weight, opacity, dashArray]);
+  }, [map, maps, points, color, weight, opacity, dashArray, zIndex]);
 
   return null;
 }
 
-function FitBounds({ points, sidebarWidth }) {
+function FitBounds({ points, sidebarWidth, bottomPadding = 0 }) {
   const map = useMap();
 
   useEffect(() => {
@@ -257,10 +331,10 @@ function FitBounds({ points, sidebarWidth }) {
     map.fitBounds(bounds, {
       top: 60,
       right: 60,
-      bottom: 60,
+      bottom: bottomPadding > 0 ? bottomPadding + 20 : 60,
       left: sidebarWidth > 0 ? sidebarWidth + 40 : 60,
     });
-  }, [map, points, sidebarWidth]);
+  }, [map, points, sidebarWidth, bottomPadding]);
 
   return null;
 }
@@ -297,18 +371,21 @@ function FocusLiveMarker({ liveMarkers }) {
   return null;
 }
 
-function FocusSelectedPlace({ selectedPlace, sidebarWidth }) {
+function FocusSelectedPlace({ selectedPlace, sidebarWidth, bottomPadding = 0 }) {
   const map = useMap();
 
   useEffect(() => {
     if (!map || !selectedPlace) return;
     map.panTo({ lat: selectedPlace.lat, lng: selectedPlace.lng });
     if (sidebarWidth > 0) map.panBy(-(sidebarWidth / 2), 0);
+    if (bottomPadding > 0) {
+      map.panBy(0, Math.min(260, Math.round(bottomPadding * 0.5)));
+    }
     const currentZoom = map.getZoom();
     if (!currentZoom || currentZoom < 15) {
       map.setZoom(15);
     }
-  }, [map, selectedPlace, sidebarWidth]);
+  }, [bottomPadding, map, selectedPlace, sidebarWidth]);
 
   return null;
 }
@@ -499,7 +576,58 @@ function PlaceDetailPanel({ place, onClose }) {
   );
 }
 
-function MapHandler({ selectedPlaceId, viewportPoints, setSelectedPoint, sidebarWidth }) {
+function formatRouteDistance(meters) {
+  const value = Number(meters);
+  if (!Number.isFinite(value)) return "";
+  if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)} km`;
+  return `${Math.round(value)} m`;
+}
+
+function formatRouteDuration(seconds) {
+  const value = Number(seconds);
+  if (!Number.isFinite(value)) return "";
+  const minutes = Math.max(1, Math.round(value / 60));
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return remainder ? `${hours} hr ${remainder} min` : `${hours} hr`;
+}
+
+function RouteSummaryPanel({ route }) {
+  if (!route?.origin || !route?.destination) return null;
+
+  const directionsUrl = buildDirectionsUrl(route);
+  const originLabel = getRoutePointLabel(route.origin, "Point A");
+  const destinationLabel = getRoutePointLabel(route.destination, "Point B");
+  const distance = formatRouteDistance(route.distanceMeters);
+  const duration = formatRouteDuration(route.durationSeconds);
+
+  return (
+    <aside className="absolute right-[18px] bottom-[18px] z-[520] grid gap-2 w-[min(360px,calc(100%-36px))] p-4 rounded-[18px] bg-[rgba(15,23,42,0.92)] text-white shadow-[0_18px_40px_rgba(15,23,42,0.28)] backdrop-blur-[12px]">
+      <span className="text-[11px] font-bold tracking-[0.04em] uppercase text-white/60">Latest route</span>
+      <strong className="text-[15px] leading-snug">
+        {originLabel} to {destinationLabel}
+      </strong>
+      {(distance || duration) && (
+        <span className="text-[13px] text-white/70">
+          {[distance, duration].filter(Boolean).join(" | ")}
+        </span>
+      )}
+      {directionsUrl ? (
+        <a
+          href={directionsUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="inline-flex justify-center mt-1 rounded-full bg-[#dbeafe] text-[#0f3f86] py-[9px] px-3 text-[13px] font-extrabold no-underline hover:opacity-90 transition-opacity"
+        >
+          Open route in Google Maps
+        </a>
+      ) : null}
+    </aside>
+  );
+}
+
+function MapHandler({ selectedPlaceId, viewportPoints, setSelectedPoint, sidebarWidth, bottomPadding = 0 }) {
   const map = useMap();
 
   useEffect(() => {
@@ -514,13 +642,16 @@ function MapHandler({ selectedPlaceId, viewportPoints, setSelectedPoint, sidebar
       if (map) {
         map.panTo({ lat: point.lat, lng: point.lng });
         if (sidebarWidth > 0) map.panBy(-(sidebarWidth / 2), 0);
+        if (bottomPadding > 0) {
+          map.panBy(0, Math.min(260, Math.round(bottomPadding * 0.5)));
+        }
         const currentZoom = map.getZoom();
         if (!currentZoom || currentZoom < 14) {
           map.setZoom(14);
         }
       }
     }
-  }, [selectedPlaceId, viewportPoints, map, setSelectedPoint, sidebarWidth]);
+  }, [bottomPadding, selectedPlaceId, viewportPoints, map, setSelectedPoint, sidebarWidth]);
 
   return null;
 }
@@ -538,6 +669,7 @@ export default function ItineraryLiveMap({
   onSelectPlace,
   theme = "light",
   sidebarWidth = 520,
+  mapBottomPadding = 0,
 }) {
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [agencyFallbackPoint, setAgencyFallbackPoint] = useState(null);
@@ -550,23 +682,24 @@ export default function ItineraryLiveMap({
     () => (Array.isArray(liveMarkers) ? liveMarkers.map((marker, index) => normalizeLiveMarker(marker, index)).filter(Boolean) : []),
     [liveMarkers],
   );
+  const latestRouteEstimate = useMemo(() => (
+    Array.isArray(routeEstimates) && routeEstimates.length > 0 ? routeEstimates[routeEstimates.length - 1] : null
+  ), [routeEstimates]);
   const latestRoutePolyline = useMemo(() => {
-    if (!Array.isArray(routeEstimates) || routeEstimates.length === 0) {
-      return [];
-    }
-
-    const latestRoute = routeEstimates[routeEstimates.length - 1];
-    return normalizeRoutePolyline(latestRoute?.polyline);
-  }, [routeEstimates]);
+    return normalizeRoutePolyline(latestRouteEstimate?.polyline);
+  }, [latestRouteEstimate]);
+  const latestRouteEndpointPoints = useMemo(() => buildRouteEndpointPoints(latestRouteEstimate), [latestRouteEstimate]);
   const routeSegments = useMemo(() => buildRouteSegmentsFromItems(items), [items]);
   const agencyFallback = useMemo(() => normalizeAgencyFallbackLocation(agencyLocation), [agencyLocation]);
   const shouldResolveClientRoute = shouldRequestClientRoute({
     pointCount: points.length,
     routeSegmentCount: routeSegments.length,
-    latestRoutePointCount: latestRoutePolyline.length,
   });
 
-  const resolvedViewportPoints = useMemo(() => [...points, ...liveMarkerPoints], [points, liveMarkerPoints]);
+  const resolvedViewportPoints = useMemo(
+    () => [...points, ...liveMarkerPoints, ...latestRouteEndpointPoints],
+    [points, liveMarkerPoints, latestRouteEndpointPoints],
+  );
   const shouldUseAgencyFallback = resolvedViewportPoints.length === 0 && Boolean(agencyFallbackPoint);
   const viewportPoints = useMemo(
     () => (shouldUseAgencyFallback ? [agencyFallbackPoint] : resolvedViewportPoints),
@@ -618,6 +751,7 @@ export default function ItineraryLiveMap({
             viewportPoints={viewportPoints}
             setSelectedPoint={setSelectedPoint}
             sidebarWidth={sidebarWidth}
+            bottomPadding={mapBottomPadding}
           />
           <ResolveAgencyFallbackPoint
             fallback={agencyFallback}
@@ -630,17 +764,16 @@ export default function ItineraryLiveMap({
             onRoute={handleClientRoute}
           />
           {shouldFitViewportBounds(viewportPoints, shouldUseAgencyFallback) && (
-            <FitBounds points={viewportPoints} sidebarWidth={sidebarWidth} />
+            <FitBounds points={viewportPoints} sidebarWidth={sidebarWidth} bottomPadding={mapBottomPadding} />
           )}
           <FocusActiveStop points={points} activeIndex={activeIndex} sidebarWidth={sidebarWidth} />
           <FocusLiveMarker liveMarkers={liveMarkerPoints} />
-          <FocusSelectedPlace selectedPlace={selectedPlace} sidebarWidth={sidebarWidth} />
+          <FocusSelectedPlace selectedPlace={selectedPlace} sidebarWidth={sidebarWidth} bottomPadding={mapBottomPadding} />
 
           {/* Planned path fallback */}
           {shouldShowPlannedPathFallback({
             pointCount: points.length,
             routeSegmentCount: routeSegments.length,
-            latestRoutePointCount: latestRoutePolyline.length,
             clientRouteStatus,
           }) && (
             <Polyline
@@ -658,7 +791,8 @@ export default function ItineraryLiveMap({
               points={clientRoutePolyline}
               color="#d77a61"
               weight={5}
-              opacity={0.9}
+              opacity={0.82}
+              zIndex={20}
             />
           )}
 
@@ -669,17 +803,19 @@ export default function ItineraryLiveMap({
               points={segment.points}
               color="#d77a61"
               weight={5}
-              opacity={0.9}
+              opacity={0.82}
+              zIndex={20}
             />
           ))}
 
-          {/* Actual route estimates */}
+          {/* Latest route estimate overlay */}
           {latestRoutePolyline.length > 1 && (
             <Polyline
               points={latestRoutePolyline}
-              color="#d77a61"
-              weight={5}
-              opacity={0.9}
+              color="#2563eb"
+              weight={6}
+              opacity={0.95}
+              zIndex={40}
             />
           )}
 
@@ -700,10 +836,9 @@ export default function ItineraryLiveMap({
                   background={isActive ? "#2563eb" : "#ffffff"}
                   borderColor={isActive ? "#1e3a8a" : "#1e293b"}
                   glyphColor={isActive ? "#ffffff" : "#1e293b"}
+                  glyph={getMapPinGlyph(index)}
                   scale={isActive ? 1.2 : 1.0}
-                >
-                  <span style={{ fontSize: "10px", fontWeight: "bold" }}>{index + 1}</span>
-                </Pin>
+                />
               </AdvancedMarker>
             );
           })}
@@ -720,6 +855,23 @@ export default function ItineraryLiveMap({
                 borderColor="#b05b45"
                 glyphColor="#ffffff"
                 scale={selectedPlaceId === marker.id ? 1.22 : 1.1}
+              />
+            </AdvancedMarker>
+          ))}
+
+          {/* Latest route endpoints */}
+          {latestRouteEndpointPoints.map((point) => (
+            <AdvancedMarker
+              key={point.id}
+              position={{ lat: point.lat, lng: point.lng }}
+              onClick={() => handleMarkerClick(point)}
+            >
+              <Pin
+                background="#2563eb"
+                borderColor="#1e3a8a"
+                glyphColor="#ffffff"
+                glyph={point.glyph}
+                scale={1.15}
               />
             </AdvancedMarker>
           ))}
@@ -746,12 +898,24 @@ export default function ItineraryLiveMap({
               position={{ lat: selectedPoint.lat, lng: selectedPoint.lng }}
               onCloseClick={() => setSelectedPoint(null)}
             >
-              <div style={{ padding: "4px", color: "#1e293b" }}>
-                <strong style={{ fontSize: "14px", display: "block", marginBottom: "4px" }}>
+              <div style={{ padding: "4px", color: "#1e293b", minWidth: "170px" }}>
+                <strong style={{ fontSize: "14px", display: "block", marginBottom: "2px" }}>
                   {selectedPoint.title || selectedPoint.name}
                 </strong>
+                {(selectedPoint.placeType || selectedPoint.rating) && (
+                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>
+                    {selectedPoint.rating ? `★ ${selectedPoint.rating}` : ""}
+                    {selectedPoint.rating && selectedPoint.placeType ? " · " : ""}
+                    {selectedPoint.placeType || ""}
+                  </div>
+                )}
+                {selectedPoint.timeLabel ? (
+                  <div style={{ fontSize: "12px", color: "#ea7a5e", fontWeight: 600, marginBottom: "4px" }}>
+                    {selectedPoint.timeLabel}
+                  </div>
+                ) : null}
                 {(selectedPoint.description || selectedPoint.formattedAddress) && (
-                  <div style={{ fontSize: "12px", color: "#64748b" }}>
+                  <div style={{ fontSize: "12px", color: "#64748b", lineHeight: 1.4 }}>
                     {selectedPoint.description || selectedPoint.formattedAddress}
                   </div>
                 )}
@@ -775,6 +939,7 @@ export default function ItineraryLiveMap({
       ) : null}
 
       <PlaceDetailPanel place={selectedPlace} onClose={() => onSelectPlace?.("")} />
+      <RouteSummaryPanel route={latestRouteEstimate} />
     </div>
   );
 }

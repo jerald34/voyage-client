@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   createAgentThread,
-  fetchAgentThread,
   fetchItineraryDraft,
   listAgentThreads,
   sendMessage,
@@ -139,8 +138,7 @@ export function useTripPlanning(agencyId) {
 
       let thread = matchingThread ?? null;
       if (thread?.id) {
-        const detailResult = await fetchAgentThread(agencyId, thread.id);
-        thread = detailResult?.thread ?? thread;
+        // listAgentThreads already returns the thread payload we need for hydration.
       } else {
         const createdResult = await createAgentThread(agencyId, tripId);
         thread = createdResult?.thread ?? null;
@@ -216,16 +214,18 @@ export function useTripPlanning(agencyId) {
       const nextDraftOrder = [];
       let fallbackContext = null;
 
-      for (const listedThread of threads) {
-        let thread = listedThread;
-        const detailResult = await fetchAgentThread(agencyId, listedThread.id);
-        thread = detailResult?.thread ?? thread;
-        if (!thread?.id) continue;
+      const hydratedThreads = await Promise.all(
+        threads.map(async (thread) => {
+          const tripId = getThreadTripId(thread);
+          const itineraryId = getThreadItineraryId(thread);
+          const itineraryResult = itineraryId ? await fetchItineraryDraft(agencyId, itineraryId) : null;
+          const itinerary = itineraryResult ? normalizeItineraryResponse(itineraryResult) : null;
+          return { thread, tripId, itineraryId, itinerary };
+        })
+      );
 
-        const tripId = getThreadTripId(thread);
-        const itineraryId = getThreadItineraryId(thread);
-        const itineraryResult = itineraryId ? await fetchItineraryDraft(agencyId, itineraryId) : null;
-        const itinerary = itineraryResult ? normalizeItineraryResponse(itineraryResult) : null;
+      for (const hydrated of hydratedThreads) {
+        const { thread, tripId, itineraryId, itinerary } = hydrated;
 
         if (tripId) {
           nextTripStates[tripId] = {

@@ -114,13 +114,13 @@ export default function LandingPage({ onLogin, onContinue }) {
 
       {/* ── Sticky Header ─────────────────────────────────────── */}
       <header className="sticky top-4 z-50 mx-auto w-full max-w-[1220px] px-4">
-        <div className="flex items-center justify-between gap-6 px-7 py-4 bg-surface/80 backdrop-blur-md border border-border/[0.12] rounded-pill shadow-soft">
+        <div className="flex items-center justify-between gap-4 px-4 sm:px-7 py-3 sm:py-4 bg-surface/80 backdrop-blur-md border border-border/[0.12] rounded-pill shadow-soft">
           {/* Brand */}
           <a href="#" className="font-serif text-2xl tracking-tight text-text-primary no-underline shrink-0">
             Voyage
           </a>
 
-          {/* Nav */}
+          {/* Nav — desktop only */}
           <nav className="hidden md:flex items-center gap-2" aria-label="Landing navigation">
             {navLinks.map((link) => (
               <a
@@ -134,21 +134,25 @@ export default function LandingPage({ onLogin, onContinue }) {
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center gap-3 shrink-0">
-            <ThemeToggle />
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Theme toggle hidden on mobile to preserve space */}
+            <span className="hidden sm:block">
+              <ThemeToggle />
+            </span>
             <button
               type="button"
               onClick={onLogin}
-              className="hidden sm:inline-flex items-center px-5 py-2.5 text-sm font-extrabold text-text-primary border border-border/[0.18] rounded-pill bg-transparent transition-all duration-150 hover:bg-accent/[0.08] hover:border-accent/30 cursor-pointer"
+              className="inline-flex items-center px-3 sm:px-5 py-2 sm:py-2.5 text-sm font-extrabold text-text-primary border border-border/[0.18] rounded-pill bg-transparent transition-all duration-150 hover:bg-accent/[0.08] hover:border-accent/30 cursor-pointer"
             >
               Login
             </button>
             <button
               type="button"
               onClick={onContinue}
-              className="inline-flex items-center px-5 py-2.5 text-sm font-extrabold text-white bg-secondary rounded-pill border border-transparent transition-opacity duration-150 hover:opacity-90 cursor-pointer"
+              className="inline-flex items-center px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-extrabold text-white bg-secondary rounded-pill border border-transparent transition-opacity duration-150 hover:opacity-90 cursor-pointer whitespace-nowrap"
             >
-              Get Early Access
+              <span className="sm:hidden">Get Access</span>
+              <span className="hidden sm:inline">Get Early Access</span>
             </button>
           </div>
         </div>

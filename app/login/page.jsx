@@ -68,6 +68,7 @@ function LoginForm() {
   const [wizardStep, setWizardStep] = useState(1);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [resetNotice, setResetNotice] = useState("");
 
   // Step 1 fields
   const [fullName, setFullName] = useState("");
@@ -100,6 +101,12 @@ function LoginForm() {
         setMode("register");
         setWizardStep(2);
       }
+    }
+
+    if (searchParams.get("reset") === "success") {
+      setResetNotice("Your password has been updated. Sign in with your new password.");
+    } else {
+      setResetNotice("");
     }
   }, [searchParams]);
 
@@ -180,9 +187,9 @@ function LoginForm() {
   const isRegister = mode === "register";
 
   return (
-    <div className={`grid grid-cols-2 min-h-[calc(100vh-100px)] gap-0 rounded-lg overflow-hidden border border-border shadow-strong transition-all duration-650 ${mounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-6 scale-[0.985]"}`}>
-      {/* LEFT: Brand showcase panel */}
-      <div className="relative flex flex-col justify-center p-[clamp(40px,5vw,72px)] bg-gradient-to-br from-[#223843] via-[#1a2e38] to-[#2d3436] overflow-hidden">
+    <div className={`grid grid-cols-1 md:grid-cols-2 min-h-screen md:min-h-[calc(100vh-100px)] gap-0 md:rounded-lg md:overflow-hidden md:border md:border-border md:shadow-strong transition-all duration-650 ${mounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-6 scale-[0.985]"}`}>
+      {/* LEFT: Brand showcase panel — hidden on mobile, shown md+ */}
+      <div className="hidden md:relative md:flex md:flex-col justify-center p-[clamp(40px,5vw,72px)] bg-gradient-to-br from-[#223843] via-[#1a2e38] to-[#2d3436] overflow-hidden">
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <FloatingOrb delay="0s" size="320px" left="-80px" top="-60px" />
           <FloatingOrb delay="2.4s" size="200px" left="60%" top="55%" />
@@ -215,7 +222,7 @@ function LoginForm() {
       </div>
 
       {/* RIGHT: Auth form */}
-      <div className="flex flex-col p-[clamp(28px,4vw,56px)] bg-gradient-to-b from-[rgba(255,255,255,0.98)] to-[rgba(239,241,243,0.94)] dark:from-[rgba(26,29,33,0.98)] dark:to-[rgba(17,20,22,0.94)] overflow-y-auto">
+      <div className="flex flex-col p-6 sm:p-10 md:p-[clamp(28px,4vw,56px)] bg-gradient-to-b from-[rgba(255,255,255,0.98)] to-[rgba(239,241,243,0.94)] dark:from-[rgba(26,29,33,0.98)] dark:to-[rgba(17,20,22,0.94)] overflow-y-auto">
         <div className="mb-8">
           <Link href="/" className="inline-flex items-center gap-2 text-text-muted text-xs font-bold no-underline transition-colors duration-160 hover:text-secondary">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -302,7 +309,9 @@ function LoginForm() {
                   <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
                     <div className="flex justify-between items-center">
                       <label htmlFor="auth-password" className="text-text-primary text-[0.86rem] font-bold">Password</label>
-                      <button type="button" className="bg-none border-none text-secondary font-bold text-xs cursor-pointer transition-colors duration-160 hover:text-text-primary">Forgot password?</button>
+                      <Link href="/forgot-password" className="bg-none border-none text-secondary font-bold text-xs cursor-pointer transition-colors duration-160 hover:text-text-primary no-underline">
+                        Forgot password?
+                      </Link>
                     </div>
                     <div className="relative flex items-center">
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -320,6 +329,7 @@ function LoginForm() {
                     </div>
                   </div>
 
+                  {resetNotice && <div className="p-3 rounded-sm bg-[rgba(32,178,170,0.08)] border border-[rgba(32,178,170,0.22)] text-text-primary text-[0.86rem] font-semibold leading-relaxed text-center [animation:auth-field-in_0.25s_ease_both]" role="status">{resetNotice}</div>}
                   {auth.error && <div className="p-3 rounded-sm bg-status-danger/[0.06] border border-status-danger/[0.18] text-status-danger text-[0.86rem] font-semibold leading-relaxed text-center [animation:auth-field-in_0.25s_ease_both]" role="alert">{auth.error.message}</div>}
 
                   <button type="submit" className="w-full mt-2 inline-flex items-center justify-center gap-2 min-h-[54px] px-7 py-4 rounded-pill font-extrabold bg-accent text-white hover:-translate-y-0.5 transition cursor-pointer disabled:opacity-55 disabled:cursor-not-allowed disabled:transform-none" disabled={auth.loading}>
@@ -535,7 +545,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="w-full max-w-[1320px] mx-auto px-5 pt-7 pb-[72px] min-h-screen">
+    <main className="w-full max-w-[1320px] mx-auto px-0 md:px-5 pt-0 md:pt-7 pb-0 md:pb-[72px] min-h-screen">
       <div className="system-grain" aria-hidden="true" />
       <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
         <LoginForm />

@@ -1,7 +1,9 @@
 import React from "react";
 import AgentMarkdown from "../../agent/chat/AgentMarkdown";
-import { getMatchedPlaces, matchPlaceMentions } from "../../../lib/trip-dashboard/placeEntities.js";
+import { getMatchedPlaces, matchPlaceMentions, getItineraryPlaceEntityId } from "../../../lib/trip-dashboard/placeEntities.js";
 import RichItineraryMessage from "./RichItineraryMessage.jsx";
+import useMobileViewport from "../mobile/useMobileViewport.js";
+import CompactPlaceCard from "../mobile/CompactPlaceCard.jsx";
 
 function PlaceLinkedText({ children, placeEntities, selectedPlaceId, onPlaceSelect }) {
   if (typeof children !== "string" && typeof children !== "number") {
@@ -110,11 +112,13 @@ export default function ChatMessage({
   placeEntities = [],
   selectedPlaceId = "",
   onPlaceSelect,
+  onEdit,
 }) {
   const shouldRenderRichItinerary = !isUser && renderAsItinerary && itinerary;
+  const isMobile = useMobileViewport();
 
   return (
-    <div className={`flex gap-3 max-w-full ${isUser ? "flex-row-reverse" : "flex-row"}`}>
+    <div className={`group flex gap-3 max-w-full ${isUser ? "flex-row-reverse" : "flex-row"}`}>
       <div
         className={`w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[11px] font-extrabold mt-1 shadow-sm ${
           isUser ? "bg-secondary text-white" : "bg-secondary text-white"
@@ -134,6 +138,20 @@ export default function ChatMessage({
         <div className={`flex items-baseline gap-2 px-1 text-[11px] ${isUser ? "flex-row-reverse" : "flex-row"}`}>
           <span className="font-bold text-text-primary">{isUser ? userName : "Voyage Agent"}</span>
           <span className="text-text-soft">{isUser ? "You" : "Agent"}</span>
+          {isUser && onEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(message.content)}
+              className="ml-1 opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-text-soft hover:text-secondary transition-all cursor-pointer border-0 bg-transparent"
+              title="Edit message"
+              aria-label="Edit this message"
+            >
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </button>
+          )}
         </div>
         <div
           className={`px-5 py-3.5 rounded-[20px] text-sm leading-relaxed break-words w-fit max-w-full shadow-lg ${
@@ -145,32 +163,57 @@ export default function ChatMessage({
           {isUser ? (
             <p className="m-0 font-medium">{message.content}</p>
           ) : renderAsItinerary && itinerary ? (
-            <div className="flex flex-col gap-4">
-              <RichItineraryMessage
-                itinerary={itinerary}
-                placeEntities={placeEntities}
-                selectedPlaceId={selectedPlaceId}
-                onPlaceSelect={onPlaceSelect}
-              />
-              {String(message?.content ?? "").trim() ? (
-                <div className="pt-3 border-t border-white/10">
-                  <MarkdownContent
-                    content={message.content}
-                    placeEntities={placeEntities}
-                    selectedPlaceId={selectedPlaceId}
-                    onPlaceSelect={onPlaceSelect}
-                    showPlaceLinks={false}
-                    showPlaceCards={false}
-                  />
-                </div>
-              ) : null}
-            </div>
+            isMobile ? (
+              <div className="flex flex-col gap-2">
+                {Array.isArray(itinerary.days) && itinerary.days.map((day) => (
+                  <div key={day.dayNumber || day.id} className="flex flex-col gap-2">
+                    <span className="text-[0.65rem] font-extrabold uppercase tracking-[0.06em] text-text-soft">
+                      Day {day.dayNumber}{day.title ? ` â€” ${day.title}` : ""}
+                    </span>
+                    {(day.items || []).map((item, iIdx) => {
+                      const entityId = getItineraryPlaceEntityId(item, day, iIdx);
+                      return (
+                        <CompactPlaceCard
+                          key={`${day.dayNumber}-${iIdx}`}
+                          item={item}
+                          isSelected={selectedPlaceId === entityId}
+                          onSelect={() => onPlaceSelect?.(entityId)}
+                        />
+                      );
+                    })}
+                  </div>
+                ))}
+                <span className="text-[0.65rem] text-text-soft mt-1">CURATED BY VOYAGE AGENT</span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <RichItineraryMessage
+                  itinerary={itinerary}
+                  placeEntities={placeEntities}
+                  selectedPlaceId={selectedPlaceId}
+                  onPlaceSelect={onPlaceSelect}
+                />
+                {String(message?.content ?? "").trim() ? (
+                  <div className="pt-3 border-t border-white/10">
+                    <MarkdownContent
+                      content={message.content}
+                      placeEntities={placeEntities}
+                      selectedPlaceId={selectedPlaceId}
+                      onPlaceSelect={onPlaceSelect}
+                      showPlaceLinks={false}
+                      showPlaceCards={false}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            )
           ) : (
             <MarkdownContent
               content={message.content}
               placeEntities={placeEntities}
               selectedPlaceId={selectedPlaceId}
               onPlaceSelect={onPlaceSelect}
+              showPlaceCards={false}
             />
           )}
         </div>

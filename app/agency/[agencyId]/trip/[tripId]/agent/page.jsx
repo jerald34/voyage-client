@@ -31,7 +31,8 @@ export default function AgencyTripAgentPage({ params }) {
     activeToolLabel,
     lastItineraryUpdate,
     error,
-    startStream
+    startStream,
+    stopStream,
   } = useAgentRunStream(agencyId);
 
   // If the run completes, move the assistant message to the static list
@@ -83,11 +84,14 @@ export default function AgencyTripAgentPage({ params }) {
   return (
     <AgencyAgentWorkspace 
       chatPanel={
-        <AgentChatPanel 
-          messages={messages} 
-          onSend={handleSend} 
-          isLoading={isStreaming} 
-          streamingMessage={assistantMessage} 
+        <AgentChatPanel
+          messages={messages}
+          onSend={handleSend}
+          isLoading={isStreaming}
+          streamingMessage={assistantMessage}
+          activeToolLabel={activeToolLabel}
+          toolCalls={toolCalls}
+          onStop={stopStream}
         />
       }
       liveWorkPanel={

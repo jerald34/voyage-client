@@ -181,7 +181,7 @@ function NamePromptBanner({ onComplete }) {
               <input
                 ref={inputRef}
                 type="text"
-                className={`px-[11px] py-[7px] border rounded-sm bg-white text-[13px] text-text-primary outline-none w-full box-border transition-all duration-150 focus:border-secondary focus:shadow-[0_0_0_3px_rgba(215,122,97,0.12)] ${nameError ? "border-red-500 shadow-[0_0_0_3px_rgba(224,92,92,0.1)]" : "border-border"}`}
+                className={`px-[11px] py-[7px] border rounded-sm bg-background text-[13px] text-text-primary outline-none w-full box-border transition-all duration-150 focus:border-secondary focus:shadow-[0_0_0_3px_rgba(215,122,97,0.12)] ${nameError ? "border-red-500 shadow-[0_0_0_3px_rgba(224,92,92,0.1)]" : "border-border/40"}`}
                 placeholder="Your name *"
                 value={name}
                 onChange={(e) => { setName(e.target.value); setNameError(false); }}
@@ -191,7 +191,7 @@ function NamePromptBanner({ onComplete }) {
             </div>
             <input
               type="email"
-              className="px-[11px] py-[7px] border border-border rounded-sm bg-white text-[13px] text-text-primary outline-none flex-1 min-w-[130px] max-sm:min-w-0 box-border transition-all duration-150 focus:border-secondary focus:shadow-[0_0_0_3px_rgba(215,122,97,0.12)]"
+              className="px-[11px] py-[7px] border border-border/40 rounded-sm bg-background text-[13px] text-text-primary outline-none flex-1 min-w-[130px] max-sm:min-w-0 box-border transition-all duration-150 focus:border-secondary focus:shadow-[0_0_0_3px_rgba(215,122,97,0.12)]"
               placeholder="Email (optional)"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -255,7 +255,7 @@ function CommentForm({ token, dayNumber, itemId, commenterName, commenterEmail, 
         <>
           <textarea
             ref={textareaRef}
-            className="w-full box-border px-3 py-[9px] border border-border rounded-sm bg-white text-[13px] leading-[1.55] text-text-primary resize-y outline-none font-[inherit] transition-all duration-150 min-h-[72px] focus:border-secondary focus:shadow-[0_0_0_3px_rgba(215,122,97,0.1)] disabled:opacity-60 disabled:cursor-not-allowed max-sm:p-[10px]"
+            className="w-full box-border px-3 py-[9px] border border-border/40 rounded-sm bg-background text-[13px] leading-[1.55] text-text-primary resize-y outline-none font-[inherit] transition-all duration-150 min-h-[72px] focus:border-secondary focus:shadow-[0_0_0_3px_rgba(215,122,97,0.1)] disabled:opacity-60 disabled:cursor-not-allowed max-sm:p-[10px]"
             placeholder="Write a comment…"
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -571,7 +571,7 @@ export default function PublicItineraryPage() {
   return (
     <div className="flex flex-col h-dvh bg-background text-text-primary overflow-hidden">
       {/* ── top branding bar ── */}
-      <header className="flex items-center justify-between px-6 py-3 bg-primary text-white flex-shrink-0 z-20 max-sm:px-4 max-sm:py-[10px]">
+      <header className="flex items-center justify-between px-6 py-3 bg-sidebar text-white flex-shrink-0 z-20 max-sm:px-4 max-sm:py-[10px]">
         <span className="font-serif text-[20px] tracking-[0.02em] max-sm:text-[18px]">Voyage</span>
         <span className="text-[12px] font-semibold uppercase tracking-[0.08em] opacity-70 max-sm:text-[10px]">Shared Itinerary</span>
         <ThemeToggle />
@@ -681,7 +681,7 @@ export default function PublicItineraryPage() {
             {itinerary.days?.map((day) => (
               <section key={day.id} className="grid gap-3">
                 <div className="flex items-start gap-3">
-                  <span className="inline-flex items-center justify-center flex-shrink-0 w-14 h-7 bg-primary text-white rounded-pill text-[11px] font-bold tracking-[0.04em] uppercase max-[400px]:w-12 max-[400px]:h-6 max-[400px]:text-[10px]">
+                  <span className="inline-flex items-center justify-center flex-shrink-0 w-14 h-7 bg-secondary text-white rounded-pill text-[11px] font-bold tracking-[0.04em] uppercase max-[400px]:w-12 max-[400px]:h-6 max-[400px]:text-[10px]">
                     Day {day.dayNumber}
                   </span>
                   <div className="flex flex-col gap-[2px] pt-[2px]">
@@ -739,13 +739,13 @@ export default function PublicItineraryPage() {
                     return (
                       <div
                         key={item.id}
-                        className={`grid grid-cols-[24px_1fr] gap-3 py-2 transition-colors duration-150 rounded-sm ${isActive ? "bg-primary/[0.04]" : ""}`}
+                        className={`grid grid-cols-[24px_1fr] gap-3 py-2 transition-colors duration-150 rounded-sm ${isActive ? "bg-secondary/[0.08]" : ""}`}
                         onMouseEnter={() => handleHoverItem(globalIdx)}
                         onMouseLeave={() => handleHoverItem(-1)}
                       >
                         {/* connector: dot + vertical line */}
                         <div className="flex flex-col items-center pt-[6px]">
-                          <span className={`w-[10px] h-[10px] rounded-full flex-shrink-0 ${isActive ? "bg-primary shadow-[0_0_0_3px_rgba(34,56,67,0.18)]" : "bg-secondary shadow-[0_0_0_3px_rgba(215,122,97,0.15)]"}`} />
+                          <span className={`w-[10px] h-[10px] rounded-full flex-shrink-0 ${isActive ? "bg-secondary shadow-[0_0_0_3px_rgba(215,122,97,0.18)]" : "bg-secondary shadow-[0_0_0_3px_rgba(215,122,97,0.15)]"}`} />
                           {idx < day.items.length - 1 && (
                             <span className="w-[2px] flex-1 min-h-4 bg-border" />
                           )}
@@ -879,6 +879,7 @@ export default function PublicItineraryPage() {
             selectedPlaceId={selectedPlaceId}
             selectedPlace={selectedPlace}
             onSelectPlace={handleSelectPlace}
+            sidebarWidth={0}
           />
         </div>
       </div>

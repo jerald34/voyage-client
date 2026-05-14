@@ -20,9 +20,9 @@ export default function ClientSwitcher({
   return (
     <div className="relative min-w-0" ref={clientMenuRef}>
       <button
-        className={`flex items-center gap-3 h-11 px-3 pr-2.5 rounded-pill border text-text-primary min-w-0 max-w-[340px] cursor-pointer transition-all ${
-          isClientMenuOpen 
-            ? "border-secondary bg-white/10 shadow-soft" 
+        className={`flex items-center gap-3 h-11 px-3 pr-2.5 rounded-pill border text-text-primary min-w-0 max-w-[340px] cursor-pointer transition-all max-[900px]:h-8 max-[900px]:px-2 max-[900px]:pr-1.5 max-[900px]:gap-1.5 max-[900px]:max-w-[160px] ${
+          isClientMenuOpen
+            ? "border-secondary bg-white/10 shadow-soft"
             : "border-border/20 bg-white/5 hover:bg-white/10 hover:border-border/40"
         }`}
         onClick={() => setIsClientMenuOpen((current) => !current)}
@@ -34,16 +34,16 @@ export default function ClientSwitcher({
         {activeTripClientName ? (
           <>
             <span className="flex items-center flex-shrink-0" aria-hidden="true">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary text-white text-[10px] font-bold">
+              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary text-white text-[10px] font-bold max-[900px]:w-5 max-[900px]:h-5 max-[900px]:text-[8px]">
                 {activeTripInitials}
               </span>
               {activeTripOrganizerInitials && (
-                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-secondary text-white text-[10px] font-bold -ml-2 border-2 border-background">
+                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-secondary text-white text-[10px] font-bold -ml-2 border-2 border-background max-[900px]:w-5 max-[900px]:h-5 max-[900px]:text-[8px] max-[900px]:-ml-1.5">
                   {activeTripOrganizerInitials}
                 </span>
               )}
             </span>
-            <span className="text-sm font-semibold truncate min-w-0">{activeTripClientName}</span>
+            <span className="text-sm font-semibold truncate min-w-0 max-[900px]:text-xs">{activeTripClientName}</span>
           </>
         ) : (
           <span className="text-sm font-semibold text-text-muted truncate">{clientMenuEmptyTitle}</span>
@@ -55,7 +55,7 @@ export default function ClientSwitcher({
 
       {isClientMenuOpen && (
         <div
-          className="absolute top-full mt-2 left-0 right-0 min-w-[320px] max-h-[420px] overflow-y-auto rounded-md bg-surface-elevated border border-border/20 shadow-strong z-50"
+          className="absolute top-full mt-2 left-0 right-0 min-w-[320px] max-h-[420px] overflow-y-auto rounded-md bg-surface-elevated border border-border/20 shadow-strong z-50 max-[900px]:fixed max-[900px]:top-12 max-[900px]:left-3 max-[900px]:right-3 max-[900px]:w-auto max-[900px]:min-w-0 max-[900px]:mt-0 max-[900px]:max-h-[70vh]"
           role="listbox"
           aria-label="Current client"
         >

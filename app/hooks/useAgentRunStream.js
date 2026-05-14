@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
+import { cancelAgentRun } from '../lib/api.js';
 
 function toNumber(value) {
   const number = Number(value);
@@ -70,6 +71,8 @@ function normalizeRouteEstimate(payload, index) {
     destination: payload?.destination ?? null,
     distanceMeters: toNumber(payload?.distanceMeters),
     durationSeconds: toNumber(payload?.durationSeconds),
+    staticDurationSeconds: toNumber(payload?.staticDurationSeconds),
+    travelMode: payload?.travelMode ?? null,
     polyline: payload?.polyline ?? null,
   };
 }
@@ -180,12 +183,14 @@ export function useAgentRunStream(agencyId) {
 
   const eventSourceRef = useRef(null);
   const streamInstanceRef = useRef(0);
+  const currentRunIdRef = useRef(null);
 
   const startStream = (runId) => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
 
+    currentRunIdRef.current = runId;
     const streamInstanceId = ++streamInstanceRef.current;
 
     setIsStreaming(true);
@@ -505,6 +510,22 @@ export function useAgentRunStream(agencyId) {
     };
   };
 
+  const stopStream = () => {
+    const runId = currentRunIdRef.current;
+    if (runId) {
+      cancelAgentRun(agencyId, runId).catch(() => {});
+      currentRunIdRef.current = null;
+    }
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    streamInstanceRef.current += 1;
+    setIsStreaming(false);
+    setRunStatus('idle');
+    setActiveToolLabel(null);
+  };
+
   useEffect(() => {
     return () => {
       if (eventSourceRef.current) {
@@ -528,6 +549,7 @@ export function useAgentRunStream(agencyId) {
     lastCompletedItineraryTool,
     streamingItinerary,
     error,
-    startStream
+    startStream,
+    stopStream,
   };
 }

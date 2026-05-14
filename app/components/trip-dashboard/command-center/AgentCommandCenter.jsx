@@ -39,6 +39,8 @@ export default function AgentCommandCenter({
   placeEntities = [],
   selectedPlaceId = "",
   onPlaceSelect,
+  onStop,
+  hideChatInput = false,
 }) {
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -88,26 +90,35 @@ export default function AgentCommandCenter({
   }
 
   const prevMessageCountRef = useRef(messages?.length ?? 0);
+  const prevItemCountRef = useRef(0);
 
+  // Scroll when messages arrive or text streams in
   useEffect(() => {
     const currentCount = messages?.length ?? 0;
     const isNewMessage = currentCount > prevMessageCountRef.current;
     prevMessageCountRef.current = currentCount;
 
-    const shouldScroll = isNewMessage || (isStreaming && assistantMessage);
+    const shouldScroll = isNewMessage
+      || (isStreaming && assistantMessage)
+      || (isStreaming && activeToolLabel != null);
 
-    if (shouldScroll && messagesEndRef.current && typeof messagesEndRef.current.scrollIntoView === "function") {
+    if (shouldScroll && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages?.length, isStreaming, assistantMessage, activeToolCalls]);
+  }, [messages?.length, isStreaming, assistantMessage, activeToolLabel, activeToolCalls]);
 
+  // Scroll when itinerary grows card-by-card
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "24px";
-      const scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = `${Math.min(scrollHeight, 200)}px`;
+    if (!streamingItinerary?.days) return;
+    const count = streamingItinerary.days.reduce(
+      (sum, d) => sum + (Array.isArray(d.items) ? d.items.length : 0),
+      0,
+    );
+    if (count > prevItemCountRef.current) {
+      prevItemCountRef.current = count;
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [composerInput]);
+  }, [streamingItinerary]);
 
   function handleKeyDown(event) {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -126,10 +137,10 @@ export default function AgentCommandCenter({
   }
 
   return (
-    <div className="glass-panel backdrop-blur-[24px] p-4 flex flex-col min-h-0 h-full shadow-strong transition-all duration-500 ease-in-out">
+    <div className={`${hideChatInput ? "" : "glass-panel backdrop-blur-[24px] shadow-strong"} p-4 flex flex-col min-h-0 h-full transition-all duration-500 ease-in-out`}>
 
       {/* chat log */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-5 pr-2 mb-5">
+      <div className={`flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-5 pr-2 ${hideChatInput ? "mb-0" : "mb-5"}`}>
         {displayedMessages.length === 0 ? (
           <div className="grid gap-2.5 place-items-center min-h-[220px] text-center text-text-muted">
             <div className="w-12 h-12 rounded-[16px] bg-background flex items-center justify-center text-text-soft mb-2" aria-hidden="true">
@@ -153,13 +164,13 @@ export default function AgentCommandCenter({
               placeEntities={placeEntities}
               selectedPlaceId={selectedPlaceId}
               onPlaceSelect={onPlaceSelect}
+              onEdit={message.role === "user" ? (content) => setComposerInput(content) : undefined}
             />
           ))
         )}
 
-        {isStreaming && (
+        {isStreaming && (activeToolLabel != null || activeToolCalls.length > 0) && (
           <div className="flex gap-3 max-w-full">
-            {/* assistant avatar */}
             <div className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[11px] font-extrabold mt-1 bg-secondary text-white" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
@@ -167,32 +178,45 @@ export default function AgentCommandCenter({
               </svg>
             </div>
             <div className="flex flex-col gap-1.5 max-w-[85%]">
-              <div className="px-4 py-3 rounded-md text-sm leading-relaxed relative bg-[rgba(255,255,255,0.05)] backdrop-blur-md border border-white/10 flex flex-col gap-2.5 w-full">
-                <div className="flex items-center gap-2 text-xs font-bold text-text-primary">
-                  <span className="w-1.5 h-1.5 bg-secondary rounded-full animate-pulse flex-shrink-0" />
-                  Agent working
-                </div>
-                {activeToolLabel && (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-primary rounded-[10px] text-white" role="status" aria-live="polite">
-                    <span className="text-[9px] font-black px-1 py-0.5 bg-white/20 rounded">SYS</span>
-                    <span className="text-xs font-semibold">{activeToolLabel}</span>
-                  </div>
-                )}
+              <div className="px-4 py-3 rounded-md bg-[rgba(255,255,255,0.05)] backdrop-blur-md border border-white/10 flex flex-col gap-2.5 w-full" role="status" aria-live="polite">
+                {/* completed tools trail */}
                 {activeToolCalls.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    {activeToolCalls.map((name, idx) => (
-                      <div key={name} className="flex items-center gap-2.5 text-xs">
-                        <div className="w-[18px] h-[18px] rounded-[6px] bg-border flex items-center justify-center text-[10px] font-extrabold text-text-primary">{idx + 1}</div>
-                        <div className="text-text-primary"><strong>{name}</strong></div>
-                        {idx < activeToolCalls.length - 1 && <div className="text-text-soft font-extrabold">{"->"}</div>}
-                      </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {activeToolCalls.map((name) => (
+                      <span key={name} className="inline-flex items-center gap-1 text-[11px] text-text-soft bg-white/5 border border-white/10 rounded-full px-2 py-[2px]">
+                        <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#4ade80] flex-shrink-0">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        {String(name).replace(/[_.]+/g, ' ').trim()}
+                      </span>
                     ))}
                   </div>
                 )}
+                {/* animated dots + active label */}
+                <div className="flex items-center gap-2.5 text-sm text-text-primary">
+                  <span className="cc-thinking-dots" aria-hidden="true">
+                    <span /><span /><span />
+                  </span>
+                  <span>{activeToolLabel || 'Thinking...'}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.05em] font-bold text-secondary opacity-70">
+                  <span className="cc-live-dot w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true" />
+                  Live
+                </div>
               </div>
             </div>
           </div>
         )}
+        <style>{`
+          .cc-thinking-dots { display:inline-flex; gap:3px; align-items:center; flex-shrink:0; }
+          .cc-thinking-dots span { display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--voyage-secondary); animation:cc-bounce 1.2s ease-in-out infinite; }
+          .cc-thinking-dots span:nth-child(1){animation-delay:0s}
+          .cc-thinking-dots span:nth-child(2){animation-delay:.15s}
+          .cc-thinking-dots span:nth-child(3){animation-delay:.3s}
+          .cc-live-dot{animation:cc-live-pulse 1.4s ease-in-out infinite}
+          @keyframes cc-bounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
+          @keyframes cc-live-pulse{0%,100%{transform:scale(.9);opacity:.7}50%{transform:scale(1);opacity:1}}
+        `}</style>
 
         {hasStreamingBubble && (
           <ChatMessage
@@ -214,15 +238,18 @@ export default function AgentCommandCenter({
         <div ref={messagesEndRef} />
       </div>
 
-      <ChatInput
-        textareaRef={textareaRef}
-        composerInput={composerInput}
-        setComposerInput={setComposerInput}
-        handleKeyDown={handleKeyDown}
-        submitComposer={submitComposer}
-        isSending={isSending}
-        agentError={agentError}
-      />
+      {!hideChatInput && (
+        <ChatInput
+          textareaRef={textareaRef}
+          composerInput={composerInput}
+          setComposerInput={setComposerInput}
+          handleKeyDown={handleKeyDown}
+          submitComposer={submitComposer}
+          isSending={isSending || isStreaming}
+          agentError={agentError}
+          onStop={onStop}
+        />
+      )}
 
     </div>
   );
