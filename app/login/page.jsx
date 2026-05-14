@@ -68,6 +68,7 @@ function LoginForm() {
   const [wizardStep, setWizardStep] = useState(1);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [resetNotice, setResetNotice] = useState("");
 
   // Step 1 fields
   const [fullName, setFullName] = useState("");
@@ -100,6 +101,12 @@ function LoginForm() {
         setMode("register");
         setWizardStep(2);
       }
+    }
+
+    if (searchParams.get("reset") === "success") {
+      setResetNotice("Your password has been updated. Sign in with your new password.");
+    } else {
+      setResetNotice("");
     }
   }, [searchParams]);
 
@@ -302,7 +309,9 @@ function LoginForm() {
                   <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
                     <div className="flex justify-between items-center">
                       <label htmlFor="auth-password" className="text-text-primary text-[0.86rem] font-bold">Password</label>
-                      <button type="button" className="bg-none border-none text-secondary font-bold text-xs cursor-pointer transition-colors duration-160 hover:text-text-primary">Forgot password?</button>
+                      <Link href="/forgot-password" className="bg-none border-none text-secondary font-bold text-xs cursor-pointer transition-colors duration-160 hover:text-text-primary no-underline">
+                        Forgot password?
+                      </Link>
                     </div>
                     <div className="relative flex items-center">
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -320,6 +329,7 @@ function LoginForm() {
                     </div>
                   </div>
 
+                  {resetNotice && <div className="p-3 rounded-sm bg-[rgba(32,178,170,0.08)] border border-[rgba(32,178,170,0.22)] text-text-primary text-[0.86rem] font-semibold leading-relaxed text-center [animation:auth-field-in_0.25s_ease_both]" role="status">{resetNotice}</div>}
                   {auth.error && <div className="p-3 rounded-sm bg-status-danger/[0.06] border border-status-danger/[0.18] text-status-danger text-[0.86rem] font-semibold leading-relaxed text-center [animation:auth-field-in_0.25s_ease_both]" role="alert">{auth.error.message}</div>}
 
                   <button type="submit" className="w-full mt-2 inline-flex items-center justify-center gap-2 min-h-[54px] px-7 py-4 rounded-pill font-extrabold bg-accent text-white hover:-translate-y-0.5 transition cursor-pointer disabled:opacity-55 disabled:cursor-not-allowed disabled:transform-none" disabled={auth.loading}>
