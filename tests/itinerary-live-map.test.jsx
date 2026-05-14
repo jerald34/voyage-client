@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDirectionsUrl,
+  buildClientRouteRequest,
   buildRouteEndpointPoints,
   buildRouteSegmentsFromItems,
   getMapPinGlyph,
@@ -100,6 +101,25 @@ describe("ItineraryLiveMap route segments", () => {
         latestRoutePointCount: 30,
       }),
     ).toBe(true);
+  });
+
+  it("builds a Routes API request with intermediate waypoints and a path field mask", () => {
+    const request = buildClientRouteRequest(
+      [
+        { lat: 14.763, lng: 120.223 },
+        { lat: 14.768, lng: 120.229 },
+        { lat: 14.775, lng: 120.236 },
+      ],
+      "DRIVING",
+    );
+
+    expect(request).toEqual({
+      origin: { lat: 14.763, lng: 120.223 },
+      destination: { lat: 14.775, lng: 120.236 },
+      intermediates: [{ location: { lat: 14.768, lng: 120.229 } }],
+      travelMode: "DRIVING",
+      fields: ["path"],
+    });
   });
 
   it("builds route endpoint markers and a Google Maps directions URL", () => {
