@@ -312,7 +312,7 @@ function Polyline({ points, color = "#3b82f6", weight = 3, opacity = 0.5, dashAr
   return null;
 }
 
-function FitBounds({ points, sidebarWidth }) {
+function FitBounds({ points, sidebarWidth, bottomPadding = 0 }) {
   const map = useMap();
 
   useEffect(() => {
@@ -324,10 +324,10 @@ function FitBounds({ points, sidebarWidth }) {
     map.fitBounds(bounds, {
       top: 60,
       right: 60,
-      bottom: 60,
+      bottom: bottomPadding > 0 ? bottomPadding + 20 : 60,
       left: sidebarWidth > 0 ? sidebarWidth + 40 : 60,
     });
-  }, [map, points, sidebarWidth]);
+  }, [map, points, sidebarWidth, bottomPadding]);
 
   return null;
 }
@@ -656,6 +656,7 @@ export default function ItineraryLiveMap({
   onSelectPlace,
   theme = "light",
   sidebarWidth = 520,
+  mapBottomPadding = 0,
 }) {
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [agencyFallbackPoint, setAgencyFallbackPoint] = useState(null);
@@ -749,7 +750,7 @@ export default function ItineraryLiveMap({
             onRoute={handleClientRoute}
           />
           {shouldFitViewportBounds(viewportPoints, shouldUseAgencyFallback) && (
-            <FitBounds points={viewportPoints} sidebarWidth={sidebarWidth} />
+            <FitBounds points={viewportPoints} sidebarWidth={sidebarWidth} bottomPadding={mapBottomPadding} />
           )}
           <FocusActiveStop points={points} activeIndex={activeIndex} sidebarWidth={sidebarWidth} />
           <FocusLiveMarker liveMarkers={liveMarkerPoints} />

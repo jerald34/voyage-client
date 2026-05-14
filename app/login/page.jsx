@@ -187,9 +187,9 @@ function LoginForm() {
   const isRegister = mode === "register";
 
   return (
-    <div className={`grid grid-cols-2 min-h-[calc(100vh-100px)] gap-0 rounded-lg overflow-hidden border border-border shadow-strong transition-all duration-650 ${mounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-6 scale-[0.985]"}`}>
-      {/* LEFT: Brand showcase panel */}
-      <div className="relative flex flex-col justify-center p-[clamp(40px,5vw,72px)] bg-gradient-to-br from-[#223843] via-[#1a2e38] to-[#2d3436] overflow-hidden">
+    <div className={`grid grid-cols-1 md:grid-cols-2 min-h-screen md:min-h-[calc(100vh-100px)] gap-0 md:rounded-lg md:overflow-hidden md:border md:border-border md:shadow-strong transition-all duration-650 ${mounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-6 scale-[0.985]"}`}>
+      {/* LEFT: Brand showcase panel — hidden on mobile, shown md+ */}
+      <div className="hidden md:relative md:flex md:flex-col justify-center p-[clamp(40px,5vw,72px)] bg-gradient-to-br from-[#223843] via-[#1a2e38] to-[#2d3436] overflow-hidden">
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <FloatingOrb delay="0s" size="320px" left="-80px" top="-60px" />
           <FloatingOrb delay="2.4s" size="200px" left="60%" top="55%" />
@@ -222,7 +222,7 @@ function LoginForm() {
       </div>
 
       {/* RIGHT: Auth form */}
-      <div className="flex flex-col p-[clamp(28px,4vw,56px)] bg-gradient-to-b from-[rgba(255,255,255,0.98)] to-[rgba(239,241,243,0.94)] dark:from-[rgba(26,29,33,0.98)] dark:to-[rgba(17,20,22,0.94)] overflow-y-auto">
+      <div className="flex flex-col p-6 sm:p-10 md:p-[clamp(28px,4vw,56px)] bg-gradient-to-b from-[rgba(255,255,255,0.98)] to-[rgba(239,241,243,0.94)] dark:from-[rgba(26,29,33,0.98)] dark:to-[rgba(17,20,22,0.94)] overflow-y-auto">
         <div className="mb-8">
           <Link href="/" className="inline-flex items-center gap-2 text-text-muted text-xs font-bold no-underline transition-colors duration-160 hover:text-secondary">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -545,7 +545,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="w-full max-w-[1320px] mx-auto px-5 pt-7 pb-[72px] min-h-screen">
+    <main className="w-full max-w-[1320px] mx-auto px-0 md:px-5 pt-0 md:pt-7 pb-0 md:pb-[72px] min-h-screen">
       <div className="system-grain" aria-hidden="true" />
       <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
         <LoginForm />

@@ -40,6 +40,7 @@ export default function AgentCommandCenter({
   selectedPlaceId = "",
   onPlaceSelect,
   onStop,
+  hideChatInput = false,
 }) {
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -144,10 +145,10 @@ export default function AgentCommandCenter({
   }
 
   return (
-    <div className="glass-panel backdrop-blur-[24px] p-4 flex flex-col min-h-0 h-full shadow-strong transition-all duration-500 ease-in-out">
+    <div className={`${hideChatInput ? "" : "glass-panel backdrop-blur-[24px] shadow-strong"} p-4 flex flex-col min-h-0 h-full transition-all duration-500 ease-in-out`}>
 
       {/* chat log */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-5 pr-2 mb-5">
+      <div className={`flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-5 pr-2 ${hideChatInput ? "mb-0" : "mb-5"}`}>
         {displayedMessages.length === 0 ? (
           <div className="grid gap-2.5 place-items-center min-h-[220px] text-center text-text-muted">
             <div className="w-12 h-12 rounded-[16px] bg-background flex items-center justify-center text-text-soft mb-2" aria-hidden="true">
@@ -245,16 +246,18 @@ export default function AgentCommandCenter({
         <div ref={messagesEndRef} />
       </div>
 
-      <ChatInput
-        textareaRef={textareaRef}
-        composerInput={composerInput}
-        setComposerInput={setComposerInput}
-        handleKeyDown={handleKeyDown}
-        submitComposer={submitComposer}
-        isSending={isSending || isStreaming}
-        agentError={agentError}
-        onStop={onStop}
-      />
+      {!hideChatInput && (
+        <ChatInput
+          textareaRef={textareaRef}
+          composerInput={composerInput}
+          setComposerInput={setComposerInput}
+          handleKeyDown={handleKeyDown}
+          submitComposer={submitComposer}
+          isSending={isSending || isStreaming}
+          agentError={agentError}
+          onStop={onStop}
+        />
+      )}
 
     </div>
   );

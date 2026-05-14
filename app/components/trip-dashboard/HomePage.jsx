@@ -31,6 +31,9 @@ import ApproveItineraryModal from "./modals/ApproveItineraryModal.jsx";
 import DashboardHeader from "./layout/DashboardHeader.jsx";
 import DashboardSidebar from "./layout/DashboardSidebar.jsx";
 import AdminAgenciesPage from "../admin/AdminAgenciesPage.jsx";
+import MobileGlassSheet from "./mobile/MobileGlassSheet.jsx";
+import useMobileViewport from "./mobile/useMobileViewport.js";
+import ChatInput from "./command-center/ChatInput.jsx";
 
 // Minimal UI helpers
 const getInitials = (name) => {
@@ -120,8 +123,11 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   const [selectedPlaceId, setSelectedPlaceId] = useState("");
   const [isClientMenuOpen, setIsClientMenuOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [mobileMapPadding, setMobileMapPadding] = useState(0);
+  const isMobile = useMobileViewport();
   const clientMenuRef = useRef(null);
   const completedAssistantMessageRef = useRef(null);
+  const mobileTextareaRef = useRef(null);
 
   // Poll pending count for admin users
   useEffect(() => {
@@ -456,6 +462,29 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
     setSelectedPlaceId("");
   }, [activeContextKey]);
 
+  const handleMobileSnapChange = useCallback((snap) => {
+    const vh = window.visualViewport?.height ?? window.innerHeight;
+    if (snap === "peek") setMobileMapPadding(120);
+    else if (snap === "half") setMobileMapPadding(Math.round(vh * 0.55));
+    else setMobileMapPadding(Math.round(vh * 0.9));
+  }, []);
+
+  function handleMobileKeyDown(event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      if (composerInput.trim() && !isSending) {
+        handleMobileSubmit(event);
+      }
+    }
+  }
+
+  function handleMobileSubmit(event) {
+    event.preventDefault();
+    if (!composerInput.trim()) return;
+    void dispatchMessage(composerInput, startStream);
+    setComposerInput("");
+  }
+
   const activeTripClientName = String(activeOption?.clientName ?? activeOption?.label ?? "").trim();
   const activeTripInitials = activeTripClientName ? getInitials(activeTripClientName) : "";
   const activeTripOrganizerInitials = activeOption?.assignedOrganizer ? getInitials(activeOption.assignedOrganizer) : "";
@@ -617,9 +646,9 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
           pendingCount={pendingCount}
         />
 
-        <main className="flex-1 overflow-y-auto p-2 flex flex-col gap-2">
+        <main className="flex-1 overflow-y-auto p-2 flex flex-col gap-2 max-[900px]:p-0 max-[900px]:overflow-hidden">
           {activeTab === "command-center" ? (
-            <section className="relative flex flex-1 min-h-0 overflow-hidden rounded-[24px] border border-border/10 shadow-inner">
+            <section className="relative flex flex-1 min-h-0 overflow-hidden rounded-[24px] border border-border/10 shadow-inner max-[900px]:rounded-none max-[900px]:border-none max-[900px]:shadow-none">
               {/* Immersive Map Background */}
               <div className="absolute inset-0 z-0 opacity-90 transition-opacity duration-700 hover:opacity-100">
                 <ItineraryLiveMap
@@ -640,12 +669,13 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                   placeEntities={placeEntities}
                   selectedPlaceId={selectedPlaceId}
                   onSelectPlace={setSelectedPlaceId}
+                  mapBottomPadding={isMobile ? mobileMapPadding : 0}
                 />
               </div>
 
-              {/* Floating Glass Panels Layer */}
-              <div className="relative z-10 flex gap-6 p-2 w-full h-full pointer-events-none overflow-hidden">
-                <div className="w-[520px] h-full pointer-events-auto transition-all duration-500 ease-in-out">
+              {/* Desktop: Floating Glass Panels Layer */}
+              <div className="relative z-10 flex gap-6 p-2 w-full h-full pointer-events-none overflow-hidden max-[900px]:hidden">
+                <div className="w-full lg:w-[520px] h-full pointer-events-auto transition-all duration-500 ease-in-out">
                   <AgentCommandCenter
                     messages={activeTripState?.messages ?? []}
                     isStreaming={isVisible ? isStreaming : false}
@@ -666,9 +696,48 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                     onStop={isVisible ? stopStream : undefined}
                   />
                 </div>
-                
-                {/* ItineraryDraftPanel removed as requested - the itinerary is now focused in the command center or itineraries tab */}
               </div>
+
+              {/* Mobile: Glass Sheet over map */}
+              {isMobile && (
+                <MobileGlassSheet
+                  defaultSnap="half"
+                  onSnapChange={handleMobileSnapChange}
+                  footer={
+                    <ChatInput
+                      textareaRef={mobileTextareaRef}
+                      composerInput={composerInput}
+                      setComposerInput={setComposerInput}
+                      handleKeyDown={handleMobileKeyDown}
+                      submitComposer={handleMobileSubmit}
+                      isSending={isSending || (isVisible && isStreaming)}
+                      agentError={agentError}
+                      onStop={isVisible ? stopStream : undefined}
+                    />
+                  }
+                >
+                  <AgentCommandCenter
+                    messages={activeTripState?.messages ?? []}
+                    isStreaming={isVisible ? isStreaming : false}
+                    assistantMessage={isVisible ? assistantMessage : ""}
+                    toolCalls={isVisible ? toolCalls : []}
+                    activeToolLabel={isVisible ? activeToolLabel : null}
+                    streamingItinerary={isVisible ? streamingItinerary : null}
+                    dispatchAgentMessage={(prompt) => dispatchMessage(prompt, startStream)}
+                    composerInput={composerInput}
+                    setComposerInput={setComposerInput}
+                    isSending={isSending}
+                    agentError={agentError}
+                    user={user}
+                    itinerary={activeTripState?.itinerary ?? null}
+                    placeEntities={placeEntities}
+                    selectedPlaceId={selectedPlaceId}
+                    onPlaceSelect={setSelectedPlaceId}
+                    onStop={isVisible ? stopStream : undefined}
+                    hideChatInput
+                  />
+                </MobileGlassSheet>
+              )}
             </section>
           ) : activeTab === "itineraries" ? (
             <ClientItineraryPage

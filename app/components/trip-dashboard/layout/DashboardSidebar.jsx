@@ -20,7 +20,7 @@ export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, acti
         />
       )}
       <aside
-        className={`w-[90px] bg-gradient-to-b from-sidebar to-[#1a2e38] flex flex-col flex-shrink-0 shadow-[inset_-1px_0_0_rgba(255,255,255,0.06)] transition-transform duration-300 z-50 max-[900px]:absolute max-[900px]:h-full max-[900px]:w-60 ${isSidebarOpen ? "max-[900px]:translate-x-0" : "max-[900px]:-translate-x-full"}`}
+        className={`w-[90px] bg-gradient-to-b from-sidebar to-[#1a2e38] flex flex-col flex-shrink-0 shadow-[inset_-1px_0_0_rgba(255,255,255,0.06)] transition-transform duration-300 z-50 max-[900px]:absolute max-[900px]:h-full max-[900px]:w-60 max-[900px]:backdrop-blur-[16px] max-[900px]:bg-sidebar/90 ${isSidebarOpen ? "max-[900px]:translate-x-0" : "max-[900px]:-translate-x-full"}`}
         aria-label="Dashboard navigation"
       >
         <nav className="flex flex-col py-[18px] flex-1 gap-2 max-[900px]:py-6 max-[900px]:px-6">

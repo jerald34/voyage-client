@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useTheme } from "../../theme/ThemeProvider.jsx";
 import {
@@ -20,6 +20,10 @@ import {
 } from "../../../lib/trip-dashboard/savedItineraries.js";
 import ShareDialog from "../itinerary/ShareDialog.jsx";
 import { generateItineraryPdf, titleToFilename } from "../../../lib/pdfExport.js";
+import MobileGlassSheet from "../mobile/MobileGlassSheet.jsx";
+import CompactPlaceCard from "../mobile/CompactPlaceCard.jsx";
+import PlaceDetailSheet from "../mobile/PlaceDetailSheet.jsx";
+import useMobileViewport from "../mobile/useMobileViewport.js";
 
 const ItineraryLiveMap = dynamic(
   () => import("../itinerary/ItineraryLiveMap.jsx"),
@@ -367,6 +371,10 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
   const [showClientDeleteConfirm, setShowClientDeleteConfirm] = useState(null);
   const [isDeletingClient, setIsDeletingClient] = useState(false);
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [mobilePane, setMobilePane] = useState("list"); // "list" | "detail" — mobile only
+  const [mobileDetailItem, setMobileDetailItem] = useState(null);
+  const [mobileMapPadding, setMobileMapPadding] = useState(0);
+  const isMobile = useMobileViewport();
   const requestSequenceRef = useRef(0);
 
   const savedTrips = useMemo(() => getSavedItineraryTrips(agencyTrips), [agencyTrips]);
@@ -551,6 +559,13 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
     }
   };
 
+  const handleCipSnapChange = useCallback((snap) => {
+    const vh = window.visualViewport?.height ?? window.innerHeight;
+    if (snap === "peek") setMobileMapPadding(120);
+    else if (snap === "half") setMobileMapPadding(Math.round(vh * 0.55));
+    else setMobileMapPadding(Math.round(vh * 0.9));
+  }, []);
+
   // Status chip helper — shared between trip cards and itinerary header
   function StatusChip({ trip, size = "sm" }) {
     const label = getSavedStatusLabel(trip);
@@ -598,9 +613,9 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
     if (fullItinerary && safeDays.length > 0) {
       const dayAccommodation = selectedDay ? getAccommodationLabel(selectedDay) : "";
       return (
-        <div className="grid grid-cols-2 h-full bg-surface/20 backdrop-blur-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-2 h-full bg-surface/20 backdrop-blur-sm">
           {/* Day content column */}
-          <div className="flex flex-col overflow-y-auto border-r border-border/5 p-6 gap-4">
+          <div className="flex flex-col overflow-y-auto border-r border-border/5 p-4 sm:p-6 gap-4">
             {showCommentsPanel && (
               <CommentsPanel
                 agencyId={agencyId}
@@ -715,8 +730,8 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
             )}
           </div>
 
-          {/* Map column */}
-          <div className="relative min-h-0 p-4 bg-surface">
+          {/* Map column — hidden on mobile, full panel on lg+ */}
+          <div className="hidden lg:relative lg:block min-h-0 p-4 bg-surface">
             <div className="relative w-full h-full rounded-md overflow-hidden border border-border/10 shadow-soft">
               <ItineraryLiveMap
                 items={selectedDayMapItems}
@@ -743,10 +758,264 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
     );
   }
 
+  // Mobile layout: map background + glass sheet
+  if (isMobile) {
+    return (
+      <div className="relative flex-1 h-full min-h-0 overflow-hidden">
+        {/* Map background */}
+        <div className="absolute inset-0 z-0">
+          <ItineraryLiveMap
+            items={selectedDayMapItems}
+            liveMarkers={[]}
+            routeEstimates={[]}
+            activeIndex={activeStopIndex}
+            onHoverItem={setActiveStopIndex}
+            selectedPlaceId=""
+            selectedPlace={null}
+            onSelectPlace={() => {}}
+            theme={theme}
+            sidebarWidth={0}
+            mapBottomPadding={mobileMapPadding}
+          />
+        </div>
+
+        {/* Glass sheet */}
+        <MobileGlassSheet
+          defaultSnap="half"
+          onSnapChange={handleCipSnapChange}
+          footer={
+            selectedClient && selectedItineraryId ? (
+              <div className="flex items-center justify-center gap-3 px-4 py-2">
+                <button
+                  className={`inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 ${
+                    showCommentsPanel
+                      ? "bg-secondary text-white border-secondary"
+                      : "bg-surface-elevated text-text-primary border-border/20"
+                  }`}
+                  onClick={() => setShowCommentsPanel((v) => !v)}
+                  aria-label="Comments"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                </button>
+                <button
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-border/20 bg-surface-elevated text-text-primary transition-all duration-200"
+                  onClick={() => setShowShareDialog(true)}
+                  aria-label="Share"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                    <polyline points="16 6 12 2 8 6" />
+                    <line x1="12" y1="2" x2="12" y2="15" />
+                  </svg>
+                </button>
+                <button
+                  className={`inline-flex items-center justify-center w-10 h-10 rounded-full border border-border/20 bg-surface-elevated text-text-primary transition-all duration-200 ${pdfLoading ? "opacity-60" : ""}`}
+                  onClick={handleDownloadPdf}
+                  disabled={pdfLoading || !fullItinerary}
+                  aria-label="Download PDF"
+                >
+                  {pdfLoading ? (
+                    <span className="inline-block w-4 h-4 border-2 border-border border-t-secondary rounded-full animate-spin" />
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            ) : null
+          }
+        >
+          {mobilePane === "list" ? (
+            <div className="flex flex-col h-full">
+              <div className="px-4 py-3 border-b border-border/5">
+                <h3 className="font-serif text-[1.3rem] text-text-primary m-0 tracking-tight mb-2">Client Directory</h3>
+                <div className="relative flex items-center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-soft pointer-events-none z-[1]">
+                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Search clients..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full py-2.5 pr-3 pl-10 rounded-md border border-border/10 bg-white/5 text-[0.9rem] font-[inherit] text-text-primary transition-all duration-200 focus:outline-none focus:border-secondary"
+                  />
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-1">
+                {filteredClients.length > 0 ? (
+                  filteredClients.map((c) => {
+                    const initials = c.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+                    const isSelected = selectedClientId === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all duration-200 w-full text-left ${
+                          isSelected
+                            ? "bg-secondary/20 border-secondary/30 shadow-soft"
+                            : "bg-transparent border-transparent hover:bg-background"
+                        }`}
+                        onClick={() => {
+                          setSelectedClientId(c.id);
+                          setSelectedTripId(c.trips[0]?.id || null);
+                          setMobilePane("detail");
+                        }}
+                      >
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[0.8rem] flex-shrink-0 ${
+                          isSelected ? "bg-secondary text-white" : "bg-secondary/40 text-white"
+                        }`}>
+                          {initials}
+                        </div>
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <strong className={`text-[0.9rem] font-bold tracking-tight truncate ${isSelected ? "text-secondary" : "text-text-primary"}`}>
+                            {c.name}
+                          </strong>
+                          <span className="text-[0.75rem] text-text-soft font-semibold">{c.trips.length} saved itineraries</span>
+                        </div>
+                      </button>
+                    );
+                  })
+                ) : clients.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center flex-1 p-6 text-text-soft text-center gap-3 min-h-[200px]">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-secondary opacity-45">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+                    </svg>
+                    <p className="text-[0.85rem] font-bold m-0">No client directory yet.</p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col h-full">
+              {/* Back button */}
+              <button
+                type="button"
+                onClick={() => setMobilePane("list")}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-text-muted bg-transparent border-b border-border/5 cursor-pointer hover:text-text-primary transition-colors"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+                All clients
+              </button>
+
+              {selectedClient ? (
+                <div className="flex flex-col flex-1 overflow-hidden">
+                  {/* Client name */}
+                  <div className="px-4 py-2 border-b border-border/5">
+                    <h2 className="font-serif text-[1.2rem] m-0 leading-tight truncate">{selectedClient.name}</h2>
+                  </div>
+
+                  {/* Trip selector */}
+                  {selectedClient.trips.length > 1 && (
+                    <div className="flex gap-2 px-4 py-2 border-b border-border/5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-shrink-0">
+                      {selectedClient.trips.map((t) => (
+                        <button
+                          key={t.id}
+                          className={`px-3 py-1.5 rounded-md text-[0.75rem] font-bold whitespace-nowrap border transition-all duration-200 ${
+                            selectedTripId === t.id
+                              ? "bg-secondary text-white border-secondary"
+                              : "bg-surface border-border/30 text-text-soft"
+                          }`}
+                          onClick={() => setSelectedTripId(t.id)}
+                        >
+                          {t.destination || "Unnamed Trip"}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Day strip */}
+                  {fullItinerary && safeDays.length > 0 && (
+                    <div className="flex gap-2 px-4 py-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-shrink-0 border-b border-border/5">
+                      {safeDays.map((day, dIdx) => (
+                        <button
+                          key={day.id || day.dayNumber || dIdx}
+                          className={`px-3 py-2 rounded-md border cursor-pointer transition-all duration-200 flex-shrink-0 text-left ${
+                            selectedDayIndex === dIdx
+                              ? "border-secondary/60 bg-secondary/10"
+                              : "border-border/30 bg-surface"
+                          }`}
+                          onClick={() => setSelectedDayIndex(dIdx)}
+                        >
+                          <div className={`text-[0.7rem] font-extrabold tracking-wide leading-snug ${selectedDayIndex === dIdx ? "text-secondary" : "text-text-soft"}`}>
+                            Day {day.dayNumber}
+                          </div>
+                          <div className="text-[0.65rem] text-text-soft font-semibold truncate max-w-[120px]">{day.title}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Comments panel */}
+                  {showCommentsPanel && (
+                    <div className="px-4 py-2 flex-shrink-0">
+                      <CommentsPanel agencyId={agencyId} tripId={selectedTripId} onClose={() => setShowCommentsPanel(false)} />
+                    </div>
+                  )}
+
+                  {/* Compact itinerary items */}
+                  <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+                    {isLoadingItinerary ? (
+                      <div className="flex items-center justify-center py-10 text-text-soft gap-2">
+                        <div className="w-5 h-5 border-2 border-border border-t-secondary rounded-full animate-spin" />
+                        <span className="text-sm">Loading...</span>
+                      </div>
+                    ) : selectedDay ? (
+                      (selectedDay.items || []).map((item, iIdx) => {
+                        const entityId = getItineraryPlaceEntityId(item, selectedDay, iIdx);
+                        return (
+                          <CompactPlaceCard
+                            key={`${selectedDay.dayNumber}-${iIdx}`}
+                            item={item}
+                            isSelected={activeStopIndex === iIdx}
+                            onSelect={() => {
+                              setActiveStopIndex(iIdx);
+                              setMobileDetailItem(item);
+                            }}
+                          />
+                        );
+                      })
+                    ) : (
+                      <div className="text-center text-text-soft py-10 text-sm">Select a day to view stops.</div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-text-soft text-center p-6">
+                  <p>Select a client to view their itineraries.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </MobileGlassSheet>
+
+        {/* Place detail sheet */}
+        {mobileDetailItem && (
+          <PlaceDetailSheet item={mobileDetailItem} onClose={() => setMobileDetailItem(null)} />
+        )}
+
+        <ShareDialog
+          isOpen={showShareDialog}
+          onClose={() => setShowShareDialog(false)}
+          agencyId={agencyId}
+          itineraryId={selectedItineraryId}
+          tripId={selectedTripId}
+          tripTitle={tripTitle}
+        />
+      </div>
+    );
+  }
+
+  // Desktop layout (unchanged)
   return (
-    <div className="grid grid-cols-[280px_1fr] gap-2 h-full min-h-0 items-stretch p-2">
-      {/* Client sidebar */}
-      <aside className="glass-panel backdrop-blur-lg flex flex-col overflow-hidden shadow-soft">
+    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-2 h-full min-h-0 items-stretch p-2">
+      {/* Client sidebar — hidden on mobile when viewing detail */}
+      <aside className={`glass-panel backdrop-blur-lg flex-col overflow-hidden shadow-soft ${mobilePane === "detail" ? "hidden lg:flex" : "flex"}`}>
         {/* Pane header */}
         <div className="px-4 py-4 border-b border-border grid gap-2.5">
           <h3 className="font-serif text-[1.6rem] text-text-primary m-0 tracking-tight">Client Directory</h3>
@@ -789,6 +1058,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                       onClick={() => {
                         setSelectedClientId(c.id);
                         setSelectedTripId(c.trips[0]?.id || null);
+                        setMobilePane("detail");
                       }}
                       title={`View ${c.name}'s itineraries`}
                     >
@@ -874,79 +1144,93 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
         </div>
       </aside>
 
-      {/* Main workspace */}
-      <main className="glass-panel backdrop-blur-lg flex flex-col overflow-hidden shadow-soft h-full">
+      {/* Main workspace — hidden on mobile when viewing list */}
+      <main className={`glass-panel backdrop-blur-lg flex-col overflow-hidden shadow-soft h-full ${mobilePane === "list" ? "hidden lg:flex" : "flex"}`}>
         {selectedClient ? (
           <div className="flex flex-col h-full overflow-hidden">
+            {/* Mobile back button */}
+            <button
+              type="button"
+              onClick={() => setMobilePane("list")}
+              className="lg:hidden flex items-center gap-2 px-4 py-3 text-sm font-semibold text-text-muted border-b border-border/10 bg-transparent cursor-pointer hover:text-text-primary transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+              All clients
+            </button>
             {/* Workspace header */}
-            <header className="px-6 py-4 bg-transparent flex justify-between items-center gap-4 border-b border-border/10 flex-shrink-0">
-              <div className="flex items-center gap-4">
-                <h2 className="font-serif text-[1.8rem] m-0 leading-none">{selectedClient.name}</h2>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20 text-secondary text-[0.75rem] font-extrabold uppercase tracking-[0.05em]">
+            <header className="px-4 sm:px-6 py-3 sm:py-4 bg-transparent flex justify-between items-start sm:items-center gap-3 border-b border-border/10 flex-shrink-0">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 min-w-0">
+                <h2 className="font-serif text-[1.4rem] sm:text-[1.8rem] m-0 leading-tight truncate">{selectedClient.name}</h2>
+                <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20 text-secondary text-[0.75rem] font-extrabold uppercase tracking-[0.05em]">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                     <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
                   </svg>
                   Saved itineraries
                 </div>
-                <span className="text-[0.9rem] text-text-soft font-semibold">
+                <span className="text-[0.8rem] sm:text-[0.9rem] text-text-soft font-semibold">
                   {selectedClient.trips.length} saved
                 </span>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                 {selectedTrip && <StatusChip trip={selectedTrip} />}
                 {selectedItineraryId && (
                   <>
+                    {/* Comments — icon-only on mobile, icon+label on sm+ */}
                     <button
-                      className={`inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border text-[0.85rem] font-bold cursor-pointer transition-all duration-200 ${
+                      className={`inline-flex items-center justify-center gap-2 min-w-[40px] min-h-[40px] px-2 sm:px-3.5 rounded-lg border text-[0.85rem] font-bold cursor-pointer transition-all duration-200 ${
                         showCommentsPanel
                           ? "bg-secondary text-white border-secondary shadow-soft"
                           : "bg-surface-elevated text-text-primary border-border/20 hover:bg-surface hover:border-border/40"
                       }`}
                       onClick={() => setShowCommentsPanel((v) => !v)}
                       title="View client comments"
+                      aria-label="Comments"
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                       </svg>
-                      Comments
+                      <span className="hidden sm:inline">Comments</span>
                       {unreadCommentCount > 0 && (
                         <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-pill bg-[#dc2626] text-white text-[0.65rem] font-extrabold leading-none flex-shrink-0">
                           {unreadCommentCount > 99 ? "99+" : unreadCommentCount}
                         </span>
                       )}
                     </button>
+
+                    {/* Share */}
                     <button
-                      className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border border-border/20 bg-surface-elevated text-text-primary text-[0.85rem] font-bold cursor-pointer transition-all duration-200 hover:bg-surface hover:border-border/40"
+                      className="inline-flex items-center justify-center gap-2 min-w-[40px] min-h-[40px] px-2 sm:px-3.5 rounded-lg border border-border/20 bg-surface-elevated text-text-primary text-[0.85rem] font-bold cursor-pointer transition-all duration-200 hover:bg-surface hover:border-border/40"
                       onClick={() => setShowShareDialog(true)}
+                      aria-label="Share"
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                         <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
                         <polyline points="16 6 12 2 8 6" />
                         <line x1="12" y1="2" x2="12" y2="15" />
                       </svg>
-                      Share
+                      <span className="hidden sm:inline">Share</span>
                     </button>
+
+                    {/* PDF */}
                     <button
-                      className={`inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg border border-border/20 bg-surface-elevated text-text-primary text-[0.85rem] font-bold cursor-pointer transition-all duration-200 hover:bg-surface hover:border-border/40 ${pdfLoading ? "opacity-60 cursor-not-allowed pointer-events-none" : ""}`}
+                      className={`inline-flex items-center justify-center gap-2 min-w-[40px] min-h-[40px] px-2 sm:px-3.5 rounded-lg border border-border/20 bg-surface-elevated text-text-primary text-[0.85rem] font-bold cursor-pointer transition-all duration-200 hover:bg-surface hover:border-border/40 ${pdfLoading ? "opacity-60 cursor-not-allowed pointer-events-none" : ""}`}
                       onClick={handleDownloadPdf}
                       disabled={pdfLoading || !fullItinerary}
                       title="Download itinerary as PDF"
+                      aria-label="Download PDF"
                     >
                       {pdfLoading ? (
-                        <>
-                          <span className="inline-block w-[13px] h-[13px] border-2 border-border border-t-secondary rounded-full animate-spin flex-shrink-0" />
-                          Generating...
-                        </>
+                        <span className="inline-block w-[13px] h-[13px] border-2 border-border border-t-secondary rounded-full animate-spin flex-shrink-0" />
                       ) : (
-                        <>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="7 10 12 15 17 10" />
-                            <line x1="12" y1="15" x2="12" y2="3" />
-                          </svg>
-                          PDF
-                        </>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
                       )}
+                      <span className="hidden sm:inline">{pdfLoading ? "Generating..." : "PDF"}</span>
                     </button>
                   </>
                 )}
