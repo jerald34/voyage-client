@@ -34,6 +34,20 @@ export async function fetchApi(path, options = {}) {
   }
 }
 
+export async function updateCurrentUserProfile(payload) {
+  return fetchApi("/auth/me", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAgencySettings(agencyId, payload) {
+  return fetchApi(`/agencies/${agencyId}/settings`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function createAgentThread(agencyId, tripId = null) {
   const body = {};
   if (tripId) body.tripId = tripId;

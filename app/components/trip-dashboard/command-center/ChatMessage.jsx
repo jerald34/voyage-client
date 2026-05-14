@@ -1,7 +1,9 @@
 import React from "react";
 import AgentMarkdown from "../../agent/chat/AgentMarkdown";
-import { getMatchedPlaces, matchPlaceMentions } from "../../../lib/trip-dashboard/placeEntities.js";
+import { getMatchedPlaces, matchPlaceMentions, getItineraryPlaceEntityId } from "../../../lib/trip-dashboard/placeEntities.js";
 import RichItineraryMessage from "./RichItineraryMessage.jsx";
+import useMobileViewport from "../mobile/useMobileViewport.js";
+import CompactPlaceCard from "../mobile/CompactPlaceCard.jsx";
 
 function PlaceLinkedText({ children, placeEntities, selectedPlaceId, onPlaceSelect }) {
   if (typeof children !== "string" && typeof children !== "number") {
@@ -113,6 +115,7 @@ export default function ChatMessage({
   onEdit,
 }) {
   const shouldRenderRichItinerary = !isUser && renderAsItinerary && itinerary;
+  const isMobile = useMobileViewport();
 
   return (
     <div className={`group flex gap-3 max-w-full ${isUser ? "flex-row-reverse" : "flex-row"}`}>
@@ -160,26 +163,50 @@ export default function ChatMessage({
           {isUser ? (
             <p className="m-0 font-medium">{message.content}</p>
           ) : renderAsItinerary && itinerary ? (
-            <div className="flex flex-col gap-4">
-              <RichItineraryMessage
-                itinerary={itinerary}
-                placeEntities={placeEntities}
-                selectedPlaceId={selectedPlaceId}
-                onPlaceSelect={onPlaceSelect}
-              />
-              {String(message?.content ?? "").trim() ? (
-                <div className="pt-3 border-t border-white/10">
-                  <MarkdownContent
-                    content={message.content}
-                    placeEntities={placeEntities}
-                    selectedPlaceId={selectedPlaceId}
-                    onPlaceSelect={onPlaceSelect}
-                    showPlaceLinks={false}
-                    showPlaceCards={false}
-                  />
-                </div>
-              ) : null}
-            </div>
+            isMobile ? (
+              <div className="flex flex-col gap-2">
+                {Array.isArray(itinerary.days) && itinerary.days.map((day) => (
+                  <div key={day.dayNumber || day.id} className="flex flex-col gap-2">
+                    <span className="text-[0.65rem] font-extrabold uppercase tracking-[0.06em] text-text-soft">
+                      Day {day.dayNumber}{day.title ? ` â€” ${day.title}` : ""}
+                    </span>
+                    {(day.items || []).map((item, iIdx) => {
+                      const entityId = getItineraryPlaceEntityId(item, day, iIdx);
+                      return (
+                        <CompactPlaceCard
+                          key={`${day.dayNumber}-${iIdx}`}
+                          item={item}
+                          isSelected={selectedPlaceId === entityId}
+                          onSelect={() => onPlaceSelect?.(entityId)}
+                        />
+                      );
+                    })}
+                  </div>
+                ))}
+                <span className="text-[0.65rem] text-text-soft mt-1">CURATED BY VOYAGE AGENT</span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <RichItineraryMessage
+                  itinerary={itinerary}
+                  placeEntities={placeEntities}
+                  selectedPlaceId={selectedPlaceId}
+                  onPlaceSelect={onPlaceSelect}
+                />
+                {String(message?.content ?? "").trim() ? (
+                  <div className="pt-3 border-t border-white/10">
+                    <MarkdownContent
+                      content={message.content}
+                      placeEntities={placeEntities}
+                      selectedPlaceId={selectedPlaceId}
+                      onPlaceSelect={onPlaceSelect}
+                      showPlaceLinks={false}
+                      showPlaceCards={false}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            )
           ) : (
             <MarkdownContent
               content={message.content}
