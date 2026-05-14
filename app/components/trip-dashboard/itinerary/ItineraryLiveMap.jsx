@@ -407,6 +407,35 @@ function latLngToPoint(latLng) {
   return { lat, lng };
 }
 
+export function buildClientRouteRequest(points, travelMode) {
+  if (!Array.isArray(points) || points.length <= 1) {
+    return null;
+  }
+
+  const originCoordinate = getRouteCoordinate(points[0]);
+  const destinationCoordinate = getRouteCoordinate(points[points.length - 1]);
+  const origin = originCoordinate ? pointToLatLngLiteral(originCoordinate) : null;
+  const destination = destinationCoordinate ? pointToLatLngLiteral(destinationCoordinate) : null;
+  if (!origin || !destination) {
+    return null;
+  }
+
+  const intermediates = points.slice(1, -1).slice(0, 25)
+    .map((point) => getRouteCoordinate(point))
+    .filter(Boolean)
+    .map((point) => ({
+      location: pointToLatLngLiteral(point),
+    }));
+
+  return {
+    origin,
+    destination,
+    intermediates,
+    travelMode: travelMode ?? "DRIVING",
+    fields: ["path"],
+  };
+}
+
 function ResolveClientRoute({ points, enabled, onRoute }) {
   const routes = useMapsLibrary("routes");
 
@@ -416,11 +445,10 @@ function ResolveClientRoute({ points, enabled, onRoute }) {
       return;
     }
 
-    const DirectionsService = routes?.DirectionsService ?? globalThis.google?.maps?.DirectionsService;
+    const Route = routes?.Route ?? globalThis.google?.maps?.routes?.Route;
     const TravelMode = routes?.TravelMode ?? globalThis.google?.maps?.TravelMode;
-    const DirectionsStatus = routes?.DirectionsStatus ?? globalThis.google?.maps?.DirectionsStatus;
 
-    if (!DirectionsService || !TravelMode) {
+    if (!Route || !TravelMode) {
       onRoute([], routes ? "unavailable" : "loading");
       return;
     }
@@ -428,36 +456,29 @@ function ResolveClientRoute({ points, enabled, onRoute }) {
     let cancelled = false;
     onRoute([], "loading");
 
-    const origin = pointToLatLngLiteral(points[0]);
-    const destination = pointToLatLngLiteral(points[points.length - 1]);
-    const waypointPoints = points.slice(1, -1).slice(0, 23);
-    const waypoints = waypointPoints.map((point) => ({
-      location: pointToLatLngLiteral(point),
-      stopover: true,
-    }));
+    const request = buildClientRouteRequest(points, TravelMode.DRIVING ?? "DRIVING");
+    if (!request) {
+      onRoute([], "failed");
+      return;
+    }
 
-    const service = new DirectionsService();
-    service.route(
-      {
-        origin,
-        destination,
-        waypoints,
-        optimizeWaypoints: false,
-        travelMode: TravelMode.DRIVING,
-      },
-      (result, status) => {
+    Promise.resolve(Route.computeRoutes(request))
+      .then((response) => {
         if (cancelled) return;
 
-        const okStatus = DirectionsStatus?.OK ?? "OK";
-        const overviewPath = result?.routes?.[0]?.overview_path;
-        if (status !== okStatus || !Array.isArray(overviewPath) || overviewPath.length <= 1) {
+        const route = response?.routes?.[0];
+        const routePath = route?.path;
+        if (!Array.isArray(routePath) || routePath.length <= 1) {
           onRoute([], "failed");
           return;
         }
 
-        onRoute(overviewPath.map(latLngToPoint).filter(Boolean), "ready");
-      },
-    );
+        onRoute(routePath.map(latLngToPoint).filter(Boolean), "ready");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        onRoute([], "failed");
+      });
 
     return () => {
       cancelled = true;
