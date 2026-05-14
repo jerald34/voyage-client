@@ -1,4 +1,4 @@
-import { getSnapshotPhotoUrl, getReadablePlaceType } from "../../../lib/trip-dashboard/richItinerary.js";
+import { getSnapshotPhotoUrl } from "../../../lib/trip-dashboard/richItinerary.js";
 
 export default function CompactPlaceCard({
   item,
@@ -8,21 +8,19 @@ export default function CompactPlaceCard({
   const snapshot = item?.placeSnapshot ?? null;
   const photoUrl = getSnapshotPhotoUrl(snapshot);
   const placeName = snapshot?.name || item?.placeName || item?.title || "Untitled";
-  const rating = snapshot?.rating ?? snapshot?.metadata?.rating ?? null;
-  const placeType = getReadablePlaceType(snapshot);
   const timeLabel =
     item?.startTime && item?.endTime
-      ? `${item.startTime} – ${item.endTime}`
+      ? `${item.startTime} - ${item.endTime}`
       : item?.startTime || "";
 
   return (
     <button
       type="button"
       onClick={() => onSelect?.(item)}
-      className={`flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl border transition-all duration-200 glass-panel ${
+      className={`flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl border transition-all duration-200 backdrop-blur-md ${
         isSelected
-          ? "ring-2 ring-secondary/40 border-secondary/30 bg-secondary/5"
-          : "border-border/10 hover:border-secondary/20 hover:shadow-soft"
+          ? "ring-2 ring-secondary/35 border-secondary/30 bg-[rgba(255,255,255,0.10)] shadow-[0_18px_40px_rgba(15,23,42,0.18)]"
+          : "border-white/10 bg-[rgba(255,255,255,0.06)] shadow-[0_14px_30px_rgba(15,23,42,0.12)] hover:border-white/15 hover:bg-[rgba(255,255,255,0.09)]"
       }`}
     >
       {/* Thumbnail */}
@@ -33,7 +31,7 @@ export default function CompactPlaceCard({
           className="w-14 h-14 rounded-xl object-cover flex-shrink-0 shadow-sm"
         />
       ) : (
-        <div className="w-14 h-14 rounded-xl flex-shrink-0 flex items-center justify-center bg-background text-text-soft text-lg font-serif font-bold border border-border/10">
+        <div className="w-14 h-14 rounded-xl flex-shrink-0 flex items-center justify-center bg-[rgba(255,255,255,0.08)] text-text-soft text-lg font-serif font-bold border border-white/10 backdrop-blur-md">
           {placeName.slice(0, 1).toUpperCase()}
         </div>
       )}
@@ -43,13 +41,6 @@ export default function CompactPlaceCard({
         <span className="text-[0.875rem] font-semibold text-text-primary leading-tight line-clamp-2">
           {placeName}
         </span>
-        {(rating || placeType) && (
-          <span className="text-[0.75rem] text-text-soft leading-tight">
-            {rating && <span>★ {rating}</span>}
-            {rating && placeType && <span> · </span>}
-            {placeType && <span>{placeType}</span>}
-          </span>
-        )}
         {timeLabel && (
           <span className="text-[0.75rem] text-secondary font-semibold leading-tight">
             {timeLabel}

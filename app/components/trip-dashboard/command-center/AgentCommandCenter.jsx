@@ -120,14 +120,6 @@ export default function AgentCommandCenter({
     }
   }, [streamingItinerary]);
 
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "24px";
-      const scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = `${Math.min(scrollHeight, 200)}px`;
-    }
-  }, [composerInput]);
-
   function handleKeyDown(event) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();

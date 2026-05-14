@@ -52,7 +52,9 @@ export default function MobileGlassSheet({
 }) {
   const isMobile = useMobileViewport();
   const sheetRef = useRef(null);
+  const dragHandleRef = useRef(null);
   const dragState = useRef(null);
+  const activePointerIdRef = useRef(null);
   const [snap, setSnap] = useState(defaultSnap);
   const [isDragging, setIsDragging] = useState(false);
   const [sheetHeight, setSheetHeight] = useState(0);
@@ -82,10 +84,35 @@ export default function MobileGlassSheet({
     onSnapChange?.(snap);
   }, [snap, onSnapChange]);
 
+  const endDrag = useCallback((pointerId = activePointerIdRef.current) => {
+    const handle = dragHandleRef.current;
+    if (handle && pointerId != null && typeof handle.hasPointerCapture === "function") {
+      try {
+        if (handle.hasPointerCapture(pointerId)) {
+          handle.releasePointerCapture(pointerId);
+        }
+      } catch {
+        // Pointer capture may already be gone if the browser released it first.
+      }
+    }
+
+    dragState.current = null;
+    activePointerIdRef.current = null;
+    setIsDragging(false);
+  }, []);
+
   const handlePointerDown = useCallback(
     (e) => {
       if (!isMobile) return;
-      e.currentTarget.setPointerCapture(e.pointerId);
+      const handle = e.currentTarget;
+      if (typeof handle.setPointerCapture === "function") {
+        try {
+          handle.setPointerCapture(e.pointerId);
+        } catch {
+          // Ignore browsers that already consider the pointer captured.
+        }
+      }
+      activePointerIdRef.current = e.pointerId;
       dragState.current = {
         startY: e.clientY,
         startHeight: sheetHeight,
@@ -100,7 +127,7 @@ export default function MobileGlassSheet({
 
   const handlePointerMove = useCallback(
     (e) => {
-      if (!dragState.current || !isMobile) return;
+      if (!dragState.current || !isMobile || activePointerIdRef.current !== e.pointerId) return;
       const ds = dragState.current;
       const delta = ds.startY - e.clientY;
       const now = Date.now();
@@ -119,15 +146,28 @@ export default function MobileGlassSheet({
     [isMobile, viewportHeight],
   );
 
-  const handlePointerUp = useCallback(() => {
-    if (!dragState.current || !isMobile) return;
+  const handlePointerUp = useCallback((e) => {
+    if (!dragState.current || !isMobile || activePointerIdRef.current !== e.pointerId) return;
     const velocity = dragState.current.velocity;
     const next = nearestSnap(sheetHeight, viewportHeight, velocity);
     setSnap(next);
     setSheetHeight(getSnapHeight(next, viewportHeight));
-    dragState.current = null;
-    setIsDragging(false);
-  }, [isMobile, sheetHeight, viewportHeight]);
+    endDrag(e.pointerId);
+  }, [endDrag, isMobile, sheetHeight, viewportHeight]);
+
+  const handlePointerCancel = useCallback((e) => {
+    if (!dragState.current || !isMobile || activePointerIdRef.current !== e.pointerId) return;
+    const velocity = dragState.current.velocity;
+    const next = nearestSnap(sheetHeight, viewportHeight, velocity);
+    setSnap(next);
+    setSheetHeight(getSnapHeight(next, viewportHeight));
+    endDrag(e.pointerId);
+  }, [endDrag, isMobile, sheetHeight, viewportHeight]);
+
+  const handleLostPointerCapture = useCallback((e) => {
+    if (activePointerIdRef.current !== e.pointerId) return;
+    endDrag(e.pointerId);
+  }, [endDrag]);
 
   const snapTo = useCallback(
     (target) => {
@@ -146,7 +186,7 @@ export default function MobileGlassSheet({
   return (
     <div
       ref={sheetRef}
-      className={`fixed bottom-0 left-0 right-0 z-30 flex flex-col glass-panel border-t border-border/10 rounded-t-[24px] shadow-strong ${className}`}
+      className={`fixed bottom-0 left-0 right-0 z-30 flex flex-col rounded-t-[24px] bg-[rgba(255,255,255,0.16)] backdrop-blur-[24px] shadow-[0_-18px_50px_rgba(15,23,42,0.18)] ${className}`}
       style={{
         height: sheetHeight || getSnapHeight(defaultSnap, viewportHeight || window.innerHeight),
         maxHeight,
@@ -155,25 +195,37 @@ export default function MobileGlassSheet({
       }}
     >
       {/* Drag handle */}
-      <div
-        className="flex items-center justify-center py-2 cursor-grab active:cursor-grabbing flex-shrink-0"
-        style={{ touchAction: "none" }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-      >
-        <div className="w-10 h-1 rounded-full bg-border/30" />
+      <div className="relative flex-shrink-0 overflow-hidden rounded-t-[24px]">
+        <div
+          ref={dragHandleRef}
+          className="relative z-10 flex items-center justify-center gap-2 py-2.5 cursor-grab active:cursor-grabbing select-none"
+          style={{ touchAction: "none" }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
+          onLostPointerCapture={handleLostPointerCapture}
+        >
+          <div className="w-12 h-1.5 rounded-full bg-white/80 shadow-[0_0_0_1px_rgba(15,23,42,0.08)]" />
+        </div>
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
-        {typeof children === "function" ? children({ snap, snapTo }) : children}
+      <div className="relative flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+        <div
+          className="relative z-0"
+          style={{
+            WebkitMaskImage: "linear-gradient(to bottom, transparent 0px, black 34px, black 100%)",
+            maskImage: "linear-gradient(to bottom, transparent 0px, black 34px, black 100%)",
+          }}
+        >
+          {typeof children === "function" ? children({ snap, snapTo }) : children}
+        </div>
       </div>
 
       {/* Sticky footer */}
       {footer && (
-        <div className="flex-shrink-0 border-t border-border/5">
+        <div className="flex-shrink-0 border-t border-white/10">
           {typeof footer === "function" ? footer({ snap, snapTo }) : footer}
         </div>
       )}

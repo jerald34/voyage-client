@@ -28,14 +28,14 @@ export default function PlaceDetailSheet({ item, onClose }) {
       {/* Backdrop */}
       <button
         type="button"
-        className="absolute inset-0 bg-black/30 backdrop-blur-[2px] border-none cursor-default"
+        className="absolute inset-0 bg-black/25 backdrop-blur-[4px] border-none cursor-default"
         onClick={onClose}
         aria-label="Close details"
       />
 
       {/* Sheet */}
       <div
-        className="relative z-10 w-full max-h-[70vh] overflow-y-auto rounded-t-[24px] glass-panel border-t border-border/10 shadow-strong p-5 flex flex-col gap-4"
+        className="relative z-10 w-full max-h-[70vh] overflow-y-auto rounded-t-[24px] bg-[rgba(255,255,255,0.78)] backdrop-blur-[24px] border-t border-white/15 shadow-[0_-18px_50px_rgba(15,23,42,0.18)] p-5 flex flex-col gap-4"
         style={{ animation: "pds-slide-up 250ms ease-out" }}
       >
         {/* Handle */}
@@ -49,10 +49,10 @@ export default function PlaceDetailSheet({ item, onClose }) {
             <img
               src={photoUrl}
               alt={placeName}
-              className="w-20 h-20 rounded-xl object-cover flex-shrink-0 shadow-md"
+              className="w-20 h-20 rounded-xl object-cover flex-shrink-0 shadow-md border border-white/10"
             />
           ) : (
-            <div className="w-20 h-20 rounded-xl flex-shrink-0 flex items-center justify-center bg-background text-text-soft text-2xl font-serif font-bold border border-border/10">
+            <div className="w-20 h-20 rounded-xl flex-shrink-0 flex items-center justify-center bg-[rgba(255,255,255,0.20)] text-text-soft text-2xl font-serif font-bold border border-white/10 backdrop-blur-md">
               {placeName.slice(0, 1).toUpperCase()}
             </div>
           )}
@@ -74,7 +74,7 @@ export default function PlaceDetailSheet({ item, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full border-none bg-border/10 text-text-soft flex items-center justify-center cursor-pointer hover:bg-border/20 transition-colors flex-shrink-0"
+            className="w-8 h-8 rounded-full border-none bg-[rgba(255,255,255,0.20)] text-text-soft flex items-center justify-center cursor-pointer hover:bg-[rgba(255,255,255,0.32)] transition-colors flex-shrink-0 backdrop-blur-md"
             aria-label="Close"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -98,9 +98,9 @@ export default function PlaceDetailSheet({ item, onClose }) {
         {highlights.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {highlights.map((h, i) => (
-              <span
-                key={i}
-                className="px-2.5 py-1 rounded-lg bg-background/50 border border-border/10 text-text-soft text-[0.75rem] font-bold"
+            <span
+              key={i}
+                className="px-2.5 py-1 rounded-lg bg-[rgba(255,255,255,0.20)] border border-white/10 text-text-soft text-[0.75rem] font-bold backdrop-blur-md"
               >
                 {h}
               </span>
@@ -114,7 +114,7 @@ export default function PlaceDetailSheet({ item, onClose }) {
             href={mapsUrl}
             target="_blank"
             rel="noreferrer noopener"
-            className="inline-flex justify-center mt-1 rounded-full bg-secondary text-white py-3 px-5 text-[0.85rem] font-extrabold no-underline hover:opacity-90 transition-opacity"
+            className="inline-flex justify-center mt-1 rounded-full bg-[rgba(215,122,97,0.92)] text-white py-3 px-5 text-[0.85rem] font-extrabold no-underline hover:opacity-90 transition-opacity shadow-[0_12px_24px_rgba(215,122,97,0.24)]"
           >
             Open in Google Maps
           </a>

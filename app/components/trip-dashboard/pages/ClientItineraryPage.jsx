@@ -22,7 +22,6 @@ import ShareDialog from "../itinerary/ShareDialog.jsx";
 import { generateItineraryPdf, titleToFilename } from "../../../lib/pdfExport.js";
 import MobileGlassSheet from "../mobile/MobileGlassSheet.jsx";
 import CompactPlaceCard from "../mobile/CompactPlaceCard.jsx";
-import PlaceDetailSheet from "../mobile/PlaceDetailSheet.jsx";
 import useMobileViewport from "../mobile/useMobileViewport.js";
 
 const ItineraryLiveMap = dynamic(
@@ -177,11 +176,11 @@ function CommentsPanel({ agencyId, tripId, onClose }) {
         prev.map((c) =>
           c.id === commentId
             ? {
-                ...c,
-                agencyReply: updated?.agencyReply ?? content,
-                agencyRepliedAt: updated?.agencyRepliedAt ?? new Date().toISOString(),
-                status: "ADDRESSED",
-              }
+              ...c,
+              agencyReply: updated?.agencyReply ?? content,
+              agencyRepliedAt: updated?.agencyRepliedAt ?? new Date().toISOString(),
+              status: "ADDRESSED",
+            }
             : c
         )
       );
@@ -266,13 +265,12 @@ function CommentsPanel({ agencyId, tripId, onClose }) {
                       </span>
                       <span className="text-[0.73rem] text-text-soft">{formatCommentTime(comment.createdAt)}</span>
                     </div>
-                    <span className={`inline-flex items-center px-2 py-[3px] rounded-[6px] text-[0.65rem] font-extrabold tracking-[0.04em] uppercase flex-shrink-0 ${
-                      comment.status === "ADDRESSED"
-                        ? "bg-[#f0fdf4] text-[#166534] border border-[#dcfce7]"
-                        : comment.status === "SEEN"
+                    <span className={`inline-flex items-center px-2 py-[3px] rounded-[6px] text-[0.65rem] font-extrabold tracking-[0.04em] uppercase flex-shrink-0 ${comment.status === "ADDRESSED"
+                      ? "bg-[#f0fdf4] text-[#166534] border border-[#dcfce7]"
+                      : comment.status === "SEEN"
                         ? "bg-[#eff6ff] text-[#1d4ed8] border border-[#bfdbfe]"
                         : "bg-[#fef9c3] text-[#854d0e] border border-[#fef08a]"
-                    }`}>
+                      }`}>
                       {comment.status === "ADDRESSED" ? "Addressed" : comment.status === "SEEN" ? "Seen" : "Pending"}
                     </span>
                   </div>
@@ -371,8 +369,8 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
   const [showClientDeleteConfirm, setShowClientDeleteConfirm] = useState(null);
   const [isDeletingClient, setIsDeletingClient] = useState(false);
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [selectedPlaceId, setSelectedPlaceId] = useState("");
   const [mobilePane, setMobilePane] = useState("list"); // "list" | "detail" — mobile only
-  const [mobileDetailItem, setMobileDetailItem] = useState(null);
   const [mobileMapPadding, setMobileMapPadding] = useState(0);
   const isMobile = useMobileViewport();
   const requestSequenceRef = useRef(0);
@@ -461,6 +459,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
   useEffect(() => {
     setShowCommentsPanel(false);
     setSelectedDayIndex(0);
+    setSelectedPlaceId("");
   }, [selectedTripId]);
 
   const safeDays = useMemo(
@@ -495,9 +494,37 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
     [mapItems, selectedDay]
   );
 
+  const selectedMobileMapItem = useMemo(() => {
+    if (!Array.isArray(selectedDayMapItems) || selectedDayMapItems.length === 0) return null;
+    const selectedById = selectedDayMapItems.find((item) => item.__placeEntityId === selectedPlaceId) || null;
+    const clampedIndex = Math.max(0, Math.min(activeStopIndex, selectedDayMapItems.length - 1));
+    const item = selectedById || selectedDayMapItems[clampedIndex];
+    if (!item) return null;
+
+    const snapshot = item?.placeSnapshot ?? null;
+    const lat = Number(item?.lat ?? item?.latitude ?? snapshot?.latitude);
+    const lng = Number(item?.lng ?? item?.longitude ?? snapshot?.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+    const rating = snapshot?.rating ?? snapshot?.metadata?.rating ?? null;
+
+    return {
+      id: item.__placeEntityId || getItineraryPlaceEntityId(item, selectedDay, clampedIndex),
+      lat,
+      lng,
+      name: snapshot?.name || item?.placeName || item?.title || "Untitled",
+      description: item?.description || snapshot?.formattedAddress || item?.type || "",
+      formattedAddress: snapshot?.formattedAddress || "",
+      timeLabel: getItemTimeLabel(item),
+      placeType: getReadablePlaceType(snapshot) || item?.type || "",
+      rating: rating ? String(rating) : "",
+    };
+  }, [activeStopIndex, selectedDay, selectedDayMapItems, selectedPlaceId]);
+
   useEffect(() => {
     setActiveStopIndex(selectedDayMapItems.length > 0 ? 0 : -1);
-  }, [selectedDayMapItems.length]);
+    setSelectedPlaceId(selectedDayMapItems[0]?.__placeEntityId ?? "");
+  }, [selectedDayMapItems]);
 
   const tripTitle = fullItinerary?.title || selectedTrip?.destination || "Itinerary";
   const tripSummary = fullItinerary?.summary || "";
@@ -544,12 +571,12 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
     try {
       const dateRange = tripDateRange;
       const doc = await generateItineraryPdf({
-        title:         tripTitle,
-        summary:       tripSummary,
+        title: tripTitle,
+        summary: tripSummary,
         dateRange,
         travelerCount,
-        days:          safeDays,
-        agencyName:    "Voyage",
+        days: safeDays,
+        agencyName: "Voyage",
       });
       doc.save(titleToFilename(tripTitle));
     } catch (err) {
@@ -659,11 +686,10 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                     return (
                       <div
                         key={`${selectedDay.dayNumber}-${iIdx}`}
-                        className={`flex flex-col gap-3 border rounded-xl p-4 cursor-default transition-all duration-200 ${
-                          isActive
-                            ? "border-secondary/40 bg-secondary/5 shadow-soft"
-                            : "border-border/20 bg-surface-elevated hover:border-secondary/20 hover:shadow-soft"
-                        }`}
+                        className={`flex flex-col gap-3 border rounded-xl p-4 cursor-default transition-all duration-200 ${isActive
+                          ? "border-secondary/40 bg-secondary/5 shadow-soft"
+                          : "border-border/20 bg-surface-elevated hover:border-secondary/20 hover:shadow-soft"
+                          }`}
                         onMouseEnter={() => setActiveStopIndex(dayItemIdx)}
                       >
                         {/* Time badge + type */}
@@ -741,7 +767,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                 onHoverItem={setActiveStopIndex}
                 selectedPlaceId=""
                 selectedPlace={null}
-                onSelectPlace={() => {}}
+                onSelectPlace={() => { }}
                 theme={theme}
                 sidebarWidth={0}
               />
@@ -770,9 +796,15 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
             routeEstimates={[]}
             activeIndex={activeStopIndex}
             onHoverItem={setActiveStopIndex}
-            selectedPlaceId=""
+            selectedPlaceId={selectedMobileMapItem?.id ?? ""}
             selectedPlace={null}
-            onSelectPlace={() => {}}
+            onSelectPlace={(placeId) => {
+              const nextIndex = selectedDayMapItems.findIndex((item) => item.__placeEntityId === placeId);
+              if (nextIndex >= 0) {
+                setActiveStopIndex(nextIndex);
+                setSelectedPlaceId(placeId);
+              }
+            }}
             theme={theme}
             sidebarWidth={0}
             mapBottomPadding={mobileMapPadding}
@@ -783,52 +815,6 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
         <MobileGlassSheet
           defaultSnap="half"
           onSnapChange={handleCipSnapChange}
-          footer={
-            selectedClient && selectedItineraryId ? (
-              <div className="flex items-center justify-center gap-3 px-4 py-2">
-                <button
-                  className={`inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 ${
-                    showCommentsPanel
-                      ? "bg-secondary text-white border-secondary"
-                      : "bg-surface-elevated text-text-primary border-border/20"
-                  }`}
-                  onClick={() => setShowCommentsPanel((v) => !v)}
-                  aria-label="Comments"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                </button>
-                <button
-                  className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-border/20 bg-surface-elevated text-text-primary transition-all duration-200"
-                  onClick={() => setShowShareDialog(true)}
-                  aria-label="Share"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                    <polyline points="16 6 12 2 8 6" />
-                    <line x1="12" y1="2" x2="12" y2="15" />
-                  </svg>
-                </button>
-                <button
-                  className={`inline-flex items-center justify-center w-10 h-10 rounded-full border border-border/20 bg-surface-elevated text-text-primary transition-all duration-200 ${pdfLoading ? "opacity-60" : ""}`}
-                  onClick={handleDownloadPdf}
-                  disabled={pdfLoading || !fullItinerary}
-                  aria-label="Download PDF"
-                >
-                  {pdfLoading ? (
-                    <span className="inline-block w-4 h-4 border-2 border-border border-t-secondary rounded-full animate-spin" />
-                  ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            ) : null
-          }
         >
           {mobilePane === "list" ? (
             <div className="flex flex-col h-full">
@@ -856,20 +842,18 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                       <button
                         key={c.id}
                         type="button"
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all duration-200 w-full text-left ${
-                          isSelected
-                            ? "bg-secondary/20 border-secondary/30 shadow-soft"
-                            : "bg-transparent border-transparent hover:bg-background"
-                        }`}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all duration-200 w-full text-left ${isSelected
+                          ? "bg-secondary/20 border-secondary/30 shadow-soft"
+                          : "bg-transparent border-transparent hover:bg-background"
+                          }`}
                         onClick={() => {
                           setSelectedClientId(c.id);
                           setSelectedTripId(c.trips[0]?.id || null);
                           setMobilePane("detail");
                         }}
                       >
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[0.8rem] flex-shrink-0 ${
-                          isSelected ? "bg-secondary text-white" : "bg-secondary/40 text-white"
-                        }`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[0.8rem] flex-shrink-0 ${isSelected ? "bg-secondary text-white" : "bg-secondary/40 text-white"
+                          }`}>
                           {initials}
                         </div>
                         <div className="flex flex-col gap-0.5 min-w-0">
@@ -893,18 +877,64 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
             </div>
           ) : (
             <div className="flex flex-col h-full">
-              {/* Back button */}
-              <button
-                type="button"
-                onClick={() => setMobilePane("list")}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-text-muted bg-transparent border-b border-border/5 cursor-pointer hover:text-text-primary transition-colors"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
-                All clients
-              </button>
+              <div className="sticky top-0 z-30 px-4 py-2.5 border-b border-white/10 bg-[rgba(17,24,39,0.15)] backdrop-blur-xl shadow-[0_1px_0_rgba(255,255,255,0.04)]">
+                <div className="flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setMobilePane("list")}
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-text-muted bg-transparent border-0 cursor-pointer hover:text-text-primary transition-colors min-h-[40px]"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+                    All clients
+                  </button>
 
+                  {selectedClient && selectedItineraryId ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        className={`inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 ${showCommentsPanel
+                          ? "bg-secondary text-white border-secondary"
+                          : "bg-surface-elevated text-text-primary border-border/20"
+                          }`}
+                        onClick={() => setShowCommentsPanel((v) => !v)}
+                        aria-label="Comments"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
+                      </button>
+                      <button
+                        className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-border/20 bg-surface-elevated text-text-primary transition-all duration-200"
+                        onClick={() => setShowShareDialog(true)}
+                        aria-label="Share"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                          <polyline points="16 6 12 2 8 6" />
+                          <line x1="12" y1="2" x2="12" y2="15" />
+                        </svg>
+                      </button>
+                      <button
+                        className={`inline-flex items-center justify-center w-10 h-10 rounded-full border border-border/20 bg-surface-elevated text-text-primary transition-all duration-200 ${pdfLoading ? "opacity-60" : ""}`}
+                        onClick={handleDownloadPdf}
+                        disabled={pdfLoading || !fullItinerary}
+                        aria-label="Download PDF"
+                      >
+                        {pdfLoading ? (
+                          <span className="inline-block w-4 h-4 border-2 border-border border-t-secondary rounded-full animate-spin" />
+                        ) : (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
               {selectedClient ? (
-                <div className="flex flex-col flex-1 overflow-hidden">
+                <div className="flex flex-col flex-1 overflow-hidden pt-2">
                   {/* Client name */}
                   <div className="px-4 py-2 border-b border-border/5">
                     <h2 className="font-serif text-[1.2rem] m-0 leading-tight truncate">{selectedClient.name}</h2>
@@ -916,11 +946,10 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                       {selectedClient.trips.map((t) => (
                         <button
                           key={t.id}
-                          className={`px-3 py-1.5 rounded-md text-[0.75rem] font-bold whitespace-nowrap border transition-all duration-200 ${
-                            selectedTripId === t.id
-                              ? "bg-secondary text-white border-secondary"
-                              : "bg-surface border-border/30 text-text-soft"
-                          }`}
+                          className={`px-3 py-1.5 rounded-md text-[0.75rem] font-bold whitespace-nowrap border transition-all duration-200 ${selectedTripId === t.id
+                            ? "bg-secondary text-white border-secondary"
+                            : "bg-surface border-border/30 text-text-soft"
+                            }`}
                           onClick={() => setSelectedTripId(t.id)}
                         >
                           {t.destination || "Unnamed Trip"}
@@ -935,11 +964,10 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                       {safeDays.map((day, dIdx) => (
                         <button
                           key={day.id || day.dayNumber || dIdx}
-                          className={`px-3 py-2 rounded-md border cursor-pointer transition-all duration-200 flex-shrink-0 text-left ${
-                            selectedDayIndex === dIdx
-                              ? "border-secondary/60 bg-secondary/10"
-                              : "border-border/30 bg-surface"
-                          }`}
+                          className={`px-3 py-2 rounded-md border cursor-pointer transition-all duration-200 flex-shrink-0 text-left ${selectedDayIndex === dIdx
+                            ? "border-secondary/60 bg-secondary/10"
+                            : "border-border/30 bg-surface"
+                            }`}
                           onClick={() => setSelectedDayIndex(dIdx)}
                         >
                           <div className={`text-[0.7rem] font-extrabold tracking-wide leading-snug ${selectedDayIndex === dIdx ? "text-secondary" : "text-text-soft"}`}>
@@ -967,7 +995,6 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                       </div>
                     ) : selectedDay ? (
                       (selectedDay.items || []).map((item, iIdx) => {
-                        const entityId = getItineraryPlaceEntityId(item, selectedDay, iIdx);
                         return (
                           <CompactPlaceCard
                             key={`${selectedDay.dayNumber}-${iIdx}`}
@@ -975,7 +1002,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                             isSelected={activeStopIndex === iIdx}
                             onSelect={() => {
                               setActiveStopIndex(iIdx);
-                              setMobileDetailItem(item);
+                              setSelectedPlaceId(item.__placeEntityId);
                             }}
                           />
                         );
@@ -993,11 +1020,6 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
             </div>
           )}
         </MobileGlassSheet>
-
-        {/* Place detail sheet */}
-        {mobileDetailItem && (
-          <PlaceDetailSheet item={mobileDetailItem} onClose={() => setMobileDetailItem(null)} />
-        )}
 
         <ShareDialog
           isOpen={showShareDialog}
@@ -1047,36 +1069,32 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
               return (
                 <div
                   key={c.id}
-                  className={`flex items-center gap-2 p-1 rounded-md transition-all duration-300 relative mb-0.5 ${
-                    isSelected
-                      ? "bg-secondary/20 shadow-soft border border-secondary/30"
-                      : "hover:bg-background border border-transparent"
-                  }`}
+                  className={`flex items-center gap-2 p-1 rounded-md transition-all duration-300 relative mb-0.5 ${isSelected
+                    ? "bg-secondary/20 shadow-soft border border-secondary/30"
+                    : "hover:bg-background border border-transparent"
+                    }`}
                 >
-                    <button
-                      className="all-unset flex-1 flex items-center gap-3.5 px-3 py-2.5 cursor-pointer min-w-0 rounded-sm"
-                      onClick={() => {
-                        setSelectedClientId(c.id);
-                        setSelectedTripId(c.trips[0]?.id || null);
-                        setMobilePane("detail");
-                      }}
-                      title={`View ${c.name}'s itineraries`}
-                    >
-                      <div className={`w-11 h-11 rounded-full flex items-center justify-center font-extrabold text-[0.85rem] flex-shrink-0 shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-all duration-200 ${
-                        isSelected ? "bg-secondary text-white" : "bg-secondary/40 text-white"
+                  <button
+                    className="all-unset flex-1 flex items-center gap-3.5 px-3 py-2.5 cursor-pointer min-w-0 rounded-sm"
+                    onClick={() => {
+                      setSelectedClientId(c.id);
+                      setSelectedTripId(c.trips[0]?.id || null);
+                      setMobilePane("detail");
+                    }}
+                    title={`View ${c.name}'s itineraries`}
+                  >
+                    <div className={`w-11 h-11 rounded-full flex items-center justify-center font-extrabold text-[0.85rem] flex-shrink-0 shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-all duration-200 ${isSelected ? "bg-secondary text-white" : "bg-secondary/40 text-white"
                       }`}>
-                        {initials}
-                      </div>
+                      {initials}
+                    </div>
                     <div className="flex flex-col gap-0.5 min-w-0">
-                      <strong className={`block text-[0.95rem] font-bold tracking-tight whitespace-nowrap overflow-hidden text-ellipsis transition-colors duration-200 ${
-                        isSelected ? "text-secondary font-black" : "text-text-primary"
-                      }`}>
+                      <strong className={`block text-[0.95rem] font-bold tracking-tight whitespace-nowrap overflow-hidden text-ellipsis transition-colors duration-200 ${isSelected ? "text-secondary font-black" : "text-text-primary"
+                        }`}>
                         {c.name}
                       </strong>
                       {!isConfirming && (
-                        <span className={`text-[0.75rem] font-semibold opacity-70 transition-colors duration-200 ${
-                          isSelected ? "text-text-primary" : "text-text-soft"
-                        }`}>
+                        <span className={`text-[0.75rem] font-semibold opacity-70 transition-colors duration-200 ${isSelected ? "text-text-primary" : "text-text-soft"
+                          }`}>
                           {c.trips.length} saved itineraries
                         </span>
                       )}
@@ -1102,11 +1120,10 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                     </div>
                   ) : (
                     <button
-                      className={`border-none w-8 h-8 flex items-center justify-center cursor-pointer rounded-lg transition-all duration-200 flex-shrink-0 mr-1 ${
-                        isSelected
-                          ? "bg-transparent text-white/60 hover:bg-white/15 hover:text-white"
-                          : "bg-transparent text-text-soft hover:bg-[#fef2f2] hover:text-[#dc2626] hover:scale-110"
-                      }`}
+                      className={`border-none w-8 h-8 flex items-center justify-center cursor-pointer rounded-lg transition-all duration-200 flex-shrink-0 mr-1 ${isSelected
+                        ? "bg-transparent text-white/60 hover:bg-white/15 hover:text-white"
+                        : "bg-transparent text-text-soft hover:bg-[#fef2f2] hover:text-[#dc2626] hover:scale-110"
+                        }`}
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowClientDeleteConfirm(c.id);
@@ -1179,11 +1196,10 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                   <>
                     {/* Comments — icon-only on mobile, icon+label on sm+ */}
                     <button
-                      className={`inline-flex items-center justify-center gap-2 min-w-[40px] min-h-[40px] px-2 sm:px-3.5 rounded-lg border text-[0.85rem] font-bold cursor-pointer transition-all duration-200 ${
-                        showCommentsPanel
-                          ? "bg-secondary text-white border-secondary shadow-soft"
-                          : "bg-surface-elevated text-text-primary border-border/20 hover:bg-surface hover:border-border/40"
-                      }`}
+                      className={`inline-flex items-center justify-center gap-2 min-w-[40px] min-h-[40px] px-2 sm:px-3.5 rounded-lg border text-[0.85rem] font-bold cursor-pointer transition-all duration-200 ${showCommentsPanel
+                        ? "bg-secondary text-white border-secondary shadow-soft"
+                        : "bg-surface-elevated text-text-primary border-border/20 hover:bg-surface hover:border-border/40"
+                        }`}
                       onClick={() => setShowCommentsPanel((v) => !v)}
                       title="View client comments"
                       aria-label="Comments"
@@ -1244,11 +1260,10 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                   {selectedClient.trips.map(t => (
                     <button
                       key={t.id}
-                      className={`px-3.5 py-1.5 rounded-md text-[0.8rem] font-bold whitespace-nowrap border transition-all duration-200 relative ${
-                        selectedTripId === t.id
-                          ? "bg-secondary text-white border-secondary"
-                          : "bg-surface border-border/30 text-text-soft hover:text-text-primary hover:border-secondary/40"
-                      }`}
+                      className={`px-3.5 py-1.5 rounded-md text-[0.8rem] font-bold whitespace-nowrap border transition-all duration-200 relative ${selectedTripId === t.id
+                        ? "bg-secondary text-white border-secondary"
+                        : "bg-surface border-border/30 text-text-soft hover:text-text-primary hover:border-secondary/40"
+                        }`}
                       onClick={() => setSelectedTripId(t.id)}
                     >
                       {t.destination || "Unnamed Trip"}
@@ -1268,11 +1283,10 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                   {safeDays.map((day, dIdx) => (
                     <div
                       key={day.id || day.dayNumber || dIdx}
-                      className={`min-w-[200px] max-w-[260px] px-4 py-3 rounded-md border cursor-pointer transition-all duration-300 flex-shrink-0 ${
-                        selectedDayIndex === dIdx
-                          ? "border-secondary/60 bg-secondary/10 shadow-soft"
-                          : "border-border/30 bg-surface hover:border-secondary/40 hover:-translate-y-0.5 hover:shadow-soft"
-                      }`}
+                      className={`min-w-[200px] max-w-[260px] px-4 py-3 rounded-md border cursor-pointer transition-all duration-300 flex-shrink-0 ${selectedDayIndex === dIdx
+                        ? "border-secondary/60 bg-secondary/10 shadow-soft"
+                        : "border-border/30 bg-surface hover:border-secondary/40 hover:-translate-y-0.5 hover:shadow-soft"
+                        }`}
                       onClick={() => setSelectedDayIndex(dIdx)}
                     >
                       <div className={`text-[0.8rem] font-extrabold tracking-wide mb-1 leading-snug ${selectedDayIndex === dIdx ? "text-secondary" : "text-text-soft"}`}>

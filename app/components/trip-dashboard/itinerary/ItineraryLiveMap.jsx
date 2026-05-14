@@ -10,6 +10,7 @@ import {
   InfoWindow,
   useMapsLibrary,
 } from "@vis.gl/react-google-maps";
+import { getReadablePlaceType } from "../../../lib/trip-dashboard/richItinerary.js";
 import { getGoogleMapsPlaceUrl } from "../../../lib/trip-dashboard/placeEntities.js";
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
@@ -38,16 +39,22 @@ export function normalizeAgencyFallbackLocation(agencyLocation) {
 }
 
 function mapItemToPoint(item, index) {
+  const snapshot = item?.placeSnapshot ?? null;
   const rawLat = Number(item?.lat ?? item?.latitude ?? item?.placeSnapshot?.latitude);
   const rawLng = Number(item?.lng ?? item?.longitude ?? item?.placeSnapshot?.longitude);
   if (Number.isFinite(rawLat) && Number.isFinite(rawLng)) {
+    const rating = snapshot?.rating ?? snapshot?.metadata?.rating ?? null;
+    const userRatingCount = Number(snapshot?.metadata?.userRatingCount);
     return {
       id: item?.__placeEntityId || `point-${index}`,
       lat: rawLat,
       lng: rawLng,
-      title: item?.placeSnapshot?.name || item?.placeName || item?.title || `Itinerary item ${index + 1}`,
-      description: item?.description || item?.type || "",
-      formattedAddress: item?.placeSnapshot?.formattedAddress || "",
+      title: snapshot?.name || item?.placeName || item?.title || `Itinerary item ${index + 1}`,
+      description: item?.description || snapshot?.formattedAddress || item?.type || "",
+      formattedAddress: snapshot?.formattedAddress || "",
+      placeType: getReadablePlaceType(snapshot) || item?.type || "",
+      rating: rating ? String(rating) : "",
+      userRatingCount: Number.isFinite(userRatingCount) ? userRatingCount : null,
       dayLabel: item?.__dayNumber ? `Day ${item.__dayNumber}` : "",
       timeLabel: item?.startTime && item?.endTime ? `${item.startTime} - ${item.endTime}` : item?.startTime || "",
     };
@@ -364,18 +371,21 @@ function FocusLiveMarker({ liveMarkers }) {
   return null;
 }
 
-function FocusSelectedPlace({ selectedPlace, sidebarWidth }) {
+function FocusSelectedPlace({ selectedPlace, sidebarWidth, bottomPadding = 0 }) {
   const map = useMap();
 
   useEffect(() => {
     if (!map || !selectedPlace) return;
     map.panTo({ lat: selectedPlace.lat, lng: selectedPlace.lng });
     if (sidebarWidth > 0) map.panBy(-(sidebarWidth / 2), 0);
+    if (bottomPadding > 0) {
+      map.panBy(0, Math.min(260, Math.round(bottomPadding * 0.5)));
+    }
     const currentZoom = map.getZoom();
     if (!currentZoom || currentZoom < 15) {
       map.setZoom(15);
     }
-  }, [map, selectedPlace, sidebarWidth]);
+  }, [bottomPadding, map, selectedPlace, sidebarWidth]);
 
   return null;
 }
@@ -617,7 +627,7 @@ function RouteSummaryPanel({ route }) {
   );
 }
 
-function MapHandler({ selectedPlaceId, viewportPoints, setSelectedPoint, sidebarWidth }) {
+function MapHandler({ selectedPlaceId, viewportPoints, setSelectedPoint, sidebarWidth, bottomPadding = 0 }) {
   const map = useMap();
 
   useEffect(() => {
@@ -632,13 +642,16 @@ function MapHandler({ selectedPlaceId, viewportPoints, setSelectedPoint, sidebar
       if (map) {
         map.panTo({ lat: point.lat, lng: point.lng });
         if (sidebarWidth > 0) map.panBy(-(sidebarWidth / 2), 0);
+        if (bottomPadding > 0) {
+          map.panBy(0, Math.min(260, Math.round(bottomPadding * 0.5)));
+        }
         const currentZoom = map.getZoom();
         if (!currentZoom || currentZoom < 14) {
           map.setZoom(14);
         }
       }
     }
-  }, [selectedPlaceId, viewportPoints, map, setSelectedPoint, sidebarWidth]);
+  }, [bottomPadding, selectedPlaceId, viewportPoints, map, setSelectedPoint, sidebarWidth]);
 
   return null;
 }
@@ -738,6 +751,7 @@ export default function ItineraryLiveMap({
             viewportPoints={viewportPoints}
             setSelectedPoint={setSelectedPoint}
             sidebarWidth={sidebarWidth}
+            bottomPadding={mapBottomPadding}
           />
           <ResolveAgencyFallbackPoint
             fallback={agencyFallback}
@@ -754,7 +768,7 @@ export default function ItineraryLiveMap({
           )}
           <FocusActiveStop points={points} activeIndex={activeIndex} sidebarWidth={sidebarWidth} />
           <FocusLiveMarker liveMarkers={liveMarkerPoints} />
-          <FocusSelectedPlace selectedPlace={selectedPlace} sidebarWidth={sidebarWidth} />
+          <FocusSelectedPlace selectedPlace={selectedPlace} sidebarWidth={sidebarWidth} bottomPadding={mapBottomPadding} />
 
           {/* Planned path fallback */}
           {shouldShowPlannedPathFallback({
@@ -884,12 +898,24 @@ export default function ItineraryLiveMap({
               position={{ lat: selectedPoint.lat, lng: selectedPoint.lng }}
               onCloseClick={() => setSelectedPoint(null)}
             >
-              <div style={{ padding: "4px", color: "#1e293b" }}>
-                <strong style={{ fontSize: "14px", display: "block", marginBottom: "4px" }}>
+              <div style={{ padding: "4px", color: "#1e293b", minWidth: "170px" }}>
+                <strong style={{ fontSize: "14px", display: "block", marginBottom: "2px" }}>
                   {selectedPoint.title || selectedPoint.name}
                 </strong>
+                {(selectedPoint.placeType || selectedPoint.rating) && (
+                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>
+                    {selectedPoint.rating ? `★ ${selectedPoint.rating}` : ""}
+                    {selectedPoint.rating && selectedPoint.placeType ? " · " : ""}
+                    {selectedPoint.placeType || ""}
+                  </div>
+                )}
+                {selectedPoint.timeLabel ? (
+                  <div style={{ fontSize: "12px", color: "#ea7a5e", fontWeight: 600, marginBottom: "4px" }}>
+                    {selectedPoint.timeLabel}
+                  </div>
+                ) : null}
                 {(selectedPoint.description || selectedPoint.formattedAddress) && (
-                  <div style={{ fontSize: "12px", color: "#64748b" }}>
+                  <div style={{ fontSize: "12px", color: "#64748b", lineHeight: 1.4 }}>
                     {selectedPoint.description || selectedPoint.formattedAddress}
                   </div>
                 )}

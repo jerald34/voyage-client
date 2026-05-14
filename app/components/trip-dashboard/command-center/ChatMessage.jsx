@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import AgentMarkdown from "../../agent/chat/AgentMarkdown";
 import { getMatchedPlaces, matchPlaceMentions, getItineraryPlaceEntityId } from "../../../lib/trip-dashboard/placeEntities.js";
 import RichItineraryMessage from "./RichItineraryMessage.jsx";
 import useMobileViewport from "../mobile/useMobileViewport.js";
 import CompactPlaceCard from "../mobile/CompactPlaceCard.jsx";
-import PlaceDetailSheet from "../mobile/PlaceDetailSheet.jsx";
 
 function PlaceLinkedText({ children, placeEntities, selectedPlaceId, onPlaceSelect }) {
   if (typeof children !== "string" && typeof children !== "number") {
@@ -117,7 +116,6 @@ export default function ChatMessage({
 }) {
   const shouldRenderRichItinerary = !isUser && renderAsItinerary && itinerary;
   const isMobile = useMobileViewport();
-  const [detailItem, setDetailItem] = useState(null);
 
   return (
     <div className={`group flex gap-3 max-w-full ${isUser ? "flex-row-reverse" : "flex-row"}`}>
@@ -179,19 +177,13 @@ export default function ChatMessage({
                           key={`${day.dayNumber}-${iIdx}`}
                           item={item}
                           isSelected={selectedPlaceId === entityId}
-                          onSelect={() => {
-                            onPlaceSelect?.(entityId);
-                            setDetailItem(item);
-                          }}
+                          onSelect={() => onPlaceSelect?.(entityId)}
                         />
                       );
                     })}
                   </div>
                 ))}
                 <span className="text-[0.65rem] text-text-soft mt-1">CURATED BY VOYAGE AGENT</span>
-                {detailItem && (
-                  <PlaceDetailSheet item={detailItem} onClose={() => setDetailItem(null)} />
-                )}
               </div>
             ) : (
               <div className="flex flex-col gap-4">

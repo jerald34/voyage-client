@@ -669,6 +669,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                   placeEntities={placeEntities}
                   selectedPlaceId={selectedPlaceId}
                   onSelectPlace={setSelectedPlaceId}
+                  sidebarWidth={isMobile ? 0 : 520}
                   mapBottomPadding={isMobile ? mobileMapPadding : 0}
                 />
               </div>
@@ -713,6 +714,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                       isSending={isSending || (isVisible && isStreaming)}
                       agentError={agentError}
                       onStop={isVisible ? stopStream : undefined}
+                      containerClassName="px-3 pb-3"
                     />
                   }
                 >
