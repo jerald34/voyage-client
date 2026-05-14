@@ -20,6 +20,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const SRC  = join(ROOT, 'public', 'Icon', 'Voyage_Logo_only.png');
 const DEST = join(ROOT, 'public', 'icons');
+const CROP_THRESHOLD = 230;
+const CROP_MARGIN_RATIO = 0.12;
 
 // Ensure output directory exists
 if (!existsSync(DEST)) mkdirSync(DEST, { recursive: true });
@@ -41,12 +43,65 @@ const ICONS = [
   { name: 'favicon-16.png',        size: 16,  padding: 0 },
 ];
 
-async function generateIcon({ name, size, padding }) {
+async function getCenteredLogoSharp() {
+  const { data, info } = await sharp(SRC)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  let minX = info.width;
+  let minY = info.height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < info.height; y += 1) {
+    for (let x = 0; x < info.width; x += 1) {
+      const idx = (y * info.width + x) * info.channels;
+      const r = data[idx];
+      const g = data[idx + 1];
+      const b = data[idx + 2];
+
+      if (r < CROP_THRESHOLD || g < CROP_THRESHOLD || b < CROP_THRESHOLD) {
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+
+  if (maxX < 0 || maxY < 0) {
+    return sharp(SRC);
+  }
+
+  const contentWidth = maxX - minX + 1;
+  const contentHeight = maxY - minY + 1;
+  const side = Math.max(contentWidth, contentHeight);
+  const padding = Math.max(8, Math.round(side * CROP_MARGIN_RATIO));
+  const cropSize = Math.min(side + padding * 2, Math.min(info.width, info.height));
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+
+  let left = Math.round(centerX - cropSize / 2);
+  let top = Math.round(centerY - cropSize / 2);
+
+  left = Math.max(0, Math.min(left, info.width - cropSize));
+  top = Math.max(0, Math.min(top, info.height - cropSize));
+
+  return sharp(SRC).extract({
+    left,
+    top,
+    width: cropSize,
+    height: cropSize,
+  });
+}
+
+async function generateIcon(baseLogo, { name, size, padding }) {
   const dest = join(DEST, name);
   const logoSize = Math.round(size * (1 - padding * 2));
   const offset   = Math.round(size * padding);
 
-  await sharp(SRC)
+  await baseLogo.clone()
     .resize(logoSize, logoSize, {
       fit: 'contain',
       background: { r: 34, g: 56, b: 67, alpha: 1 }, // --color-primary #223843
@@ -86,8 +141,9 @@ async function generateOgImage() {
 
 async function main() {
   console.log('\nGenerating Voyage PWA icons…\n');
+  const centeredLogo = await getCenteredLogoSharp();
   for (const icon of ICONS) {
-    await generateIcon(icon);
+    await generateIcon(centeredLogo, icon);
   }
   await generateOgImage();
   console.log('\nDone! Add public/icons/ to .gitignore if icons are build artifacts.\n');
