@@ -10,6 +10,19 @@ if (!HTMLElement.prototype.scrollIntoView) {
   HTMLElement.prototype.scrollIntoView = vi.fn();
 }
 
+if (!window.matchMedia) {
+  window.matchMedia = vi.fn().mockImplementation((query) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn()
+  }));
+}
+
 const mocks = vi.hoisted(() => ({
   startStreamMock: vi.fn(),
   streamState: {
@@ -707,7 +720,7 @@ describe("Agency portfolio HomePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send message" }));
     await screen.findByRole("button", { name: "Current client: Draft itinerary 1" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Save to Client" }));
+    fireEvent.click(screen.getByRole("button", { name: /save.*client/i }));
     fireEvent.change(screen.getByLabelText("Client name"), { target: { value: "Garcia Family" } });
     fireEvent.change(screen.getByLabelText("Destination"), { target: { value: "Olongapo City" } });
     fireEvent.click(screen.getByRole("button", { name: "Save client plan" }));
@@ -778,7 +791,7 @@ describe("Agency portfolio HomePage", () => {
                 id: "agency-1",
                 name: "Olongapo Travel Studio",
                 status: "VERIFIED",
-                businessPhone: "+63 900 111 2222",
+                businessPhone: "639001112222",
                 businessEmail: "hello@olongapo.example",
                 city: "Olongapo City",
                 country: "Philippines",
@@ -794,7 +807,7 @@ describe("Agency portfolio HomePage", () => {
     expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
     expect(screen.getByDisplayValue("Agency Owner")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Olongapo Travel Studio")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("+63 900 111 2222")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("639001112222")).toBeInTheDocument();
     expect(screen.getByDisplayValue("hello@olongapo.example")).toBeInTheDocument();
   });
 
@@ -804,7 +817,7 @@ describe("Agency portfolio HomePage", () => {
         id: "agency-1",
         name: "Voyage Travel Co",
         status: "VERIFIED",
-        businessPhone: "+63 900 111 2222",
+        businessPhone: "639001112222",
         businessEmail: "hello@voyage.example",
         city: "Olongapo City",
         country: "Philippines",
@@ -825,7 +838,7 @@ describe("Agency portfolio HomePage", () => {
           id: "agency-1",
           name: "Voyage Travel Studio",
           status: "VERIFIED",
-          businessPhone: "+63 900 111 2222",
+          businessPhone: "639001112222",
           businessEmail: "hello@voyage.example",
           city: "Olongapo City",
           country: "Philippines",
@@ -849,7 +862,7 @@ describe("Agency portfolio HomePage", () => {
     await waitFor(() => {
       expect(onUpdateAgency).toHaveBeenCalledWith({
         name: "Voyage Travel Co",
-        businessPhone: "+63 900 111 2222",
+        businessPhone: "639001112222",
         businessEmail: "hello@voyage.example",
         city: "Olongapo City",
         country: "Philippines",
@@ -857,7 +870,7 @@ describe("Agency portfolio HomePage", () => {
     });
 
     expect(screen.getByLabelText("Agency name")).toHaveValue("Voyage Travel Co");
-    expect(screen.getByLabelText("Business phone")).toHaveValue("+63 900 111 2222");
+    expect(screen.getByLabelText("Business phone")).toHaveValue("639001112222");
     expect(screen.getByLabelText("Business email")).toHaveValue("hello@voyage.example");
     expect(screen.getByLabelText("City")).toHaveValue("Olongapo City");
     expect(screen.getByLabelText("Country")).toHaveValue("Philippines");

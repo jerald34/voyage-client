@@ -38,6 +38,10 @@ function getFieldClass(readOnly = false) {
   ].join(" ");
 }
 
+function sanitizeBusinessPhoneInput(value) {
+  return String(value ?? "").replace(/\D/g, "");
+}
+
 function Panel({ eyebrow, title, description, children }) {
   return (
     <section className="rounded-[24px] border border-border bg-surface/95 p-5 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
@@ -60,18 +64,22 @@ function Field({ label, value, readOnly = false, id }) {
   );
 }
 
-function TextInputField({ label, id, value, onChange, placeholder, readOnly = false, autoComplete }) {
+function TextInputField({ label, id, value, onChange, placeholder, readOnly = false, autoComplete, type = "text", inputMode, pattern, maxLength }) {
   return (
     <label className="block">
       <span className="text-xs font-semibold uppercase tracking-[0.08em] text-text-soft">{label}</span>
       <input
         id={id}
         className={getFieldClass(readOnly)}
+        type={type}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
         readOnly={readOnly}
         autoComplete={autoComplete}
+        inputMode={inputMode}
+        pattern={pattern}
+        maxLength={maxLength}
       />
     </label>
   );
@@ -108,7 +116,7 @@ export default function SettingsPage({ user, agency, membership, logout, onUpdat
 
   useEffect(() => {
     const nextAgencyName = String(agency?.name ?? "");
-    const nextBusinessPhone = String(agency?.businessPhone ?? "");
+    const nextBusinessPhone = sanitizeBusinessPhoneInput(agency?.businessPhone ?? "");
     const nextBusinessEmail = String(agency?.businessEmail ?? "");
     const nextCity = String(agency?.city ?? "");
     const nextCountry = String(agency?.country ?? "");
@@ -171,7 +179,7 @@ export default function SettingsPage({ user, agency, membership, logout, onUpdat
 
     const normalizedAgencyValues = {
       name: agencyName.trim(),
-      businessPhone: businessPhone.trim(),
+      businessPhone: sanitizeBusinessPhoneInput(businessPhone),
       businessEmail: businessEmail.trim(),
       city: city.trim(),
       country: country.trim(),
@@ -217,11 +225,41 @@ export default function SettingsPage({ user, agency, membership, logout, onUpdat
   };
 
   const workspaceFields = useMemo(() => ([
-    { label: "Agency name", value: agencyName },
-    { label: "Business phone", value: businessPhone },
-    { label: "Business email", value: businessEmail },
-    { label: "City", value: city },
-    { label: "Country", value: country },
+    {
+      label: "Agency name",
+      value: agencyName,
+      onChange: (event) => setAgencyName(event.target.value),
+      placeholder: "Enter agency name",
+    },
+    {
+      label: "Business phone",
+      value: businessPhone,
+      onChange: (event) => setBusinessPhone(sanitizeBusinessPhoneInput(event.target.value)),
+      placeholder: "Digits only",
+      inputMode: "numeric",
+      pattern: "[0-9]*",
+      maxLength: 30,
+      autoComplete: "tel-national",
+    },
+    {
+      label: "Business email",
+      value: businessEmail,
+      onChange: (event) => setBusinessEmail(event.target.value),
+      placeholder: "Enter business email",
+      autoComplete: "email",
+    },
+    {
+      label: "City",
+      value: city,
+      onChange: (event) => setCity(event.target.value),
+      placeholder: "Enter city",
+    },
+    {
+      label: "Country",
+      value: country,
+      onChange: (event) => setCountry(event.target.value),
+      placeholder: "Enter country",
+    },
     { label: "Membership role", value: formatReadOnlyValue(membership?.role) },
   ]), [agencyName, businessEmail, businessPhone, city, country, membership?.role]);
 
@@ -298,21 +336,14 @@ export default function SettingsPage({ user, agency, membership, logout, onUpdat
                   label={field.label}
                   id={field.label.toLowerCase().replace(/\s+/g, "-")}
                   value={field.value || ""}
-                  onChange={
-                    field.label === "Agency name"
-                      ? (event) => setAgencyName(event.target.value)
-                      : field.label === "Business phone"
-                        ? (event) => setBusinessPhone(event.target.value)
-                        : field.label === "Business email"
-                          ? (event) => setBusinessEmail(event.target.value)
-                          : field.label === "City"
-                            ? (event) => setCity(event.target.value)
-                            : field.label === "Country"
-                              ? (event) => setCountry(event.target.value)
-                              : undefined
-                  }
+                  onChange={field.onChange}
                   readOnly={field.label === "Membership role" || !canEditWorkspace}
-                  placeholder={field.label}
+                  placeholder={field.placeholder || field.label}
+                  type={field.type}
+                  inputMode={field.inputMode}
+                  pattern={field.pattern}
+                  maxLength={field.maxLength}
+                  autoComplete={field.autoComplete}
                 />
               ))}
             </div>

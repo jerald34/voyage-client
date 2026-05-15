@@ -29,6 +29,76 @@ const socialProviders = [
   },
 ];
 
+const registerValidationErrorCodes = new Set([
+  "VALIDATION_ERROR",
+  "EMAIL_ALREADY_USED",
+  "PASSWORD_TOO_SHORT",
+  "DISPLAY_NAME_REQUIRED",
+]);
+
+const passwordSimilarityMessage = "Password must be different from your name and email.";
+const agencyLocationOptions = {
+  Philippines: ["Manila", "Olongapo City", "Baguio", "Cebu", "Davao", "Boracay", "Coron", "Subic Bay"],
+  Japan: ["Tokyo", "Osaka", "Kyoto", "Fukuoka", "Sapporo"],
+  Singapore: ["Singapore"],
+  Thailand: ["Bangkok", "Phuket", "Chiang Mai", "Pattaya"],
+  Malaysia: ["Kuala Lumpur", "Penang", "Langkawi"]
+};
+const agencyCountryOptions = Object.keys(agencyLocationOptions);
+
+function sanitizeBusinessPhoneInput(value) {
+  return String(value ?? "").replace(/\D/g, "");
+}
+
+function getPasswordSimilarityError(emailValue, nameValue, passwordValue) {
+  const normalizedEmail = emailValue.trim().toLowerCase();
+  const normalizedName = nameValue.trim().toLowerCase();
+  const normalizedPassword = passwordValue.toLowerCase();
+  const emailLocalPart = normalizedEmail.split("@")[0] ?? "";
+
+  if (
+    normalizedPassword === normalizedEmail ||
+    normalizedPassword === normalizedName ||
+    (emailLocalPart && normalizedPassword === emailLocalPart)
+  ) {
+    return passwordSimilarityMessage;
+  }
+
+  return null;
+}
+
+function mapAuthErrorToRegisterErrors(error) {
+  if (!error || !registerValidationErrorCodes.has(error.code)) {
+    return {};
+  }
+
+  if (error.code === "EMAIL_ALREADY_USED") {
+    return { email: error.message };
+  }
+
+  if (error.code === "PASSWORD_TOO_SHORT") {
+    return { password: error.message };
+  }
+
+  if (error.code === "DISPLAY_NAME_REQUIRED") {
+    return { fullName: error.message };
+  }
+
+  const fieldErrors = {};
+  for (const issue of error.issues || []) {
+    const field = issue?.path?.[0];
+    if (field === "displayName") {
+      fieldErrors.fullName = issue.message;
+    } else if (field === "email") {
+      fieldErrors.email = issue.message;
+    } else if (field === "password") {
+      fieldErrors.password = issue.message;
+    }
+  }
+
+  return fieldErrors;
+}
+
 function FloatingOrb({ delay, size, left, top }) {
   return (
     <div
@@ -78,6 +148,7 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [step1Errors, setStep1Errors] = useState({});
+  const [serverStep1Errors, setServerStep1Errors] = useState({});
 
   // Step 2 fields
   const [agencyName, setAgencyName] = useState("");
@@ -85,6 +156,7 @@ function LoginForm() {
   const [businessEmail, setBusinessEmail] = useState("");
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
+  const [step2Errors, setStep2Errors] = useState({});
 
   // Whether user is already authenticated (OAuth return)
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -110,10 +182,26 @@ function LoginForm() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    if (mode !== "register") {
+      setServerStep1Errors({});
+      return;
+    }
+
+    const mappedErrors = mapAuthErrorToRegisterErrors(auth.error);
+    setServerStep1Errors(mappedErrors);
+
+    if (Object.keys(mappedErrors).length > 0 && wizardStep !== 1) {
+      setWizardStep(1);
+      setIsTransitioning(false);
+    }
+  }, [auth.error, mode, wizardStep]);
+
   const handleModeSwitch = (newMode) => {
     if (newMode === mode) return;
     setIsTransitioning(true);
     setStep1Errors({});
+    setServerStep1Errors({});
     auth.setError(null);
     setTimeout(() => {
       setMode(newMode);
@@ -128,6 +216,10 @@ function LoginForm() {
     if (!email.trim()) errors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(email)) errors.email = "Enter a valid email";
     if (password.length < 8) errors.password = "Password must be at least 8 characters";
+    else {
+      const passwordSimilarityError = getPasswordSimilarityError(email, fullName, password);
+      if (passwordSimilarityError) errors.password = passwordSimilarityError;
+    }
     if (password !== confirmPassword) errors.confirmPassword = "Passwords do not match";
     if (!agreedToTerms) errors.terms = "You must agree to the terms";
     setStep1Errors(errors);
@@ -149,12 +241,34 @@ function LoginForm() {
     e.preventDefault();
     auth.setError(null);
 
+    const nextStep2Errors = {};
+    const trimmedAgencyName = agencyName.trim();
+    const normalizedBusinessPhone = sanitizeBusinessPhoneInput(businessPhone);
+    const trimmedBusinessEmail = businessEmail.trim();
+    const trimmedCountry = country.trim();
+    const trimmedCity = city.trim();
+
+    if (!trimmedAgencyName) nextStep2Errors.agencyName = "Agency name is required";
+    if (!normalizedBusinessPhone) nextStep2Errors.businessPhone = "Business phone is required";
+    if (!trimmedBusinessEmail) nextStep2Errors.businessEmail = "Business email is required";
+    else if (!/\S+@\S+\.\S+/.test(trimmedBusinessEmail)) nextStep2Errors.businessEmail = "Enter a valid business email";
+    if (!trimmedCountry) nextStep2Errors.country = "Country is required";
+    if (!trimmedCity) nextStep2Errors.city = "City is required";
+    else if (trimmedCountry && !(agencyLocationOptions[trimmedCountry] ?? []).includes(trimmedCity)) {
+      nextStep2Errors.city = "Choose a city from the selected country";
+    }
+
+    setStep2Errors(nextStep2Errors);
+    if (Object.keys(nextStep2Errors).length > 0) {
+      return;
+    }
+
     const agencyData = {
-      name: agencyName,
-      businessPhone,
-      businessEmail: businessEmail || undefined,
-      country,
-      city,
+      name: trimmedAgencyName,
+      businessPhone: normalizedBusinessPhone,
+      businessEmail: trimmedBusinessEmail,
+      country: trimmedCountry,
+      city: trimmedCity,
     };
 
     if (isAuthenticated) {
@@ -185,6 +299,13 @@ function LoginForm() {
   };
 
   const isRegister = mode === "register";
+  const isRegisterFieldError = registerValidationErrorCodes.has(auth.error?.code);
+  const fullNameError = step1Errors.fullName || serverStep1Errors.fullName;
+  const emailError = step1Errors.email || serverStep1Errors.email;
+  const passwordError = step1Errors.password || serverStep1Errors.password;
+  const confirmPasswordError = step1Errors.confirmPassword || serverStep1Errors.confirmPassword;
+  const termsError = step1Errors.terms || serverStep1Errors.terms;
+  const countryCityOptions = agencyLocationOptions[country] ?? [];
 
   return (
     <div className={`grid grid-cols-1 md:grid-cols-2 min-h-screen md:min-h-[calc(100vh-100px)] gap-0 md:rounded-lg md:overflow-hidden md:border md:border-border md:shadow-strong transition-all duration-650 ${mounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-6 scale-[0.985]"}`}>
@@ -374,9 +495,9 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
                       </svg>
-                      <input id="auth-fullname" type="text" placeholder="Your full name" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-fullname" type="text" placeholder="Your full name" value={fullName} onChange={(e) => { setFullName(e.target.value); setStep1Errors({}); setServerStep1Errors({}); }} autoComplete="name" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
-                    {step1Errors.fullName && <span className="text-[0.8rem] text-status-danger mt-0.5">{step1Errors.fullName}</span>}
+                    {fullNameError && <span className="text-[0.8rem] text-status-danger mt-0.5">{fullNameError}</span>}
                   </div>
 
                   <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
@@ -385,9 +506,9 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                       </svg>
-                      <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => { setEmail(e.target.value); setStep1Errors({}); setServerStep1Errors({}); }} autoComplete="email" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
-                    {step1Errors.email && <span className="text-[0.8rem] text-status-danger mt-0.5">{step1Errors.email}</span>}
+                    {emailError && <span className="text-[0.8rem] text-status-danger mt-0.5">{emailError}</span>}
                   </div>
 
                   <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
@@ -396,7 +517,7 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
-                      <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" className="w-full !pl-[46px] !pr-14 py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="At least 8 characters" value={password} onChange={(e) => { setPassword(e.target.value); setStep1Errors({}); setServerStep1Errors({}); }} autoComplete="new-password" className="w-full !pl-[46px] !pr-14 py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                       <button type="button" className="absolute right-3.5 flex items-center justify-center w-8.5 h-8.5 bg-none border-none text-text-soft cursor-pointer rounded-sm transition-all duration-160 hover:text-secondary hover:bg-[rgba(215,122,97,0.06)]" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>
                         {showPassword ? (
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
@@ -405,7 +526,7 @@ function LoginForm() {
                         )}
                       </button>
                     </div>
-                    {step1Errors.password && <span className="text-[0.8rem] text-status-danger mt-0.5">{step1Errors.password}</span>}
+                    {passwordError && <span className="text-[0.8rem] text-status-danger mt-0.5">{passwordError}</span>}
                   </div>
 
                   <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
@@ -414,9 +535,9 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                       </svg>
-                      <input id="auth-confirm-password" type="password" placeholder="Repeat your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-confirm-password" type="password" placeholder="Repeat your password" value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setStep1Errors({}); setServerStep1Errors({}); }} autoComplete="new-password" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
-                    {step1Errors.confirmPassword && <span className="text-[0.8rem] text-status-danger mt-0.5">{step1Errors.confirmPassword}</span>}
+                    {confirmPasswordError && <span className="text-[0.8rem] text-status-danger mt-0.5">{confirmPasswordError}</span>}
                   </div>
 
                   <label className="flex items-center gap-3 cursor-pointer py-0.5" htmlFor="auth-terms">
@@ -433,7 +554,7 @@ function LoginForm() {
                       <a href="#" className="text-secondary font-semibold hover:underline">Privacy Policy</a>
                     </span>
                   </label>
-                  {step1Errors.terms && <span className="text-[0.8rem] text-status-danger mt-0.5">{step1Errors.terms}</span>}
+                  {termsError && <span className="text-[0.8rem] text-status-danger mt-0.5">{termsError}</span>}
 
                   <button type="submit" className="w-full mt-2 inline-flex items-center justify-center gap-3 min-h-[54px] px-7 py-4 border border-transparent rounded-pill text-base font-extrabold cursor-pointer bg-accent text-white shadow-[0_16px_32px_rgba(216,180,160,0.26)] hover:-translate-y-px hover:bg-[#dbbfae] transition-all">
                     Next: Agency Details
@@ -448,64 +569,132 @@ function LoginForm() {
                 <div className="mb-7">
                   <h2 className="text-[clamp(1.6rem,2.4vw,2.2rem)] mb-2">Your agency</h2>
                   <p className="text-[1.08rem] text-text-muted mb-0">Tell us about your travel agency so we can set up your workspace.</p>
+                  <p className="mt-2 text-[0.88rem] font-semibold text-text-soft">All agency details are required.</p>
                 </div>
 
-                <form onSubmit={handleStep2Submit} className="flex flex-col gap-5">
+                <form onSubmit={handleStep2Submit} noValidate className="flex flex-col gap-5">
                   <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
-                    <label htmlFor="auth-agency-name" className="text-text-primary text-[0.86rem] font-bold">Agency name</label>
+                    <label htmlFor="auth-agency-name" className="text-text-primary text-[0.86rem] font-bold">
+                      Agency name <span className="text-status-danger">*</span>
+                    </label>
                     <div className="relative flex items-center">
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
                       </svg>
-                      <input id="auth-agency-name" type="text" placeholder="e.g. Wanderlust Travel Co." value={agencyName} onChange={(e) => setAgencyName(e.target.value)} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-agency-name" type="text" placeholder="e.g. Wanderlust Travel Co." value={agencyName} onChange={(e) => { setAgencyName(e.target.value); setStep2Errors((prev) => ({ ...prev, agencyName: undefined })); }} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
+                    {step2Errors.agencyName && <span className="text-[0.8rem] text-status-danger mt-0.5">{step2Errors.agencyName}</span>}
                   </div>
 
                   <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
-                    <label htmlFor="auth-business-phone" className="text-text-primary text-[0.86rem] font-bold">Business phone</label>
+                    <label htmlFor="auth-business-phone" className="text-text-primary text-[0.86rem] font-bold">
+                      Business phone <span className="text-status-danger">*</span>
+                    </label>
                     <div className="relative flex items-center">
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                       </svg>
-                      <input id="auth-business-phone" type="tel" placeholder="+1 (555) 123-4567" value={businessPhone} onChange={(e) => setBusinessPhone(e.target.value)} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input
+                        id="auth-business-phone"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={30}
+                        placeholder="Digits only"
+                        value={businessPhone}
+                        onChange={(e) => {
+                          setBusinessPhone(sanitizeBusinessPhoneInput(e.target.value));
+                          setStep2Errors((prev) => ({ ...prev, businessPhone: undefined }));
+                        }}
+                        required
+                        className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft"
+                      />
                     </div>
+                    {step2Errors.businessPhone && <span className="text-[0.8rem] text-status-danger mt-0.5">{step2Errors.businessPhone}</span>}
                   </div>
 
                   <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
                     <label htmlFor="auth-business-email" className="text-text-primary text-[0.86rem] font-bold">
-                      Business email <span className="text-text-soft font-normal text-[0.78rem]">(optional)</span>
+                      Business email <span className="text-status-danger">*</span>
                     </label>
                     <div className="relative flex items-center">
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                       </svg>
-                      <input id="auth-business-email" type="email" placeholder="info@youragency.com" value={businessEmail} onChange={(e) => setBusinessEmail(e.target.value)} className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-business-email" type="email" placeholder="info@youragency.com" value={businessEmail} onChange={(e) => { setBusinessEmail(e.target.value); setStep2Errors((prev) => ({ ...prev, businessEmail: undefined })); }} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
                     </div>
+                    {step2Errors.businessEmail && <span className="text-[0.8rem] text-status-danger mt-0.5">{step2Errors.businessEmail}</span>}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3.5">
                     <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
-                      <label htmlFor="auth-country" className="text-text-primary text-[0.86rem] font-bold">Country</label>
+                      <label htmlFor="auth-country" className="text-text-primary text-[0.86rem] font-bold">
+                        Country <span className="text-status-danger">*</span>
+                      </label>
                       <div className="relative flex items-center">
                         <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                         </svg>
-                        <input id="auth-country" type="text" placeholder="Philippines" value={country} onChange={(e) => setCountry(e.target.value)} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                        <select
+                          id="auth-country"
+                          value={country}
+                          onChange={(e) => {
+                            setCountry(e.target.value);
+                            setCity("");
+                            setStep2Errors((prev) => ({ ...prev, country: undefined, city: undefined }));
+                          }}
+                          required
+                          className="w-full appearance-none !pl-[46px] !pr-12 py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)]"
+                        >
+                          <option value="">Select country</option>
+                          {agencyCountryOptions.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                        <svg className="pointer-events-none absolute right-4 text-text-soft" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
                       </div>
+                      {step2Errors.country && <span className="text-[0.8rem] text-status-danger mt-0.5">{step2Errors.country}</span>}
                     </div>
 
                     <div className="flex flex-col gap-[7px] [animation:auth-field-in_0.35s_ease_both]">
-                      <label htmlFor="auth-city" className="text-text-primary text-[0.86rem] font-bold">City</label>
+                      <label htmlFor="auth-city" className="text-text-primary text-[0.86rem] font-bold">
+                        City <span className="text-status-danger">*</span>
+                      </label>
                       <div className="relative flex items-center">
                         <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
                         </svg>
-                        <input id="auth-city" type="text" placeholder="Manila" value={city} onChange={(e) => setCity(e.target.value)} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                        <select
+                          id="auth-city"
+                          value={city}
+                          onChange={(e) => {
+                            setCity(e.target.value);
+                            setStep2Errors((prev) => ({ ...prev, city: undefined }));
+                          }}
+                          required
+                          disabled={!country}
+                          className="w-full appearance-none !pl-[46px] !pr-12 py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          <option value="">{country ? "Select city" : "Select country first"}</option>
+                          {countryCityOptions.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                        <svg className="pointer-events-none absolute right-4 text-text-soft" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
                       </div>
+                      {step2Errors.city && <span className="text-[0.8rem] text-status-danger mt-0.5">{step2Errors.city}</span>}
                     </div>
                   </div>
 
-                  {auth.error && <div className="p-3 rounded-sm bg-status-danger/[0.06] border border-status-danger/[0.18] text-status-danger text-[0.86rem] font-semibold leading-relaxed text-center" role="alert">{auth.error.message}</div>}
+                  {auth.error && !isRegisterFieldError && <div className="p-3 rounded-sm bg-status-danger/[0.06] border border-status-danger/[0.18] text-status-danger text-[0.86rem] font-semibold leading-relaxed text-center" role="alert">{auth.error.message}</div>}
 
                   <button type="submit" className="w-full mt-2 inline-flex items-center justify-center gap-3 min-h-[54px] px-7 py-4 border border-transparent rounded-pill text-base font-extrabold cursor-pointer bg-accent text-white shadow-[0_16px_32px_rgba(216,180,160,0.26)] hover:-translate-y-px hover:bg-[#dbbfae] transition-all disabled:opacity-55 disabled:cursor-not-allowed disabled:transform-none" disabled={auth.loading}>
                     {auth.loading ? "Setting up your agency…" : "Create my agency"}

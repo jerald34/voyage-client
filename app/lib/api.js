@@ -19,6 +19,7 @@ export async function fetchApi(path, options = {}) {
       const error = new Error(data.error?.message || "An unexpected error occurred");
       error.code = data.error?.code || "UNKNOWN_ERROR";
       error.status = response.status;
+      error.issues = data.error?.issues || [];
       throw error;
     }
 
@@ -30,6 +31,7 @@ export async function fetchApi(path, options = {}) {
     const error = new Error("Unable to connect. Please try again.");
     error.code = "NETWORK_ERROR";
     error.status = 0;
+    error.issues = [];
     throw error;
   }
 }
