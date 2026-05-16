@@ -434,10 +434,10 @@ export default function SettingsPage({
                   Tutorial replay
                 </p>
                 <h3 className="mt-3 text-lg font-semibold tracking-[-0.02em] text-text-primary">
-                  See the live dashboard as you learn
+                  Walk through the live dashboard
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-text-soft">
-                  The guide captures the current homepage and workspace so the preview matches the system you are using.
+                  The guide highlights real controls in place, so each step points to the same system the user is using.
                 </p>
               </div>
 

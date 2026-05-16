@@ -2,51 +2,69 @@ export const HOME_TOUR_STORAGE_KEY = "voyage-home-tour-completed-v1";
 
 export const homeTourSteps = [
   {
-    id: "home-header",
-    title: "Start on the homepage",
+    id: "new-itinerary",
+    target: "new-itinerary",
+    placement: "bottom",
+    title: "Create a new itinerary",
     description:
-      "Use the homepage as your control room. Create a new itinerary, switch between active clients, and see the current trip state before you start editing.",
+      "Start a fresh trip draft from the dashboard header without leaving the current workspace.",
     bullets: [
-      "Tap New Itinerary to create a fresh draft.",
-      "Use the client switcher to jump between trips.",
-      "The header shows whether the agent is streaming or idle.",
+      "Use this when a new client inquiry comes in.",
+      "Voyage creates a draft thread you can refine before approval.",
     ],
-    captureTarget: "home-header",
-    fallbackImage: "/tutorial/home-tour-1.svg",
-    alt: "Live capture of the homepage controls",
+  },
+  {
+    id: "client-switcher",
+    target: "client-switcher",
+    placement: "bottom",
+    title: "Switch active clients",
+    description:
+      "Jump between live trips and draft threads from the same control so the workspace follows the selected client.",
+    bullets: [
+      "The selected client controls the chat, itinerary, and map state.",
+      "Open the menu to move to another active planning item.",
+    ],
   },
   {
     id: "workspace",
-    title: "Plan inside the workspace",
+    target: "workspace",
+    placement: "right",
+    title: "Work in the planning space",
     description:
-      "The workspace keeps chat, itinerary, and map context together so you can refine the trip without losing the story of the plan.",
+      "Use the command center to chat with Voyage, review draft updates, and keep the itinerary work in one place.",
     bullets: [
-      "Chat with the agent to adjust stops and timing.",
-      "Follow the itinerary as it updates in real time.",
-      "Use the map to see how the trip fits together.",
+      "Send adjustments through the chat composer.",
+      "Watch itinerary updates and tool activity as they happen.",
     ],
-    captureTarget: "workspace",
-    fallbackImage: "/tutorial/home-tour-2.svg",
-    alt: "Live capture of the itinerary workspace",
+  },
+  {
+    id: "map-context",
+    target: "workspace-map",
+    placement: "left",
+    title: "Use the map context",
+    description:
+      "The live map stays behind the workspace so routes, stops, and place context remain visible while planning.",
+    bullets: [
+      "Use map pins to keep the trip geography visible.",
+      "The map updates with the active itinerary and streaming results.",
+    ],
   },
   {
     id: "replay-help",
-    title: "Review and replay later",
+    target: "settings-replay",
+    placement: "right",
+    title: "Replay the guide later",
     description:
-      "When the itinerary is ready, use the review tools, then come back to Settings any time to replay this guide.",
+      "Settings keeps the tutorial available after first use, so users can reopen the same guided walkthrough whenever they need it.",
     bullets: [
-      "Check the itinerary summary before approval.",
-      "Use the review screen to validate the final plan.",
-      "Open Settings anytime for help and replay.",
+      "Open Settings from the sidebar.",
+      "Use Replay tutorial to run this guided tour again.",
     ],
-    captureTarget: "workspace",
-    fallbackImage: "/tutorial/home-tour-3.svg",
-    alt: "Live capture of the dashboard help flow",
   },
 ];
 
 export const homeTourHelpBullets = [
   "You only see the tour once unless you replay it from Settings.",
-  "The tour captures mounted dashboard sections so the visuals match the current interface.",
+  "The tour highlights real controls on the dashboard one step at a time.",
   "Settings keeps the same help content in one permanent place.",
 ];

@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -129,12 +129,6 @@ const mocks = vi.hoisted(() => ({
     },
   })),
 }));
-
-const html2CanvasMock = vi.hoisted(() =>
-  vi.fn(async () => ({
-    toDataURL: vi.fn(() => "data:image/png;base64,dynamic-tour-capture"),
-  })),
-);
 
 function resetApiMocks() {
   mocks.startStreamMock.mockClear();
@@ -288,10 +282,6 @@ vi.mock("../app/lib/api.js", () => ({
   sendMessage: (...args) => mocks.sendMessageMock(...args),
 }));
 
-vi.mock("html2canvas", () => ({
-  default: (...args) => html2CanvasMock(...args),
-}));
-
 const testMapPlaces = [
   { id: "place-1", name: "Airport transfer", district: "Transit", note: "Arrival route" },
   { id: "place-2", name: "Hotel check-in", district: "Eixample", note: "Drop bags first" },
@@ -345,10 +335,6 @@ function DashboardHookHarness() {
 describe("useTripDashboard", () => {
   beforeEach(() => {
     resetApiMocks();
-    html2CanvasMock.mockClear();
-    html2CanvasMock.mockResolvedValue({
-      toDataURL: vi.fn(() => "data:image/png;base64,dynamic-tour-capture"),
-    });
     localStorage.setItem("voyage-home-tour-completed-v1", "true");
   });
 
@@ -826,27 +812,21 @@ describe("Agency portfolio HomePage", () => {
     expect(screen.getByDisplayValue("hello@olongapo.example")).toBeInTheDocument();
   });
 
-  it("shows the first-use tutorial with a live homepage capture until it is dismissed", async () => {
+  it("shows an anchored first-use guided tour until it is dismissed", async () => {
     localStorage.removeItem("voyage-home-tour-completed-v1");
 
     render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
     expect(await screen.findByRole("dialog", { name: "First-use tutorial" })).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(html2CanvasMock).toHaveBeenCalled();
-    });
-
-    expect(html2CanvasMock.mock.calls[0][0]).toHaveAttribute("data-tour-capture", "home-header");
-    expect(html2CanvasMock.mock.calls[0][1]).toMatchObject({ foreignObjectRendering: true });
-    expect(await screen.findByAltText("Live capture of the homepage controls")).toHaveAttribute(
-      "src",
-      "data:image/png;base64,dynamic-tour-capture",
-    );
+    expect(screen.getByRole("heading", { name: "Create a new itinerary" })).toBeInTheDocument();
+    expect(document.querySelector('[data-tour-target="new-itinerary"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-tour-spotlight="new-itinerary"]')).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Next" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Next" }));
+    for (let step = 0; step < 4; step += 1) {
+      fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    }
+
     fireEvent.click(screen.getByRole("button", { name: "Finish tutorial" }));
 
     await waitFor(() => {
@@ -886,7 +866,7 @@ describe("Agency portfolio HomePage", () => {
     expect(screen.queryByRole("dialog", { name: "First-use tutorial" })).not.toBeInTheDocument();
   });
 
-  it("keeps Tab focus inside the first-use tutorial", async () => {
+  it("keeps Tab focus inside the first-use tutorial controls", async () => {
     localStorage.removeItem("voyage-home-tour-completed-v1");
 
     render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
@@ -905,144 +885,33 @@ describe("Agency portfolio HomePage", () => {
     expect(dialog).toContainElement(document.activeElement);
   });
 
-  it("captures the workspace target when the user advances the tutorial", async () => {
+  it("moves the guided tour spotlight through real dashboard targets", async () => {
     localStorage.removeItem("voyage-home-tour-completed-v1");
 
     render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
     expect(await screen.findByRole("dialog", { name: "First-use tutorial" })).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(html2CanvasMock.mock.calls.some(([element]) => element.getAttribute("data-tour-capture") === "home-header")).toBe(true);
-    });
+    expect(document.querySelector('[data-tour-spotlight="new-itinerary"]')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
-
-    await waitFor(() => {
-      expect(html2CanvasMock.mock.calls.some(([element]) => element.getAttribute("data-tour-capture") === "workspace")).toBe(true);
-    });
-
-    expect(screen.getByRole("heading", { name: "Plan inside the workspace" })).toBeInTheDocument();
-  });
-
-  it("retries a failed capture when the user revisits that tutorial step", async () => {
-    localStorage.removeItem("voyage-home-tour-completed-v1");
-    let homeHeaderAttempts = 0;
-
-    html2CanvasMock.mockImplementation(async (element) => {
-      if (element.getAttribute("data-tour-capture") === "home-header") {
-        homeHeaderAttempts += 1;
-        if (homeHeaderAttempts === 1) {
-          throw new Error("capture failed");
-        }
-      }
-
-      return {
-        toDataURL: vi.fn(() => `data:image/png;base64,retry-${homeHeaderAttempts}`),
-      };
-    });
-
-    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
-
-    expect(await screen.findByRole("dialog", { name: "First-use tutorial" })).toBeInTheDocument();
-    expect(await screen.findByText("Live preview unavailable")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Switch active clients" })).toBeInTheDocument();
+    expect(document.querySelector('[data-tour-spotlight="client-switcher"]')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
-    expect(await screen.findByRole("heading", { name: "Plan inside the workspace" })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /Start on the homepage/i }));
-
-    await waitFor(() => {
-      expect(homeHeaderAttempts).toBeGreaterThanOrEqual(2);
-    });
-
-    expect(await screen.findByAltText("Live capture of the homepage controls")).toHaveAttribute(
-      "src",
-      "data:image/png;base64,retry-2",
-    );
-  });
-
-  it("retries a cancelled in-flight capture after revisiting before the old request settles", async () => {
-    localStorage.removeItem("voyage-home-tour-completed-v1");
-    let homeHeaderAttempts = 0;
-    let resolveFirstHomeHeaderCapture;
-
-    html2CanvasMock.mockImplementation((element) => {
-      const captureTarget = element.getAttribute("data-tour-capture");
-
-      if (captureTarget === "home-header") {
-        homeHeaderAttempts += 1;
-
-        if (homeHeaderAttempts === 1) {
-          return new Promise((resolve) => {
-            resolveFirstHomeHeaderCapture = resolve;
-          });
-        }
-
-        return Promise.resolve({
-          toDataURL: vi.fn(() => "data:image/png;base64,recaptured-home-header"),
-        });
-      }
-
-      return Promise.resolve({
-        toDataURL: vi.fn(() => "data:image/png;base64,workspace-capture"),
-      });
-    });
-
-    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
-
-    expect(await screen.findByRole("dialog", { name: "First-use tutorial" })).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(homeHeaderAttempts).toBe(1);
-    });
+    expect(screen.getByRole("heading", { name: "Work in the planning space" })).toBeInTheDocument();
+    expect(document.querySelector('[data-tour-spotlight="workspace"]')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
-    expect(await screen.findByRole("heading", { name: "Plan inside the workspace" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Use the map context" })).toBeInTheDocument();
+    expect(document.querySelector('[data-tour-spotlight="workspace-map"]')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("heading", { name: "Replay the guide later" })).toBeInTheDocument();
+    expect(document.querySelector('[data-tour-spotlight="settings-replay"]')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
-    expect(await screen.findByRole("heading", { name: "Start on the homepage" })).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(homeHeaderAttempts).toBe(2);
-    });
-
-    expect(await screen.findByAltText("Live capture of the homepage controls")).toHaveAttribute(
-      "src",
-      "data:image/png;base64,recaptured-home-header",
-    );
-
-    await act(async () => {
-      resolveFirstHomeHeaderCapture({
-        toDataURL: vi.fn(() => "data:image/png;base64,late-home-header"),
-      });
-      await Promise.resolve();
-    });
-
-    expect(screen.getByAltText("Live capture of the homepage controls")).toHaveAttribute(
-      "src",
-      "data:image/png;base64,recaptured-home-header",
-    );
-  });
-
-  it("keeps the tutorial usable when a live capture fails", async () => {
-    localStorage.removeItem("voyage-home-tour-completed-v1");
-    html2CanvasMock.mockRejectedValueOnce(new Error("capture failed"));
-
-    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
-
-    expect(await screen.findByRole("dialog", { name: "First-use tutorial" })).toBeInTheDocument();
-
-    expect(await screen.findByText("Live preview unavailable")).toBeInTheDocument();
-    expect(await screen.findByAltText("Live capture of the homepage controls")).toHaveAttribute(
-      "src",
-      "/tutorial/home-tour-1.svg",
-    );
-    expect(screen.getByText("You can continue the guide while Voyage refreshes this preview.")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Next" }));
-
-    expect(await screen.findByRole("heading", { name: "Plan inside the workspace" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Use the map context" })).toBeInTheDocument();
+    expect(document.querySelector('[data-tour-spotlight="workspace-map"]')).toBeInTheDocument();
   });
 
   it("normalizes saved workspace fields after a successful agency update", async () => {

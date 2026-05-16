@@ -35,7 +35,6 @@ import MobileGlassSheet from "./mobile/MobileGlassSheet.jsx";
 import useMobileViewport from "./mobile/useMobileViewport.js";
 import ChatInput from "./command-center/ChatInput.jsx";
 import FirstUseTutorial from "./tutorial/FirstUseTutorial.jsx";
-import { captureTutorialTarget } from "./tutorial/captureTutorialTarget.js";
 import { HOME_TOUR_STORAGE_KEY } from "./tutorial/tutorialContent.js";
 
 // Minimal UI helpers
@@ -494,7 +493,11 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
     setIsFirstUseTutorialOpen(true);
   }, []);
 
-  const getTutorialCapture = useCallback((captureTarget) => captureTutorialTarget(captureTarget), []);
+  const handleFirstUseTutorialStepChange = useCallback((step) => {
+    if (step?.target === "settings-replay") {
+      setIsSidebarOpen(true);
+    }
+  }, []);
 
   function handleMobileKeyDown(event) {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -625,7 +628,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
       <FirstUseTutorial
         open={isFirstUseTutorialOpen}
         onClose={closeFirstUseTutorial}
-        getCapture={getTutorialCapture}
+        onStepChange={handleFirstUseTutorialStepChange}
       />
 
       {isApprovalModalOpen && activeContext?.type === "draft" && (
@@ -638,7 +641,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
         />
       )}
 
-      <div data-tour-capture="home-header">
+      <div>
         <DashboardHeader
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
@@ -684,11 +687,14 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
         <main className="flex-1 overflow-y-auto p-2 flex flex-col gap-2 max-[900px]:p-0 max-[900px]:overflow-hidden">
           {activeTab === "command-center" ? (
             <section
-              data-tour-capture="workspace"
+              data-tour-target="workspace"
               className="relative flex flex-1 min-h-0 overflow-hidden rounded-[24px] border border-border/10 shadow-inner max-[900px]:rounded-none max-[900px]:border-none max-[900px]:shadow-none"
             >
               {/* Immersive Map Background */}
-              <div className="absolute inset-0 z-0 opacity-90 transition-opacity duration-700 hover:opacity-100">
+              <div
+                data-tour-target="workspace-map"
+                className="absolute inset-0 z-0 opacity-90 transition-opacity duration-700 hover:opacity-100"
+              >
                 <ItineraryLiveMap
                   theme={theme}
                   agencyLocation={agencyMapFallback}

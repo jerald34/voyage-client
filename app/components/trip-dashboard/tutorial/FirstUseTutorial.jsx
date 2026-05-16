@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { homeTourSteps } from "./tutorialContent.js";
 
@@ -13,32 +13,131 @@ const FOCUSABLE_SELECTOR = [
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
 
-function TutorialStepDot({ active }) {
+const VIEWPORT_PADDING = 16;
+const CARD_WIDTH = 370;
+const CARD_GAP = 18;
+const ESTIMATED_CARD_HEIGHT = 310;
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getTargetSelector(target) {
+  return `[data-tour-target="${target}"]`;
+}
+
+function getPrefersReducedMotion() {
+  return Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+}
+
+function getCompactViewport() {
+  return window.matchMedia?.("(max-width: 760px)")?.matches ?? window.innerWidth <= 760;
+}
+
+function getCoachPosition(rect, placement, isCompact) {
+  if (isCompact) {
+    return {
+      left: VIEWPORT_PADDING,
+      right: VIEWPORT_PADDING,
+      bottom: VIEWPORT_PADDING,
+    };
+  }
+
+  const viewportWidth = window.innerWidth || 1024;
+  const viewportHeight = window.innerHeight || 768;
+  const width = Math.min(CARD_WIDTH, viewportWidth - VIEWPORT_PADDING * 2);
+  const fallbackRect = {
+    top: viewportHeight / 2 - 80,
+    left: viewportWidth / 2 - 80,
+    width: 160,
+    height: 160,
+  };
+  const targetRect = rect ?? fallbackRect;
+  const centeredLeft = targetRect.left + targetRect.width / 2 - width / 2;
+  const centeredTop = targetRect.top + targetRect.height / 2 - ESTIMATED_CARD_HEIGHT / 2;
+
+  let left = centeredLeft;
+  let top = targetRect.top + targetRect.height + CARD_GAP;
+
+  if (placement === "top") {
+    top = targetRect.top - ESTIMATED_CARD_HEIGHT - CARD_GAP;
+  } else if (placement === "right") {
+    left = targetRect.left + targetRect.width + CARD_GAP;
+    top = centeredTop;
+  } else if (placement === "left") {
+    left = targetRect.left - width - CARD_GAP;
+    top = centeredTop;
+  }
+
+  if (left + width > viewportWidth - VIEWPORT_PADDING) {
+    left = targetRect.left - width - CARD_GAP;
+  }
+
+  if (left < VIEWPORT_PADDING) {
+    left = targetRect.left + targetRect.width + CARD_GAP;
+  }
+
+  if (left + width > viewportWidth - VIEWPORT_PADDING || left < VIEWPORT_PADDING) {
+    left = centeredLeft;
+  }
+
+  if (top + ESTIMATED_CARD_HEIGHT > viewportHeight - VIEWPORT_PADDING) {
+    top = targetRect.top - ESTIMATED_CARD_HEIGHT - CARD_GAP;
+  }
+
+  if (top < VIEWPORT_PADDING) {
+    top = targetRect.top + targetRect.height + CARD_GAP;
+  }
+
+  return {
+    left: clamp(left, VIEWPORT_PADDING, Math.max(VIEWPORT_PADDING, viewportWidth - width - VIEWPORT_PADDING)),
+    top: clamp(top, VIEWPORT_PADDING, Math.max(VIEWPORT_PADDING, viewportHeight - ESTIMATED_CARD_HEIGHT - VIEWPORT_PADDING)),
+    width,
+  };
+}
+
+function TutorialProgress({ activeIndex }) {
   return (
-    <span
-      className={[
-        "h-2.5 w-2.5 rounded-full transition-all",
-        active ? "bg-secondary shadow-[0_0_0_6px_rgba(215,122,97,0.14)]" : "bg-white/25",
-      ].join(" ")}
-      aria-hidden="true"
-    />
+    <div className="flex items-center gap-1.5" aria-hidden="true">
+      {homeTourSteps.map((step, index) => (
+        <span
+          key={step.id}
+          className={[
+            "h-1.5 rounded-full transition-all",
+            index === activeIndex ? "w-7 bg-secondary" : "w-2 bg-white/25",
+          ].join(" ")}
+        />
+      ))}
+    </div>
   );
 }
 
-export default function FirstUseTutorial({ open, onClose, getCapture }) {
+export default function FirstUseTutorial({ open, onClose, onStepChange }) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [captures, setCaptures] = useState({});
+  const [targetRect, setTargetRect] = useState(null);
+  const [isCompact, setIsCompact] = useState(false);
   const dialogRef = useRef(null);
   const previousFocusRef = useRef(null);
-  const captureRequestIdRef = useRef(0);
+
+  const activeStep = homeTourSteps[activeIndex] ?? homeTourSteps[0];
+  const isLastStep = activeIndex === homeTourSteps.length - 1;
 
   useEffect(() => {
     if (!open) {
       return;
     }
+
     setActiveIndex(0);
-    setCaptures({});
+    setIsCompact(getCompactViewport());
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !activeStep) {
+      return;
+    }
+
+    onStepChange?.(activeStep);
+  }, [activeStep, onStepChange, open]);
 
   useEffect(() => {
     if (!open) {
@@ -47,13 +146,15 @@ export default function FirstUseTutorial({ open, onClose, getCapture }) {
 
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
-    const dialog = dialogRef.current;
-    const firstFocusable = dialog?.querySelector(FOCUSABLE_SELECTOR);
-    if (firstFocusable instanceof HTMLElement) {
-      firstFocusable.focus();
-    } else {
-      dialog?.focus();
-    }
+    window.setTimeout(() => {
+      const dialog = dialogRef.current;
+      const firstFocusable = dialog?.querySelector(FOCUSABLE_SELECTOR);
+      if (firstFocusable instanceof HTMLElement) {
+        firstFocusable.focus();
+      } else {
+        dialog?.focus();
+      }
+    }, 0);
 
     return () => {
       const previousFocus = previousFocusRef.current;
@@ -119,81 +220,103 @@ export default function FirstUseTutorial({ open, onClose, getCapture }) {
     };
   }, [onClose, open]);
 
-  const activeStep = homeTourSteps[activeIndex] ?? homeTourSteps[0];
-  const activeCapture = captures[activeStep.id];
-  const progress = useMemo(() => {
-    if (!homeTourSteps.length) return 0;
-    return Math.round(((activeIndex + 1) / homeTourSteps.length) * 100);
-  }, [activeIndex]);
-
   useEffect(() => {
-    if (!open || !activeStep?.captureTarget || typeof getCapture !== "function") return;
+    if (!open || !activeStep?.target) {
+      return undefined;
+    }
 
-    if (activeCapture?.status === "ready" || activeCapture?.status === "capturing") return;
+    let frameId = 0;
+    let scrollSettleTimer = 0;
+    const targetElement = document.querySelector(getTargetSelector(activeStep.target));
 
-    let cancelled = false;
-    const requestId = (captureRequestIdRef.current += 1);
+    const updateTargetRect = () => {
+      if (!(targetElement instanceof HTMLElement)) {
+        setTargetRect(null);
+        return;
+      }
 
-    setCaptures((current) => ({
-      ...current,
-      [activeStep.id]: { status: "capturing", src: "", error: "", requestId },
-    }));
-
-    getCapture(activeStep.captureTarget)
-      .then((src) => {
-        setCaptures((current) => ({
-          ...current,
-          ...(current[activeStep.id]?.requestId === requestId && !cancelled
-            ? { [activeStep.id]: { status: "ready", src, error: "", requestId } }
-            : {}),
-        }));
-      })
-      .catch((error) => {
-        if (cancelled) return;
-        setCaptures((current) => ({
-          ...current,
-          ...(current[activeStep.id]?.requestId === requestId
-            ? {
-                [activeStep.id]: {
-                  status: "failed",
-                  src: activeStep.fallbackImage ?? "",
-                  error: error instanceof Error ? error.message : "Capture failed.",
-                  requestId,
-                },
-              }
-            : {}),
-        }));
+      const nextRect = targetElement.getBoundingClientRect();
+      setTargetRect({
+        top: nextRect.top,
+        left: nextRect.left,
+        width: nextRect.width,
+        height: nextRect.height,
       });
+      setIsCompact(getCompactViewport());
+    };
+
+    if (targetElement instanceof HTMLElement) {
+      targetElement.scrollIntoView?.({
+        block: "center",
+        inline: "center",
+        behavior: getPrefersReducedMotion() ? "auto" : "smooth",
+      });
+    }
+
+    const requestRectUpdate = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(updateTargetRect);
+    };
+
+    scrollSettleTimer = window.setTimeout(requestRectUpdate, 90);
+    requestRectUpdate();
+
+    window.addEventListener("resize", requestRectUpdate);
+    window.addEventListener("scroll", requestRectUpdate, true);
 
     return () => {
-      cancelled = true;
-      setCaptures((current) => {
-        const currentCapture = current[activeStep.id];
-        if (currentCapture?.requestId !== requestId || currentCapture?.status === "ready") {
-          return current;
-        }
-
-        return {
-          ...current,
-          [activeStep.id]: { status: "idle", src: "", error: "", requestId },
-        };
-      });
+      window.clearTimeout(scrollSettleTimer);
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", requestRectUpdate);
+      window.removeEventListener("scroll", requestRectUpdate, true);
     };
-  }, [activeStep, getCapture, open]);
+  }, [activeStep, open]);
 
-  if (!open) return null;
+  const coachStyle = useMemo(() => {
+    if (!open || !activeStep) {
+      return {};
+    }
 
-  const handleClose = () => {
+    return getCoachPosition(targetRect, activeStep.placement, isCompact);
+  }, [activeStep, isCompact, open, targetRect]);
+
+  const spotlightStyle = useMemo(() => {
+    if (!targetRect) {
+      return {
+        display: "none",
+      };
+    }
+
+    const inset = isCompact ? 4 : 8;
+    return {
+      top: Math.max(8, targetRect.top - inset),
+      left: Math.max(8, targetRect.left - inset),
+      width: Math.max(44, targetRect.width + inset * 2),
+      height: Math.max(44, targetRect.height + inset * 2),
+    };
+  }, [isCompact, targetRect]);
+
+  const handleClose = useCallback(() => {
     onClose?.();
-  };
+  }, [onClose]);
+
+  if (!open || !activeStep) {
+    return null;
+  }
 
   return (
-    <div className="fixed inset-0 z-[180] flex items-center justify-center px-4 py-6">
+    <div className="fixed inset-0 z-[180]">
       <button
         type="button"
         aria-label="Close tutorial backdrop"
-        className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-950/62 backdrop-blur-[2px]"
         onClick={handleClose}
+      />
+
+      <div
+        className="pointer-events-none fixed rounded-[22px] border-2 border-secondary bg-secondary/10 shadow-[0_0_0_9999px_rgba(2,8,23,0.48),0_0_0_8px_rgba(215,122,97,0.16),0_18px_46px_rgba(0,0,0,0.28)] transition-all duration-200"
+        data-tour-spotlight={activeStep.target}
+        style={spotlightStyle}
       />
 
       <section
@@ -201,165 +324,74 @@ export default function FirstUseTutorial({ open, onClose, getCapture }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="first-use-tutorial-title"
+        aria-describedby="first-use-tutorial-description"
         tabIndex={-1}
-        className="relative z-10 w-full max-w-6xl overflow-hidden rounded-[32px] border border-white/10 bg-[#08131a] text-white shadow-[0_32px_120px_rgba(2,8,23,0.55)]"
+        className="fixed z-10 max-h-[calc(100vh-32px)] overflow-y-auto rounded-[22px] border border-white/12 bg-[#0b171e] p-4 text-white shadow-[0_24px_80px_rgba(2,8,23,0.5)] outline-none max-[760px]:rounded-[24px] max-[760px]:p-4"
+        style={coachStyle}
       >
-        <div className="grid lg:grid-cols-[1.06fr_0.94fr]">
-          <div className="relative p-5 sm:p-8 lg:p-10">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/45">
-                  First-use guide
-                </p>
-                <h2 id="first-use-tutorial-title" className="mt-2 text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
-                  First-use tutorial
-                </h2>
-                <p className="mt-2 text-base font-medium text-white/82">
-                  Welcome to Voyage
-                </p>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65 sm:text-[15px]">
-                  A short walkthrough of the homepage, workspace, and review flow. Use the live previews to orient yourself, then jump into the real trip planning tools.
-                </p>
-              </div>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary/90">
+              Step {activeIndex + 1} of {homeTourSteps.length}
+            </p>
+            <h2 id="first-use-tutorial-title" className="mt-1 text-xl font-semibold tracking-[-0.02em] text-white">
+              First-use tutorial
+            </h2>
+          </div>
+          <TutorialProgress activeIndex={activeIndex} />
+        </div>
 
+        <h3 className="mt-4 text-lg font-semibold leading-6 tracking-[-0.01em] text-white">
+          {activeStep.title}
+        </h3>
+        <p id="first-use-tutorial-description" className="mt-2 text-sm leading-6 text-white/70">
+          {activeStep.description}
+        </p>
+
+        <ul className="mt-4 space-y-2">
+          {activeStep.bullets.map((bullet) => (
+            <li key={bullet} className="flex gap-2 text-sm leading-6 text-white/72">
+              <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-secondary" aria-hidden="true" />
+              <span>{bullet}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+          <button
+            type="button"
+            className="min-h-11 rounded-pill border border-white/15 bg-white/5 px-4 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10"
+            onClick={handleClose}
+          >
+            Skip tutorial
+          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="min-h-11 rounded-pill border border-white/15 bg-white/5 px-4 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={() => setActiveIndex((current) => Math.max(current - 1, 0))}
+              disabled={activeIndex === 0}
+            >
+              Back
+            </button>
+            {isLastStep ? (
               <button
                 type="button"
-                className="rounded-pill border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10"
+                className="min-h-11 rounded-pill bg-secondary px-5 text-sm font-semibold text-white transition hover:brightness-110"
                 onClick={handleClose}
               >
-                Skip tutorial
+                Finish tutorial
               </button>
-            </div>
-
-            <div className="mt-6 overflow-hidden rounded-[26px] border border-white/10 bg-[#0f1d24] p-3 sm:p-4">
-              <div className="rounded-[18px] border border-white/10 bg-[#081016] shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
-                <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-                  <span className="ml-2">Voyage homepage preview</span>
-                </div>
-                <div className="aspect-[16/10] overflow-hidden">
-                  {activeCapture?.status === "failed" ? (
-                    <div className="relative h-full bg-[#0b171e]">
-                      {activeStep.fallbackImage ? (
-                        <img
-                          src={activeStep.fallbackImage}
-                          alt={activeStep.alt}
-                          className="h-full w-full object-cover opacity-55"
-                        />
-                      ) : null}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0b171e]/78 p-6 text-center">
-                        <p className="text-sm font-semibold text-white">Live preview unavailable</p>
-                        <p className="mt-2 max-w-sm text-sm leading-6 text-white/70">
-                          You can continue the guide while Voyage refreshes this preview.
-                        </p>
-                      </div>
-                    </div>
-                  ) : activeCapture?.status === "ready" && activeCapture.src ? (
-                    <img
-                      src={activeCapture.src}
-                      alt={activeStep.alt}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full flex-col items-center justify-center bg-[#0b171e] p-6 text-center">
-                      <p className="text-sm font-semibold text-white">Capturing the current dashboard</p>
-                      <p className="mt-2 max-w-sm text-sm leading-6 text-white/60">
-                        Voyage is using the live page below this guide.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              {homeTourSteps.map((step, index) => (
-                <button
-                  type="button"
-                  key={step.title}
-                  className={[
-                    "rounded-[20px] border p-4 text-left transition-all",
-                    index === activeIndex
-                      ? "border-secondary/40 bg-secondary/12"
-                      : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8",
-                  ].join(" ")}
-                  onClick={() => setActiveIndex(index)}
-                >
-                  <div className="flex items-center gap-2">
-                    <TutorialStepDot active={index === activeIndex} />
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
-                      Step {index + 1}
-                    </p>
-                  </div>
-                  <p className="mt-3 text-sm font-semibold text-white">{step.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-white/58">{step.description}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="border-t border-white/10 bg-white/[0.03] p-5 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
-            <div className="flex items-center justify-between gap-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/40">
-              <span>Step {activeIndex + 1} of {homeTourSteps.length}</span>
-              <span>{progress}% complete</span>
-            </div>
-
-            <h3 className="mt-4 text-2xl font-semibold tracking-[-0.03em] text-white">
-              {activeStep.title}
-            </h3>
-            <p className="mt-3 text-sm leading-6 text-white/68">
-              {activeStep.description}
-            </p>
-
-            <ul className="mt-6 space-y-3">
-              {activeStep.bullets.map((bullet) => (
-                <li
-                  key={bullet}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-6 text-white/72"
-                >
-                  {bullet}
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-6 rounded-[22px] border border-secondary/20 bg-secondary/10 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary/80">
-                Need this later?
-              </p>
-              <p className="mt-2 text-sm leading-6 text-white/72">
-                Open Settings any time to replay the tutorial and review the help section with the same step-by-step guide.
-              </p>
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+            ) : (
               <button
                 type="button"
-                className="rounded-pill border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:opacity-40"
-                onClick={() => setActiveIndex((current) => Math.max(current - 1, 0))}
-                disabled={activeIndex === 0}
+                className="min-h-11 rounded-pill bg-secondary px-5 text-sm font-semibold text-white transition hover:brightness-110"
+                onClick={() => setActiveIndex((current) => Math.min(current + 1, homeTourSteps.length - 1))}
               >
-                Back
+                Next
               </button>
-              {activeIndex < homeTourSteps.length - 1 ? (
-                <button
-                  type="button"
-                  className="rounded-pill bg-secondary px-5 py-2 text-sm font-semibold text-white transition hover:brightness-110"
-                  onClick={() => setActiveIndex((current) => Math.min(current + 1, homeTourSteps.length - 1))}
-                >
-                  Next
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="rounded-pill bg-secondary px-5 py-2 text-sm font-semibold text-white transition hover:brightness-110"
-                  onClick={handleClose}
-                >
-                  Finish tutorial
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </section>

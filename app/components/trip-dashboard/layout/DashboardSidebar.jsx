@@ -79,6 +79,7 @@ export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, acti
 
           <button
             type="button"
+            data-tour-target="settings-replay"
             className={`${navItemBase} ${activeTab === "settings" ? navItemActive : ""}`}
             aria-current={activeTab === "settings" ? "page" : undefined}
             onClick={() => setActiveTab("settings")}

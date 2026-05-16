@@ -66,6 +66,7 @@ export default function DashboardHeader({
       {showCenterActions && (
         <div className="flex items-center gap-3 flex-1 justify-center min-w-0 max-[900px]:gap-1.5">
           <button
+            data-tour-target="new-itinerary"
             className="inline-flex items-center gap-2 border border-border/10 rounded-pill bg-white/10 text-text-primary px-[18px] text-[13px] font-bold tracking-[-0.01em] cursor-pointer whitespace-nowrap shadow-sm transition-all duration-200 h-11 hover:-translate-y-px hover:bg-white/15 hover:shadow-md disabled:cursor-wait disabled:opacity-50 disabled:translate-y-0 max-[900px]:w-8 max-[900px]:h-8 max-[900px]:px-0 max-[900px]:justify-center max-[900px]:rounded-full max-[900px]:border-none max-[900px]:shadow-none"
             onClick={() => onNewItinerary?.()}
             disabled={isCreatingDraftThread}
@@ -77,23 +78,25 @@ export default function DashboardHeader({
           </button>
 
           <div className="flex items-center gap-3 min-w-0 max-[900px]:gap-1.5">
-            <ClientSwitcher
-              isClientMenuOpen={isClientMenuOpen}
-              setIsClientMenuOpen={setIsClientMenuOpen}
-              clientMenuRef={clientMenuRef}
-              hasOptions={hasOptions}
-              activeTripClientName={activeTripClientName}
-              activeTripInitials={activeTripInitials}
-              activeTripOrganizerInitials={activeTripOrganizerInitials}
-              clientMenuEmptyTitle={clientMenuEmptyTitle}
-              clientMenuEmptyBody={clientMenuEmptyBody}
-              safeOptions={safeOptions}
-              activeOption={activeOption}
-              getInitials={getInitials}
-              onPlanningOptionDelete={onPlanningOptionDelete}
-              deletingThreadId={deletingThreadId}
-              onPlanningOptionChange={onPlanningOptionChange}
-            />
+            <div data-tour-target="client-switcher" className="min-w-0">
+              <ClientSwitcher
+                isClientMenuOpen={isClientMenuOpen}
+                setIsClientMenuOpen={setIsClientMenuOpen}
+                clientMenuRef={clientMenuRef}
+                hasOptions={hasOptions}
+                activeTripClientName={activeTripClientName}
+                activeTripInitials={activeTripInitials}
+                activeTripOrganizerInitials={activeTripOrganizerInitials}
+                clientMenuEmptyTitle={clientMenuEmptyTitle}
+                clientMenuEmptyBody={clientMenuEmptyBody}
+                safeOptions={safeOptions}
+                activeOption={activeOption}
+                getInitials={getInitials}
+                onPlanningOptionDelete={onPlanningOptionDelete}
+                deletingThreadId={deletingThreadId}
+                onPlanningOptionChange={onPlanningOptionChange}
+              />
+            </div>
             {canApproveDraft && (
               <button
                 className="inline-flex items-center justify-center border border-border/10 rounded-pill bg-surface-elevated text-text-primary px-4 text-[13px] font-extrabold cursor-pointer whitespace-nowrap h-11 hover:border-secondary hover:text-secondary transition-colors shadow-sm max-[900px]:h-8 max-[900px]:px-2.5 max-[900px]:text-[11px]"
