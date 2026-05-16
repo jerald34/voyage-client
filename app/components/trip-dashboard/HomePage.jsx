@@ -35,7 +35,7 @@ import MobileGlassSheet from "./mobile/MobileGlassSheet.jsx";
 import useMobileViewport from "./mobile/useMobileViewport.js";
 import ChatInput from "./command-center/ChatInput.jsx";
 import FirstUseTutorial from "./tutorial/FirstUseTutorial.jsx";
-import { HOME_TOUR_STORAGE_KEY } from "./tutorial/tutorialContent.js";
+import { VOYAGE_TOUR_STORAGE_KEY, voyageTourSteps } from "./tutorial/tutorialContent.js";
 
 // Minimal UI helpers
 const getInitials = (name) => {
@@ -127,6 +127,20 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   const [pendingCount, setPendingCount] = useState(0);
   const [mobileMapPadding, setMobileMapPadding] = useState(0);
   const [isFirstUseTutorialOpen, setIsFirstUseTutorialOpen] = useState(false);
+  const [cipTourState, setCipTourState] = useState({
+    hasSelectedClient: false,
+    hasMultipleTrips: false,
+    hasItineraryDays: false,
+  });
+
+  const visibleTourSteps = useMemo(() => {
+    return voyageTourSteps.filter((step) => {
+      if (step.target === "cip-trip-selector") return cipTourState.hasMultipleTrips;
+      if (step.target === "cip-day-strip") return cipTourState.hasItineraryDays;
+      if (step.target === "cip-actions") return cipTourState.hasSelectedClient;
+      return true;
+    });
+  }, [cipTourState]);
   const isMobile = useMobileViewport();
   const clientMenuRef = useRef(null);
   const completedAssistantMessageRef = useRef(null);
@@ -185,7 +199,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   useEffect(() => {
     if (!user) return;
     const hasSeenTutorial = typeof window !== "undefined"
-      && localStorage.getItem(HOME_TOUR_STORAGE_KEY) === "true";
+      && localStorage.getItem(VOYAGE_TOUR_STORAGE_KEY) === "true";
     if (!hasSeenTutorial) {
       setIsFirstUseTutorialOpen(true);
     }
@@ -483,7 +497,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
 
   const closeFirstUseTutorial = useCallback(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem(HOME_TOUR_STORAGE_KEY, "true");
+      localStorage.setItem(VOYAGE_TOUR_STORAGE_KEY, "true");
     }
     setIsFirstUseTutorialOpen(false);
   }, []);
@@ -494,6 +508,9 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   }, []);
 
   const handleFirstUseTutorialStepChange = useCallback((step) => {
+    if (step?.tab) {
+      setActiveTab((current) => (current === step.tab ? current : step.tab));
+    }
     if (step?.target === "settings-replay") {
       setIsSidebarOpen(true);
     }
@@ -629,6 +646,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
         open={isFirstUseTutorialOpen}
         onClose={closeFirstUseTutorial}
         onStepChange={handleFirstUseTutorialStepChange}
+        steps={visibleTourSteps}
       />
 
       {isApprovalModalOpen && activeContext?.type === "draft" && (
@@ -720,7 +738,10 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
 
               {/* Desktop: Floating Glass Panels Layer */}
               <div className="relative z-10 flex gap-6 p-2 w-full h-full pointer-events-none overflow-hidden max-[900px]:hidden">
-                <div className="w-full lg:w-[520px] h-full pointer-events-auto transition-all duration-500 ease-in-out">
+                <div
+                  data-tour-target="workspace-chat"
+                  className="w-full lg:w-[520px] h-full pointer-events-auto transition-all duration-500 ease-in-out"
+                >
                   <AgentCommandCenter
                     messages={activeTripState?.messages ?? []}
                     isStreaming={isVisible ? isStreaming : false}
@@ -789,6 +810,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
             <ClientItineraryPage
               agencyTrips={savedTripsForPortfolio}
               agencyId={agencyId}
+              onTourStateChange={setCipTourState}
               onDeleteTrip={async (aid, tripId) => {
                 await deleteAgencyTrip(aid, tripId);
                 setFetchedTrips(prev => (prev || []).filter(t => t.id !== tripId));

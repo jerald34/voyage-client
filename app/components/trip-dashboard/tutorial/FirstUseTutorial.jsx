@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { homeTourSteps } from "./tutorialContent.js";
+import { voyageTourSteps } from "./tutorialContent.js";
 
 const FOCUSABLE_SELECTOR = [
   "a[href]",
@@ -96,10 +96,10 @@ function getCoachPosition(rect, placement, isCompact) {
   };
 }
 
-function TutorialProgress({ activeIndex }) {
+function TutorialProgress({ activeIndex, steps }) {
   return (
     <div className="flex items-center gap-1.5" aria-hidden="true">
-      {homeTourSteps.map((step, index) => (
+      {steps.map((step, index) => (
         <span
           key={step.id}
           className={[
@@ -171,15 +171,21 @@ function TutorialBackdrop({ onClose, spotlightStyle }) {
   );
 }
 
-export default function FirstUseTutorial({ open, onClose, onStepChange }) {
+export default function FirstUseTutorial({
+  open,
+  onClose,
+  onStepChange,
+  steps = voyageTourSteps,
+  title = "First-use tutorial",
+}) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
   const [isCompact, setIsCompact] = useState(false);
   const dialogRef = useRef(null);
   const previousFocusRef = useRef(null);
 
-  const activeStep = homeTourSteps[activeIndex] ?? homeTourSteps[0];
-  const isLastStep = activeIndex === homeTourSteps.length - 1;
+  const activeStep = steps[activeIndex] ?? steps[0];
+  const isLastStep = activeIndex === steps.length - 1;
 
   useEffect(() => {
     if (!open) {
@@ -286,12 +292,28 @@ export default function FirstUseTutorial({ open, onClose, onStepChange }) {
 
     let frameId = 0;
     let scrollSettleTimer = 0;
-    const targetElement = document.querySelector(getTargetSelector(activeStep.target));
+    let observer = null;
+    let didScrollIntoView = false;
+
+    const findTarget = () =>
+      document.querySelector(getTargetSelector(activeStep.target));
 
     const updateTargetRect = () => {
+      // Re-query each tick so we pick up the target after a tab switch /
+      // conditional render mounts it later than this effect runs.
+      const targetElement = findTarget();
       if (!(targetElement instanceof HTMLElement)) {
         setTargetRect(null);
         return;
+      }
+
+      if (!didScrollIntoView) {
+        didScrollIntoView = true;
+        targetElement.scrollIntoView?.({
+          block: "center",
+          inline: "center",
+          behavior: getPrefersReducedMotion() ? "auto" : "smooth",
+        });
       }
 
       const nextRect = targetElement.getBoundingClientRect();
@@ -302,20 +324,24 @@ export default function FirstUseTutorial({ open, onClose, onStepChange }) {
         height: nextRect.height,
       });
       setIsCompact(getCompactViewport());
-    };
 
-    if (targetElement instanceof HTMLElement) {
-      targetElement.scrollIntoView?.({
-        block: "center",
-        inline: "center",
-        behavior: getPrefersReducedMotion() ? "auto" : "smooth",
-      });
-    }
+      if (observer) {
+        observer.disconnect();
+        observer = null;
+      }
+    };
 
     const requestRectUpdate = () => {
       window.cancelAnimationFrame(frameId);
       frameId = window.requestAnimationFrame(updateTargetRect);
     };
+
+    if (typeof MutationObserver !== "undefined") {
+      observer = new MutationObserver(() => {
+        requestRectUpdate();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
 
     scrollSettleTimer = window.setTimeout(requestRectUpdate, 90);
     requestRectUpdate();
@@ -326,6 +352,10 @@ export default function FirstUseTutorial({ open, onClose, onStepChange }) {
     return () => {
       window.clearTimeout(scrollSettleTimer);
       window.cancelAnimationFrame(frameId);
+      if (observer) {
+        observer.disconnect();
+        observer = null;
+      }
       window.removeEventListener("resize", requestRectUpdate);
       window.removeEventListener("scroll", requestRectUpdate, true);
     };
@@ -386,13 +416,13 @@ export default function FirstUseTutorial({ open, onClose, onStepChange }) {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary/90">
-              Step {activeIndex + 1} of {homeTourSteps.length}
+              Step {activeIndex + 1} of {steps.length}
             </p>
             <h2 id="first-use-tutorial-title" className="mt-1 text-xl font-semibold tracking-[-0.02em] text-white">
-              First-use tutorial
+              {title}
             </h2>
           </div>
-          <TutorialProgress activeIndex={activeIndex} />
+          <TutorialProgress activeIndex={activeIndex} steps={steps} />
         </div>
 
         <h3 className="mt-4 text-lg font-semibold leading-6 tracking-[-0.01em] text-white">
@@ -441,7 +471,7 @@ export default function FirstUseTutorial({ open, onClose, onStepChange }) {
               <button
                 type="button"
                 className="min-h-11 rounded-pill bg-secondary px-5 text-sm font-semibold text-white transition hover:brightness-110"
-                onClick={() => setActiveIndex((current) => Math.min(current + 1, homeTourSteps.length - 1))}
+                onClick={() => setActiveIndex((current) => Math.min(current + 1, steps.length - 1))}
               >
                 Next
               </button>

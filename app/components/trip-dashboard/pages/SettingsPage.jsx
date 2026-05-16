@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "../../theme/ThemeProvider";
-import { homeTourHelpBullets, homeTourSteps } from "../tutorial/tutorialContent.js";
+import { voyageTourHelpBullets, voyageTourSteps } from "../tutorial/tutorialContent.js";
 
 function formatReadOnlyValue(value) {
   const text = String(value ?? "").trim();
@@ -449,7 +449,7 @@ export default function SettingsPage({
               </button>
 
               <ul className="grid gap-2">
-                {homeTourHelpBullets.map((bullet) => (
+                {voyageTourHelpBullets.map((bullet) => (
                   <li
                     key={bullet}
                     className="rounded-2xl border border-border bg-background px-3 py-2.5 text-sm leading-5 text-text-soft"
@@ -463,10 +463,10 @@ export default function SettingsPage({
             <div className="min-w-0">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-soft">Quick steps</p>
-                <p className="hidden text-xs text-text-soft lg:block">{homeTourSteps.length} guided stops</p>
+                <p className="hidden text-xs text-text-soft lg:block">{voyageTourSteps.length} guided stops</p>
               </div>
               <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
-                {homeTourSteps.map((step, index) => (
+                {voyageTourSteps.map((step, index) => (
                   <article
                     key={step.title}
                     className="min-h-[148px] rounded-2xl border border-border bg-background px-3.5 py-3"

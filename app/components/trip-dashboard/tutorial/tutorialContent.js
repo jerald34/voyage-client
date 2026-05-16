@@ -1,8 +1,10 @@
-export const HOME_TOUR_STORAGE_KEY = "voyage-home-tour-completed-v1";
+export const VOYAGE_TOUR_STORAGE_KEY = "voyage-tour-completed-v2";
 
-export const homeTourSteps = [
+export const voyageTourSteps = [
+  // ── Command Center ─────────────────────────────────────────────────────────
   {
     id: "new-itinerary",
+    tab: "command-center",
     target: "new-itinerary",
     placement: "bottom",
     title: "Create a new itinerary",
@@ -15,6 +17,7 @@ export const homeTourSteps = [
   },
   {
     id: "client-switcher",
+    tab: "command-center",
     target: "client-switcher",
     placement: "bottom",
     title: "Switch active clients",
@@ -27,18 +30,20 @@ export const homeTourSteps = [
   },
   {
     id: "workspace",
-    target: "workspace",
+    tab: "command-center",
+    target: "workspace-chat",
     placement: "right",
     title: "Work in the planning space",
     description:
-      "Use the command center to chat with Voyage, review draft updates, and keep the itinerary work in one place.",
+      "The command center on the left is where you chat with Voyage, review draft updates, and keep the itinerary work in one place.",
     bullets: [
-      "Send adjustments through the chat composer.",
-      "Watch itinerary updates and tool activity as they happen.",
+      "Send adjustments through the chat composer at the bottom.",
+      "Watch itinerary updates and tool activity stream in above.",
     ],
   },
   {
     id: "map-context",
+    tab: "command-center",
     target: "workspace-map",
     placement: "left",
     title: "Use the map context",
@@ -49,8 +54,76 @@ export const homeTourSteps = [
       "The map updates with the active itinerary and streaming results.",
     ],
   },
+  // ── Client Itineraries ─────────────────────────────────────────────────────
+  {
+    id: "client-directory",
+    tab: "itineraries",
+    target: "cip-client-directory",
+    placement: "right",
+    title: "Browse your clients",
+    description:
+      "The Client Directory lists every traveler with a saved itinerary. Search by name or pick a client to load their work.",
+    bullets: [
+      "Search filters the list as you type.",
+      "Selecting a client opens the saved itineraries in the workspace.",
+    ],
+  },
+  {
+    id: "client-workspace",
+    tab: "itineraries",
+    target: "cip-workspace",
+    placement: "left",
+    title: "Review saved itineraries",
+    description:
+      "When a client is selected, the workspace shows their approved itinerary day by day, alongside a live map of every stop.",
+    bullets: [
+      "Day content lives on the left, the geographic context on the right.",
+      "Hover a stop to highlight it on the map.",
+    ],
+  },
+  {
+    id: "trip-selector",
+    tab: "itineraries",
+    target: "cip-trip-selector",
+    placement: "bottom",
+    title: "Switch between saved trips",
+    description:
+      "If a client has more than one saved itinerary, use the trip tabs to jump between them without leaving the workspace.",
+    bullets: [
+      "Each tab loads its own day strip and map.",
+      "Unread comment badges follow the active trip.",
+    ],
+  },
+  {
+    id: "day-strip",
+    tab: "itineraries",
+    target: "cip-day-strip",
+    placement: "bottom",
+    title: "Navigate the itinerary by day",
+    description:
+      "The day strip lets you walk through the trip one day at a time, updating the stops list and the map together.",
+    bullets: [
+      "Click a day to focus its stops and pins.",
+      "Use the day strip to verify pacing and accommodations.",
+    ],
+  },
+  {
+    id: "itinerary-actions",
+    tab: "itineraries",
+    target: "cip-actions",
+    placement: "bottom",
+    title: "Share, discuss, and export",
+    description:
+      "Use the action bar to open client comments, send a share link, or export the itinerary as a polished PDF.",
+    bullets: [
+      "Comments shows replies from clients with an unread count.",
+      "Share opens a public link; PDF downloads a printable copy.",
+    ],
+  },
+  // ── Replay reminder ────────────────────────────────────────────────────────
   {
     id: "replay-help",
+    tab: "command-center",
     target: "settings-replay",
     placement: "right",
     title: "Replay the guide later",
@@ -63,8 +136,8 @@ export const homeTourSteps = [
   },
 ];
 
-export const homeTourHelpBullets = [
+export const voyageTourHelpBullets = [
   "You only see the tour once unless you replay it from Settings.",
-  "The tour highlights real controls on the dashboard one step at a time.",
-  "Settings keeps the same help content in one permanent place.",
+  "The tour highlights real controls across the Command Center and Client Itineraries.",
+  "Voyage switches tabs for you as the walkthrough advances.",
 ];

@@ -353,7 +353,7 @@ function CommentsPanel({ agencyId, tripId, onClose }) {
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
-export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDeleteTrip }) {
+export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDeleteTrip, onTourStateChange }) {
   const { theme } = useTheme();
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [selectedTripId, setSelectedTripId] = useState(null);
@@ -397,6 +397,18 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
   const selectedClient = clients.find(c => c.id === selectedClientId) || null;
   const selectedTrip = selectedClient?.trips.find(t => t.id === selectedTripId) || null;
   const selectedItineraryId = getStableItineraryId(selectedTrip);
+
+  // Notify parent (HomePage) so the unified tour can filter out steps whose
+  // targets are conditionally rendered (e.g. trip-selector when a client only
+  // has one saved itinerary).
+  const hasSelectedClient = Boolean(selectedClient);
+  const hasMultipleTrips = Boolean(selectedClient && selectedClient.trips.length > 1);
+  const hasItineraryDays = Boolean(
+    fullItinerary && Array.isArray(fullItinerary.days) && fullItinerary.days.length > 0,
+  );
+  useEffect(() => {
+    onTourStateChange?.({ hasSelectedClient, hasMultipleTrips, hasItineraryDays });
+  }, [onTourStateChange, hasSelectedClient, hasMultipleTrips, hasItineraryDays]);
 
   useEffect(() => {
     const nextSelection = resolveSavedPortfolioSelection({ clients, selectedClientId, selectedTripId });
@@ -1037,7 +1049,10 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-2 h-full min-h-0 items-stretch p-2">
       {/* Client sidebar — hidden on mobile when viewing detail */}
-      <aside className={`glass-panel backdrop-blur-lg flex-col overflow-hidden shadow-soft ${mobilePane === "detail" ? "hidden lg:flex" : "flex"}`}>
+      <aside
+        data-tour-target="cip-client-directory"
+        className={`glass-panel backdrop-blur-lg flex-col overflow-hidden shadow-soft ${mobilePane === "detail" ? "hidden lg:flex" : "flex"}`}
+      >
         {/* Pane header */}
         <div className="px-4 py-4 border-b border-border grid gap-2.5">
           <h3 className="font-serif text-[1.6rem] text-text-primary m-0 tracking-tight">Client Directory</h3>
@@ -1162,7 +1177,10 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
       </aside>
 
       {/* Main workspace — hidden on mobile when viewing list */}
-      <main className={`glass-panel backdrop-blur-lg flex-col overflow-hidden shadow-soft h-full ${mobilePane === "list" ? "hidden lg:flex" : "flex"}`}>
+      <main
+        data-tour-target="cip-workspace"
+        className={`glass-panel backdrop-blur-lg flex-col overflow-hidden shadow-soft h-full ${mobilePane === "list" ? "hidden lg:flex" : "flex"}`}
+      >
         {selectedClient ? (
           <div className="flex flex-col h-full overflow-hidden">
             {/* Mobile back button */}
@@ -1190,7 +1208,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                   {selectedClient.trips.length} saved
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+              <div data-tour-target="cip-actions" className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                 {selectedTrip && <StatusChip trip={selectedTrip} />}
                 {selectedItineraryId && (
                   <>
@@ -1256,7 +1274,10 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
             <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
               {/* Trip selector — only shown when client has multiple saved trips */}
               {selectedClient.trips.length > 1 && (
-                <div className="flex gap-2 px-6 py-3 border-b border-border/10 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-shrink-0">
+                <div
+                  data-tour-target="cip-trip-selector"
+                  className="flex gap-2 px-6 py-3 border-b border-border/10 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-shrink-0"
+                >
                   {selectedClient.trips.map(t => (
                     <button
                       key={t.id}
@@ -1279,7 +1300,10 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
 
               {/* Day strip */}
               {fullItinerary && safeDays.length > 0 && (
-                <div className="flex gap-3 px-6 py-4 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-shrink-0 border-b border-border/10">
+                <div
+                  data-tour-target="cip-day-strip"
+                  className="flex gap-3 px-6 py-4 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-shrink-0 border-b border-border/10"
+                >
                   {safeDays.map((day, dIdx) => (
                     <div
                       key={day.id || day.dayNumber || dIdx}
