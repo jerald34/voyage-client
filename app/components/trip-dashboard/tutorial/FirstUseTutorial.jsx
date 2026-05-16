@@ -34,12 +34,49 @@ function getCompactViewport() {
   return window.matchMedia?.("(max-width: 760px)")?.matches ?? window.innerWidth <= 760;
 }
 
-function getCoachPosition(rect, placement, isCompact) {
+function getCoachPosition(rect, step, isCompact) {
+  const placement = step?.placement;
   if (isCompact) {
+    // Per-step explicit override wins.
+    const compactPlacement = step?.compactPlacement;
+    if (compactPlacement === "top") {
+      return {
+        left: VIEWPORT_PADDING,
+        right: VIEWPORT_PADDING,
+        top: VIEWPORT_PADDING,
+      };
+    }
+    if (compactPlacement === "bottom") {
+      return {
+        left: VIEWPORT_PADDING,
+        right: VIEWPORT_PADDING,
+        bottom: VIEWPORT_PADDING,
+      };
+    }
+    // Otherwise anchor the card to the opposite end of the viewport from the
+    // target so it doesn't cover the spotlight.
+    const viewportHeight = window.innerHeight || 768;
+    if (rect && (rect.width > 0 || rect.height > 0)) {
+      const targetCenterY = rect.top + rect.height / 2;
+      if (targetCenterY > viewportHeight * 0.5) {
+        return {
+          left: VIEWPORT_PADDING,
+          right: VIEWPORT_PADDING,
+          top: VIEWPORT_PADDING,
+        };
+      }
+      return {
+        left: VIEWPORT_PADDING,
+        right: VIEWPORT_PADDING,
+        bottom: VIEWPORT_PADDING,
+      };
+    }
+    // No measurable target — on mobile the actionable surface is the bottom
+    // sheet (MobileGlassSheet), so anchor the card to the top to keep it clear.
     return {
       left: VIEWPORT_PADDING,
       right: VIEWPORT_PADDING,
-      bottom: VIEWPORT_PADDING,
+      top: VIEWPORT_PADDING,
     };
   }
 
@@ -295,8 +332,23 @@ export default function FirstUseTutorial({
     let observer = null;
     let didScrollIntoView = false;
 
-    const findTarget = () =>
-      document.querySelector(getTargetSelector(activeStep.target));
+    const findTarget = () => {
+      // Multiple elements may share the same data-tour-target (e.g. desktop
+      // and mobile variants of the same control where one lives in a
+      // display:none layer). Pick the first visible match. We can't use
+      // offsetParent here because it's null for position:fixed elements like
+      // MobileGlassSheet — a real bounding rect with non-zero size is the
+      // reliable signal (display:none returns all zeros).
+      const all = document.querySelectorAll(getTargetSelector(activeStep.target));
+      for (const el of all) {
+        if (!(el instanceof HTMLElement)) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          return el;
+        }
+      }
+      return null;
+    };
 
     const updateTargetRect = () => {
       // Re-query each tick so we pick up the target after a tab switch /
@@ -317,6 +369,11 @@ export default function FirstUseTutorial({
       }
 
       const nextRect = targetElement.getBoundingClientRect();
+      if (nextRect.width === 0 && nextRect.height === 0) {
+        // Target is inside a display:none ancestor — treat it as missing.
+        setTargetRect(null);
+        return;
+      }
       setTargetRect({
         top: nextRect.top,
         left: nextRect.left,
@@ -366,7 +423,7 @@ export default function FirstUseTutorial({
       return {};
     }
 
-    return getCoachPosition(targetRect, activeStep.placement, isCompact);
+    return getCoachPosition(targetRect, activeStep, isCompact);
   }, [activeStep, isCompact, open, targetRect]);
 
   const spotlightStyle = useMemo(() => {

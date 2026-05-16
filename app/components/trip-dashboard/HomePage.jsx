@@ -127,6 +127,9 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   const [pendingCount, setPendingCount] = useState(0);
   const [mobileMapPadding, setMobileMapPadding] = useState(0);
   const [isFirstUseTutorialOpen, setIsFirstUseTutorialOpen] = useState(false);
+  const [activeTourSteps, setActiveTourSteps] = useState(voyageTourSteps);
+  const [tourMobilePaneOverride, setTourMobilePaneOverride] = useState(null);
+  const [tourGlassSheetSnap, setTourGlassSheetSnap] = useState(null);
   const [cipTourState, setCipTourState] = useState({
     hasSelectedClient: false,
     hasMultipleTrips: false,
@@ -201,6 +204,10 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
     const hasSeenTutorial = typeof window !== "undefined"
       && localStorage.getItem(VOYAGE_TOUR_STORAGE_KEY) === "true";
     if (!hasSeenTutorial) {
+      // Snapshot steps at open time so the total count stays frozen during the tour.
+      // cipTourState is all-false on first mount (Itineraries tab not yet visited),
+      // so we include all steps to avoid hiding cip-* steps prematurely.
+      setActiveTourSteps(voyageTourSteps);
       setIsFirstUseTutorialOpen(true);
     }
   }, [user]);
@@ -500,16 +507,51 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
       localStorage.setItem(VOYAGE_TOUR_STORAGE_KEY, "true");
     }
     setIsFirstUseTutorialOpen(false);
+    setTourMobilePaneOverride(null);
+    setTourGlassSheetSnap(null);
   }, []);
 
   const replayFirstUseTutorial = useCallback(() => {
     setActiveTab("command-center");
+    // Snapshot steps at replay time. If cipTourState already reflects a visited
+    // Itineraries tab, use the filtered list; otherwise include all steps.
+    const snapshot = cipTourState.hasSelectedClient
+      ? voyageTourSteps.filter((step) => {
+          if (step.target === "cip-trip-selector") return cipTourState.hasMultipleTrips;
+          if (step.target === "cip-day-strip") return cipTourState.hasItineraryDays;
+          return true;
+        })
+      : voyageTourSteps;
+    setActiveTourSteps(snapshot);
     setIsFirstUseTutorialOpen(true);
-  }, []);
+  }, [cipTourState]);
 
   const handleFirstUseTutorialStepChange = useCallback((step) => {
     if (step?.tab) {
       setActiveTab((current) => (current === step.tab ? current : step.tab));
+    }
+    // Drive ClientItineraryPage's mobile pane so detail-pane targets exist
+    // when their step appears on mobile.
+    if (step?.target === "cip-client-directory") {
+      setTourMobilePaneOverride("list");
+    } else if (
+      step?.target === "cip-workspace" ||
+      step?.target === "cip-trip-selector" ||
+      step?.target === "cip-day-strip" ||
+      step?.target === "cip-actions"
+    ) {
+      setTourMobilePaneOverride("detail");
+    } else {
+      setTourMobilePaneOverride(null);
+    }
+    // Drive the Command Center's mobile glass sheet so the right surface is
+    // visible for each step on mobile.
+    if (step?.target === "workspace-chat") {
+      setTourGlassSheetSnap("half");
+    } else if (step?.target === "workspace-map") {
+      setTourGlassSheetSnap("peek");
+    } else {
+      setTourGlassSheetSnap(null);
     }
     if (step?.target === "settings-replay") {
       setIsSidebarOpen(true);
@@ -646,7 +688,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
         open={isFirstUseTutorialOpen}
         onClose={closeFirstUseTutorial}
         onStepChange={handleFirstUseTutorialStepChange}
-        steps={visibleTourSteps}
+        steps={activeTourSteps}
       />
 
       {isApprovalModalOpen && activeContext?.type === "draft" && (
@@ -769,6 +811,8 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                 <MobileGlassSheet
                   defaultSnap="half"
                   onSnapChange={handleMobileSnapChange}
+                  forcedSnap={tourGlassSheetSnap}
+                  data-tour-target="workspace-chat"
                   footer={
                     <ChatInput
                       textareaRef={mobileTextareaRef}
@@ -811,6 +855,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
               agencyTrips={savedTripsForPortfolio}
               agencyId={agencyId}
               onTourStateChange={setCipTourState}
+              tourMobilePaneOverride={tourMobilePaneOverride}
               onDeleteTrip={async (aid, tripId) => {
                 await deleteAgencyTrip(aid, tripId);
                 setFetchedTrips(prev => (prev || []).filter(t => t.id !== tripId));

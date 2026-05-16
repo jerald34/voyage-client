@@ -46,6 +46,7 @@ export const voyageTourSteps = [
     tab: "command-center",
     target: "workspace-map",
     placement: "left",
+    compactPlacement: "bottom",
     title: "Use the map context",
     description:
       "The live map stays behind the workspace so routes, stops, and place context remain visible while planning.",

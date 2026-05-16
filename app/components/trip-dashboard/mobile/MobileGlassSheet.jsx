@@ -49,6 +49,8 @@ export default function MobileGlassSheet({
   defaultSnap = "half",
   onSnapChange,
   className = "",
+  forcedSnap = null,
+  "data-tour-target": dataTourTarget,
 }) {
   const isMobile = useMobileViewport();
   const sheetRef = useRef(null);
@@ -83,6 +85,14 @@ export default function MobileGlassSheet({
   useEffect(() => {
     onSnapChange?.(snap);
   }, [snap, onSnapChange]);
+
+  // Allow an external controller (e.g. the in-app tour) to force the sheet
+  // into a specific snap. Internal snap state still drives layout so user drag
+  // gestures keep working — this just nudges it when forcedSnap changes.
+  useEffect(() => {
+    if (!forcedSnap) return;
+    setSnap(forcedSnap);
+  }, [forcedSnap]);
 
   const endDrag = useCallback((pointerId = activePointerIdRef.current) => {
     const handle = dragHandleRef.current;
@@ -186,6 +196,7 @@ export default function MobileGlassSheet({
   return (
     <div
       ref={sheetRef}
+      data-tour-target={dataTourTarget}
       className={`fixed bottom-0 left-0 right-0 z-30 flex flex-col rounded-t-[24px] bg-[rgba(255,255,255,0.16)] backdrop-blur-[24px] shadow-[0_-18px_50px_rgba(15,23,42,0.18)] ${className}`}
       style={{
         height: sheetHeight || getSnapHeight(defaultSnap, viewportHeight || window.innerHeight),

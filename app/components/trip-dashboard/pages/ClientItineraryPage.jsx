@@ -353,7 +353,7 @@ function CommentsPanel({ agencyId, tripId, onClose }) {
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
-export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDeleteTrip, onTourStateChange }) {
+export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDeleteTrip, onTourStateChange, tourMobilePaneOverride = null }) {
   const { theme } = useTheme();
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [selectedTripId, setSelectedTripId] = useState(null);
@@ -370,7 +370,12 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
   const [isDeletingClient, setIsDeletingClient] = useState(false);
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [selectedPlaceId, setSelectedPlaceId] = useState("");
-  const [mobilePane, setMobilePane] = useState("list"); // "list" | "detail" — mobile only
+  const [internalMobilePane, setInternalMobilePane] = useState("list"); // "list" | "detail" — mobile only
+  // When a tour is active, HomePage drives the pane via `tourMobilePaneOverride`
+  // so the tour's spotlighted target (list pane vs detail pane) is always
+  // visible. User-initiated pane changes still go through setInternalMobilePane.
+  const mobilePane = tourMobilePaneOverride ?? internalMobilePane;
+  const setMobilePane = setInternalMobilePane;
   const [mobileMapPadding, setMobileMapPadding] = useState(0);
   const isMobile = useMobileViewport();
   const requestSequenceRef = useRef(0);
@@ -829,7 +834,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
           onSnapChange={handleCipSnapChange}
         >
           {mobilePane === "list" ? (
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full" data-tour-target="cip-client-directory">
               <div className="px-4 py-3 border-b border-border/5">
                 <h3 className="font-serif text-[1.3rem] text-text-primary m-0 tracking-tight mb-2">Client Directory</h3>
                 <div className="relative flex items-center">
@@ -888,7 +893,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
               </div>
             </div>
           ) : (
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full" data-tour-target="cip-workspace">
               <div className="sticky top-0 z-30 px-4 py-2.5 border-b border-white/10 bg-[rgba(17,24,39,0.15)] backdrop-blur-xl shadow-[0_1px_0_rgba(255,255,255,0.04)]">
                 <div className="flex items-center justify-between gap-3">
                   <button
@@ -901,7 +906,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                   </button>
 
                   {selectedClient && selectedItineraryId ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" data-tour-target="cip-actions">
                       <button
                         className={`inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 ${showCommentsPanel
                           ? "bg-secondary text-white border-secondary"
@@ -954,7 +959,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
 
                   {/* Trip selector */}
                   {selectedClient.trips.length > 1 && (
-                    <div className="flex gap-2 px-4 py-2 border-b border-border/5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-shrink-0">
+                    <div className="flex gap-2 px-4 py-2 border-b border-border/5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-shrink-0" data-tour-target="cip-trip-selector">
                       {selectedClient.trips.map((t) => (
                         <button
                           key={t.id}
@@ -972,7 +977,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
 
                   {/* Day strip */}
                   {fullItinerary && safeDays.length > 0 && (
-                    <div className="flex gap-2 px-4 py-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-shrink-0 border-b border-border/5">
+                    <div className="flex gap-2 px-4 py-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-shrink-0 border-b border-border/5" data-tour-target="cip-day-strip">
                       {safeDays.map((day, dIdx) => (
                         <button
                           key={day.id || day.dayNumber || dIdx}
