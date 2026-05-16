@@ -855,6 +855,20 @@ describe("Agency portfolio HomePage", () => {
     expect(screen.queryByRole("dialog", { name: "First-use tutorial" })).not.toBeInTheDocument();
   });
 
+  it("stores completion when the first-use tutorial is skipped", async () => {
+    localStorage.removeItem("voyage-home-tour-completed-v1");
+
+    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    expect(await screen.findByRole("dialog", { name: "First-use tutorial" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
+
+    await waitFor(() => {
+      expect(localStorage.getItem("voyage-home-tour-completed-v1")).toBe("true");
+    });
+  });
+
   it("captures the workspace target when the user advances the tutorial", async () => {
     localStorage.removeItem("voyage-home-tour-completed-v1");
 
@@ -873,6 +887,43 @@ describe("Agency portfolio HomePage", () => {
     });
 
     expect(screen.getByRole("heading", { name: "Plan inside the workspace" })).toBeInTheDocument();
+  });
+
+  it("retries a failed capture when the user revisits that tutorial step", async () => {
+    localStorage.removeItem("voyage-home-tour-completed-v1");
+    let homeHeaderAttempts = 0;
+
+    html2CanvasMock.mockImplementation(async (element) => {
+      if (element.getAttribute("data-tour-capture") === "home-header") {
+        homeHeaderAttempts += 1;
+        if (homeHeaderAttempts === 1) {
+          throw new Error("capture failed");
+        }
+      }
+
+      return {
+        toDataURL: vi.fn(() => `data:image/png;base64,retry-${homeHeaderAttempts}`),
+      };
+    });
+
+    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    expect(await screen.findByRole("dialog", { name: "First-use tutorial" })).toBeInTheDocument();
+    expect(await screen.findByText("Live preview unavailable")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(await screen.findByRole("heading", { name: "Plan inside the workspace" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Start on the homepage/i }));
+
+    await waitFor(() => {
+      expect(homeHeaderAttempts).toBeGreaterThanOrEqual(2);
+    });
+
+    expect(await screen.findByAltText("Live capture of the homepage controls")).toHaveAttribute(
+      "src",
+      "data:image/png;base64,retry-2",
+    );
   });
 
   it("keeps the tutorial usable when a live capture fails", async () => {

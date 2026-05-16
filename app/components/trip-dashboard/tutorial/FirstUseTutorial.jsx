@@ -59,6 +59,7 @@ export default function FirstUseTutorial({ open, onClose, getCapture }) {
         }));
       })
       .catch((error) => {
+        captureRequestsRef.current.delete(activeStep.id);
         if (cancelled) return;
         setCaptures((current) => ({
           ...current,
