@@ -926,7 +926,7 @@ describe("Agency portfolio HomePage", () => {
     );
   });
 
-  it("retries a cancelled in-flight capture when the user revisits that tutorial step", async () => {
+  it("retries a cancelled in-flight capture after revisiting before the old request settles", async () => {
     localStorage.removeItem("voyage-home-tour-completed-v1");
     let homeHeaderAttempts = 0;
     let resolveFirstHomeHeaderCapture;
@@ -964,6 +964,18 @@ describe("Agency portfolio HomePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(await screen.findByRole("heading", { name: "Plan inside the workspace" })).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("heading", { name: "Start on the homepage" })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(homeHeaderAttempts).toBe(2);
+    });
+
+    expect(await screen.findByAltText("Live capture of the homepage controls")).toHaveAttribute(
+      "src",
+      "data:image/png;base64,recaptured-home-header",
+    );
+
     await act(async () => {
       resolveFirstHomeHeaderCapture({
         toDataURL: vi.fn(() => "data:image/png;base64,late-home-header"),
@@ -971,13 +983,7 @@ describe("Agency portfolio HomePage", () => {
       await Promise.resolve();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Start on the homepage/i }));
-
-    await waitFor(() => {
-      expect(homeHeaderAttempts).toBe(2);
-    });
-
-    expect(await screen.findByAltText("Live capture of the homepage controls")).toHaveAttribute(
+    expect(screen.getByAltText("Live capture of the homepage controls")).toHaveAttribute(
       "src",
       "data:image/png;base64,recaptured-home-header",
     );

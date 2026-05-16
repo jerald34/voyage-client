@@ -19,11 +19,10 @@ function TutorialStepDot({ active }) {
 export default function FirstUseTutorial({ open, onClose, getCapture }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [captures, setCaptures] = useState({});
-  const captureRequestsRef = useRef(new Set());
+  const captureRequestIdRef = useRef(0);
 
   useEffect(() => {
     if (!open) {
-      captureRequestsRef.current = new Set();
       return;
     }
     setActiveIndex(0);
@@ -40,42 +39,55 @@ export default function FirstUseTutorial({ open, onClose, getCapture }) {
   useEffect(() => {
     if (!open || !activeStep?.captureTarget || typeof getCapture !== "function") return;
 
-    if (captureRequestsRef.current.has(activeStep.id)) return;
-    captureRequestsRef.current.add(activeStep.id);
+    if (activeCapture?.status === "ready" || activeCapture?.status === "capturing") return;
 
     let cancelled = false;
+    const requestId = (captureRequestIdRef.current += 1);
 
     setCaptures((current) => ({
       ...current,
-      [activeStep.id]: { status: "capturing", src: "", error: "" },
+      [activeStep.id]: { status: "capturing", src: "", error: "", requestId },
     }));
 
     getCapture(activeStep.captureTarget)
       .then((src) => {
-        if (cancelled) {
-          captureRequestsRef.current.delete(activeStep.id);
-          return;
-        }
         setCaptures((current) => ({
           ...current,
-          [activeStep.id]: { status: "ready", src, error: "" },
+          ...(current[activeStep.id]?.requestId === requestId && !cancelled
+            ? { [activeStep.id]: { status: "ready", src, error: "", requestId } }
+            : {}),
         }));
       })
       .catch((error) => {
-        captureRequestsRef.current.delete(activeStep.id);
         if (cancelled) return;
         setCaptures((current) => ({
           ...current,
-          [activeStep.id]: {
-            status: "failed",
-            src: activeStep.fallbackImage ?? "",
-            error: error instanceof Error ? error.message : "Capture failed.",
-          },
+          ...(current[activeStep.id]?.requestId === requestId
+            ? {
+                [activeStep.id]: {
+                  status: "failed",
+                  src: activeStep.fallbackImage ?? "",
+                  error: error instanceof Error ? error.message : "Capture failed.",
+                  requestId,
+                },
+              }
+            : {}),
         }));
       });
 
     return () => {
       cancelled = true;
+      setCaptures((current) => {
+        const currentCapture = current[activeStep.id];
+        if (currentCapture?.requestId !== requestId || currentCapture?.status === "ready") {
+          return current;
+        }
+
+        return {
+          ...current,
+          [activeStep.id]: { status: "idle", src: "", error: "", requestId },
+        };
+      });
     };
   }, [activeStep, getCapture, open]);
 
