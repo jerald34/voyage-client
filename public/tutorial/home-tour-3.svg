@@ -1,0 +1,40 @@
+<svg width="1200" height="750" viewBox="0 0 1200 750" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="1200" y2="750" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#091219"/>
+      <stop offset="1" stop-color="#132B33"/>
+    </linearGradient>
+    <linearGradient id="card3" x1="170" y1="150" x2="1030" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#172B34"/>
+      <stop offset="1" stop-color="#0D1B23"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="750" rx="36" fill="url(#bg3)"/>
+  <rect x="48" y="46" width="1104" height="658" rx="28" fill="#08131A" stroke="#FFFFFF" stroke-opacity="0.08"/>
+  <rect x="48" y="46" width="1104" height="84" rx="28" fill="#0D1B23" stroke="#FFFFFF" stroke-opacity="0.05"/>
+  <circle cx="88" cy="88" r="8" fill="#FF5F57"/>
+  <circle cx="112" cy="88" r="8" fill="#FEBC2E"/>
+  <circle cx="136" cy="88" r="8" fill="#28C840"/>
+  <rect x="178" y="74" width="176" height="28" rx="14" fill="#D77A61" fill-opacity="0.16"/>
+  <rect x="930" y="70" width="176" height="36" rx="18" fill="#FFFFFF" fill-opacity="0.06"/>
+  <rect x="78" y="168" width="1044" height="480" rx="30" fill="url(#card3)" stroke="#FFFFFF" stroke-opacity="0.08"/>
+  <rect x="110" y="214" width="260" height="42" rx="21" fill="#FFFFFF" fill-opacity="0.08"/>
+  <rect x="110" y="276" width="378" height="24" rx="12" fill="#FFFFFF" fill-opacity="0.14"/>
+  <rect x="110" y="320" width="520" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.08"/>
+  <rect x="110" y="352" width="460" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.08"/>
+  <rect x="110" y="408" width="340" height="176" rx="24" fill="#0B1620" stroke="#FFFFFF" stroke-opacity="0.08"/>
+  <rect x="486" y="408" width="264" height="176" rx="24" fill="#0B1620" stroke="#FFFFFF" stroke-opacity="0.08"/>
+  <rect x="776" y="408" width="316" height="176" rx="24" fill="#0B1620" stroke="#FFFFFF" stroke-opacity="0.08"/>
+  <circle cx="164" cy="468" r="38" fill="#D77A61" fill-opacity="0.24"/>
+  <circle cx="570" cy="468" r="38" fill="#7DC8E8" fill-opacity="0.20"/>
+  <circle cx="906" cy="468" r="38" fill="#FFFFFF" fill-opacity="0.14"/>
+  <text x="78" y="160" fill="#B8D2D8" font-family="Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="3">REVIEW + SHARE</text>
+  <text x="110" y="246" fill="#F2FAFC" font-family="Arial, sans-serif" font-size="24" font-weight="700">Approve the draft and share the final trip</text>
+  <text x="110" y="304" fill="#AFC3C8" font-family="Arial, sans-serif" font-size="18">Use the review screen to validate the itinerary before sending it out.</text>
+  <text x="110" y="448" fill="#F2FAFC" font-family="Arial, sans-serif" font-size="18" font-weight="700">Review</text>
+  <text x="486" y="448" fill="#F2FAFC" font-family="Arial, sans-serif" font-size="18" font-weight="700">Approve</text>
+  <text x="776" y="448" fill="#F2FAFC" font-family="Arial, sans-serif" font-size="18" font-weight="700">Share</text>
+  <text x="110" y="524" fill="#AFC3C8" font-family="Arial, sans-serif" font-size="16">Check details</text>
+  <text x="486" y="524" fill="#AFC3C8" font-family="Arial, sans-serif" font-size="16">Lock itinerary</text>
+  <text x="776" y="524" fill="#AFC3C8" font-family="Arial, sans-serif" font-size="16">Send to client</text>
+</svg>

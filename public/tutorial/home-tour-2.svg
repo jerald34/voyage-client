@@ -1,0 +1,38 @@
+<svg width="1200" height="750" viewBox="0 0 1200 750" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1200" y2="750" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0A141B"/>
+      <stop offset="1" stop-color="#102C34"/>
+    </linearGradient>
+    <linearGradient id="map2" x1="600" y1="180" x2="1140" y2="660" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#183642"/>
+      <stop offset="1" stop-color="#0C1A22"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="750" rx="36" fill="url(#bg2)"/>
+  <rect x="48" y="46" width="1104" height="658" rx="28" fill="#08131A" stroke="#FFFFFF" stroke-opacity="0.08"/>
+  <rect x="48" y="46" width="1104" height="84" rx="28" fill="#0D1B23" stroke="#FFFFFF" stroke-opacity="0.05"/>
+  <circle cx="88" cy="88" r="8" fill="#FF5F57"/>
+  <circle cx="112" cy="88" r="8" fill="#FEBC2E"/>
+  <circle cx="136" cy="88" r="8" fill="#28C840"/>
+  <rect x="178" y="74" width="172" height="28" rx="14" fill="#D77A61" fill-opacity="0.16"/>
+  <rect x="930" y="70" width="176" height="36" rx="18" fill="#FFFFFF" fill-opacity="0.06"/>
+  <rect x="78" y="168" width="456" height="480" rx="30" fill="#0F1D26" stroke="#FFFFFF" stroke-opacity="0.08"/>
+  <rect x="566" y="168" width="546" height="480" rx="30" fill="url(#map2)" stroke="#FFFFFF" stroke-opacity="0.08"/>
+  <rect x="108" y="214" width="210" height="24" rx="12" fill="#FFFFFF" fill-opacity="0.16"/>
+  <rect x="108" y="266" width="356" height="48" rx="20" fill="#FFFFFF" fill-opacity="0.08"/>
+  <rect x="108" y="332" width="322" height="48" rx="20" fill="#D77A61" fill-opacity="0.20"/>
+  <rect x="108" y="398" width="372" height="48" rx="20" fill="#FFFFFF" fill-opacity="0.08"/>
+  <rect x="108" y="464" width="292" height="48" rx="20" fill="#FFFFFF" fill-opacity="0.08"/>
+  <rect x="108" y="530" width="344" height="48" rx="20" fill="#FFFFFF" fill-opacity="0.08"/>
+  <circle cx="700" cy="292" r="58" fill="#D77A61" fill-opacity="0.18"/>
+  <circle cx="862" cy="350" r="74" fill="#7DC8E8" fill-opacity="0.18"/>
+  <circle cx="994" cy="470" r="62" fill="#D77A61" fill-opacity="0.17"/>
+  <path d="M674 508C742 440 806 408 892 394C974 380 1030 356 1076 290" stroke="#D77A61" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 0"/>
+  <path d="M674 508C742 440 806 408 892 394C974 380 1030 356 1076 290" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="18" stroke-linecap="round"/>
+  <text x="78" y="160" fill="#B8D2D8" font-family="Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="3">WORKSPACE</text>
+  <text x="108" y="250" fill="#F2FAFC" font-family="Arial, sans-serif" font-size="24" font-weight="700">Chat, itinerary, and map stay together</text>
+  <text x="108" y="288" fill="#AFC3C8" font-family="Arial, sans-serif" font-size="18">Make edits while the plan updates live.</text>
+  <text x="606" y="222" fill="#F2FAFC" font-family="Arial, sans-serif" font-size="24" font-weight="700">Map view for real trip context</text>
+  <text x="606" y="258" fill="#AFC3C8" font-family="Arial, sans-serif" font-size="18">See where the itinerary is clustered and adjust accordingly.</text>
+</svg>

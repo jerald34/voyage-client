@@ -34,6 +34,9 @@ import AdminAgenciesPage from "../admin/AdminAgenciesPage.jsx";
 import MobileGlassSheet from "./mobile/MobileGlassSheet.jsx";
 import useMobileViewport from "./mobile/useMobileViewport.js";
 import ChatInput from "./command-center/ChatInput.jsx";
+import FirstUseTutorial from "./tutorial/FirstUseTutorial.jsx";
+import { captureTutorialTarget } from "./tutorial/captureTutorialTarget.js";
+import { HOME_TOUR_STORAGE_KEY } from "./tutorial/tutorialContent.js";
 
 // Minimal UI helpers
 const getInitials = (name) => {
@@ -124,6 +127,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   const [isClientMenuOpen, setIsClientMenuOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [mobileMapPadding, setMobileMapPadding] = useState(0);
+  const [isFirstUseTutorialOpen, setIsFirstUseTutorialOpen] = useState(false);
   const isMobile = useMobileViewport();
   const clientMenuRef = useRef(null);
   const completedAssistantMessageRef = useRef(null);
@@ -178,6 +182,15 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
 
   // Load initial data
   useEffect(() => { if (agencyId) loadInitialThreads(); }, [agencyId]);
+
+  useEffect(() => {
+    if (!user) return;
+    const hasSeenTutorial = typeof window !== "undefined"
+      && localStorage.getItem(HOME_TOUR_STORAGE_KEY) === "true";
+    if (!hasSeenTutorial) {
+      setIsFirstUseTutorialOpen(true);
+    }
+  }, [user]);
 
   const persistUser = useCallback((nextUserOrUpdater) => {
     setUser((currentUser) => {
@@ -469,6 +482,20 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
     else setMobileMapPadding(Math.round(vh * 0.9));
   }, []);
 
+  const closeFirstUseTutorial = useCallback(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(HOME_TOUR_STORAGE_KEY, "true");
+    }
+    setIsFirstUseTutorialOpen(false);
+  }, []);
+
+  const replayFirstUseTutorial = useCallback(() => {
+    setActiveTab("command-center");
+    setIsFirstUseTutorialOpen(true);
+  }, []);
+
+  const getTutorialCapture = useCallback((captureTarget) => captureTutorialTarget(captureTarget), []);
+
   function handleMobileKeyDown(event) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
@@ -595,6 +622,12 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-background text-text-primary font-sans">
+      <FirstUseTutorial
+        open={isFirstUseTutorialOpen}
+        onClose={closeFirstUseTutorial}
+        getCapture={getTutorialCapture}
+      />
+
       {isApprovalModalOpen && activeContext?.type === "draft" && (
         <ApproveItineraryModal
           itinerary={activeTripState?.itinerary ?? null}
@@ -605,35 +638,37 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
         />
       )}
 
-      <DashboardHeader
-        isSidebarOpen={isSidebarOpen}
-        setIsSidebarOpen={setIsSidebarOpen}
-        liveStatus={liveStatus}
-        scopedStreamError={isVisible ? streamError : null}
-        scopedIsStreaming={isVisible ? isStreaming : false}
-        getInitials={getInitials}
-        displayName={user?.displayName || "Traveler"}
-        agencyId={agencyId}
-        activeTab={activeTab}
-        onNewItinerary={handleNewItinerary}
-        isCreatingDraftThread={isCreatingDraftThread}
-        isClientMenuOpen={isClientMenuOpen}
-        setIsClientMenuOpen={setIsClientMenuOpen}
-        clientMenuRef={clientMenuRef}
-        hasOptions={planningOptions.length > 0}
-        activeTripClientName={activeTripClientName}
-        activeTripInitials={activeTripInitials}
-        activeTripOrganizerInitials={activeTripOrganizerInitials}
-        clientMenuEmptyTitle={clientMenuEmptyTitle}
-        clientMenuEmptyBody={clientMenuEmptyBody}
-        safeOptions={activeTab === "itineraries" ? planningOptions.filter(o => o.type !== "draft") : planningOptions}
-        activeOption={activeOption}
-        onPlanningOptionDelete={handleDeleteOption}
-        deletingThreadId={deletingThreadId}
-        onPlanningOptionChange={(ctx) => { setActiveContext(createPlanningContext(ctx?.type, ctx?.id)); setComposerInput(""); }}
-        canApproveDraft={activeContext?.type === "draft" && Boolean(activeTripState?.itinerary?.id)}
-        onApproveDraft={() => { setApprovalError(""); setIsApprovalModalOpen(true); }}
-      />
+      <div data-tour-capture="home-header">
+        <DashboardHeader
+          isSidebarOpen={isSidebarOpen}
+          setIsSidebarOpen={setIsSidebarOpen}
+          liveStatus={liveStatus}
+          scopedStreamError={isVisible ? streamError : null}
+          scopedIsStreaming={isVisible ? isStreaming : false}
+          getInitials={getInitials}
+          displayName={user?.displayName || "Traveler"}
+          agencyId={agencyId}
+          activeTab={activeTab}
+          onNewItinerary={handleNewItinerary}
+          isCreatingDraftThread={isCreatingDraftThread}
+          isClientMenuOpen={isClientMenuOpen}
+          setIsClientMenuOpen={setIsClientMenuOpen}
+          clientMenuRef={clientMenuRef}
+          hasOptions={planningOptions.length > 0}
+          activeTripClientName={activeTripClientName}
+          activeTripInitials={activeTripInitials}
+          activeTripOrganizerInitials={activeTripOrganizerInitials}
+          clientMenuEmptyTitle={clientMenuEmptyTitle}
+          clientMenuEmptyBody={clientMenuEmptyBody}
+          safeOptions={activeTab === "itineraries" ? planningOptions.filter(o => o.type !== "draft") : planningOptions}
+          activeOption={activeOption}
+          onPlanningOptionDelete={handleDeleteOption}
+          deletingThreadId={deletingThreadId}
+          onPlanningOptionChange={(ctx) => { setActiveContext(createPlanningContext(ctx?.type, ctx?.id)); setComposerInput(""); }}
+          canApproveDraft={activeContext?.type === "draft" && Boolean(activeTripState?.itinerary?.id)}
+          onApproveDraft={() => { setApprovalError(""); setIsApprovalModalOpen(true); }}
+        />
+      </div>
 
       <div className="flex flex-1 overflow-hidden relative">
         <DashboardSidebar
@@ -648,7 +683,10 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
 
         <main className="flex-1 overflow-y-auto p-2 flex flex-col gap-2 max-[900px]:p-0 max-[900px]:overflow-hidden">
           {activeTab === "command-center" ? (
-            <section className="relative flex flex-1 min-h-0 overflow-hidden rounded-[24px] border border-border/10 shadow-inner max-[900px]:rounded-none max-[900px]:border-none max-[900px]:shadow-none">
+            <section
+              data-tour-capture="workspace"
+              className="relative flex flex-1 min-h-0 overflow-hidden rounded-[24px] border border-border/10 shadow-inner max-[900px]:rounded-none max-[900px]:border-none max-[900px]:shadow-none"
+            >
               {/* Immersive Map Background */}
               <div className="absolute inset-0 z-0 opacity-90 transition-opacity duration-700 hover:opacity-100">
                 <ItineraryLiveMap
@@ -761,6 +799,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
               logout={logout}
               onUpdateProfile={handleUserProfileUpdate}
               onUpdateAgency={handleAgencySettingsUpdate}
+              onReplayTutorial={replayFirstUseTutorial}
             />
           ) : activeTab === "admin" && user?.role === "ADMIN" ? (
             <AdminAgenciesPage onPendingCountChange={refreshPendingCount} />

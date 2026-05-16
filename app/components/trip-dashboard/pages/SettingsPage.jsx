@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "../../theme/ThemeProvider";
+import { homeTourHelpBullets, homeTourSteps } from "../tutorial/tutorialContent.js";
 
 function formatReadOnlyValue(value) {
   const text = String(value ?? "").trim();
@@ -85,7 +86,15 @@ function TextInputField({ label, id, value, onChange, placeholder, readOnly = fa
   );
 }
 
-export default function SettingsPage({ user, agency, membership, logout, onUpdateProfile, onUpdateAgency }) {
+export default function SettingsPage({
+  user,
+  agency,
+  membership,
+  logout,
+  onUpdateProfile,
+  onUpdateAgency,
+  onReplayTutorial,
+}) {
   const { theme, setTheme } = useTheme();
 
   const [displayName, setDisplayName] = useState("");
@@ -407,6 +416,73 @@ export default function SettingsPage({ user, agency, membership, logout, onUpdat
               >
                 Logout
               </button>
+            </div>
+          </div>
+        </Panel>
+
+        <Panel
+          eyebrow="Help"
+          title="First-use tutorial"
+          description="Replay the homepage walkthrough anytime or use the quick reference below to remember where each action lives."
+        >
+          <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="space-y-4">
+              <div
+                className="rounded-[22px] border border-border bg-background p-5 shadow-[0_14px_36px_rgba(15,23,42,0.08)]"
+                data-tour-capture="settings-help"
+              >
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-soft">
+                  Tutorial replay
+                </p>
+                <h3 className="mt-3 text-lg font-semibold tracking-[-0.02em] text-text-primary">
+                  See the live dashboard as you learn
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-text-soft">
+                  The guide captures the current homepage and workspace so the preview matches the system you are using.
+                </p>
+              </div>
+
+              <ul className="space-y-3">
+                {homeTourHelpBullets.map((bullet) => (
+                  <li
+                    key={bullet}
+                    className="rounded-2xl border border-border bg-surface-elevated/60 px-4 py-3 text-sm leading-6 text-text-soft"
+                  >
+                    {bullet}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="flex flex-col gap-4 rounded-[22px] border border-border bg-surface/80 p-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-soft">Quick steps</p>
+                <div className="mt-3 space-y-3">
+                  {homeTourSteps.map((step, index) => (
+                    <div key={step.title} className="rounded-2xl border border-border bg-background px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-soft">
+                        Step {index + 1}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-text-primary">{step.title}</p>
+                      <p className="mt-1 text-sm leading-6 text-text-soft">{step.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-auto flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  className="rounded-pill bg-secondary px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => onReplayTutorial?.()}
+                  disabled={!onReplayTutorial}
+                >
+                  Replay tutorial
+                </button>
+                <p className="text-sm leading-6 text-text-soft">
+                  The same guide opens over the homepage, so you can revisit the flow without leaving Settings.
+                </p>
+              </div>
             </div>
           </div>
         </Panel>
