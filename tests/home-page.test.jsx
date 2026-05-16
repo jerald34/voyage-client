@@ -437,6 +437,16 @@ describe("Agency portfolio HomePage", () => {
     expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
   });
 
+  it("gives settings its own scroll container for mobile dashboard layouts", async () => {
+    localStorage.setItem("voyage-home-tour-completed-v1", "true");
+
+    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+
+    expect(await screen.findByTestId("settings-page")).toHaveClass("overflow-y-auto");
+  });
+
   it("wires the New Itinerary button through the homepage", () => {
     const onNewItinerary = vi.fn();
 

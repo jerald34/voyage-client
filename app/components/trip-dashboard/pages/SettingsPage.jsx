@@ -273,7 +273,10 @@ export default function SettingsPage({
   ]), [agencyName, businessEmail, businessPhone, city, country, membership?.role]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 rounded-[28px] border border-border/10 bg-background p-4 text-text-primary">
+    <div
+      data-testid="settings-page"
+      className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain rounded-[28px] border border-border/10 bg-background p-4 pb-8 text-text-primary max-[900px]:rounded-none max-[900px]:border-0 max-[900px]:pb-[calc(2rem+env(safe-area-inset-bottom))]"
+    >
       <header className="flex flex-col gap-2 rounded-[24px] border border-border bg-gradient-to-r from-surface to-surface-elevated p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-soft">Workspace settings</p>
         <h1 className="text-2xl font-semibold tracking-[-0.02em]">Settings</h1>
