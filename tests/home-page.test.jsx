@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -923,6 +923,63 @@ describe("Agency portfolio HomePage", () => {
     expect(await screen.findByAltText("Live capture of the homepage controls")).toHaveAttribute(
       "src",
       "data:image/png;base64,retry-2",
+    );
+  });
+
+  it("retries a cancelled in-flight capture when the user revisits that tutorial step", async () => {
+    localStorage.removeItem("voyage-home-tour-completed-v1");
+    let homeHeaderAttempts = 0;
+    let resolveFirstHomeHeaderCapture;
+
+    html2CanvasMock.mockImplementation((element) => {
+      const captureTarget = element.getAttribute("data-tour-capture");
+
+      if (captureTarget === "home-header") {
+        homeHeaderAttempts += 1;
+
+        if (homeHeaderAttempts === 1) {
+          return new Promise((resolve) => {
+            resolveFirstHomeHeaderCapture = resolve;
+          });
+        }
+
+        return Promise.resolve({
+          toDataURL: vi.fn(() => "data:image/png;base64,recaptured-home-header"),
+        });
+      }
+
+      return Promise.resolve({
+        toDataURL: vi.fn(() => "data:image/png;base64,workspace-capture"),
+      });
+    });
+
+    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    expect(await screen.findByRole("dialog", { name: "First-use tutorial" })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(homeHeaderAttempts).toBe(1);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(await screen.findByRole("heading", { name: "Plan inside the workspace" })).toBeInTheDocument();
+
+    await act(async () => {
+      resolveFirstHomeHeaderCapture({
+        toDataURL: vi.fn(() => "data:image/png;base64,late-home-header"),
+      });
+      await Promise.resolve();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Start on the homepage/i }));
+
+    await waitFor(() => {
+      expect(homeHeaderAttempts).toBe(2);
+    });
+
+    expect(await screen.findByAltText("Live capture of the homepage controls")).toHaveAttribute(
+      "src",
+      "data:image/png;base64,recaptured-home-header",
     );
   });
 

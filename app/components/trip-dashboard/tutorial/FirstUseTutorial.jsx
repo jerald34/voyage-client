@@ -52,7 +52,10 @@ export default function FirstUseTutorial({ open, onClose, getCapture }) {
 
     getCapture(activeStep.captureTarget)
       .then((src) => {
-        if (cancelled) return;
+        if (cancelled) {
+          captureRequestsRef.current.delete(activeStep.id);
+          return;
+        }
         setCaptures((current) => ({
           ...current,
           [activeStep.id]: { status: "ready", src, error: "" },
