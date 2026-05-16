@@ -429,7 +429,6 @@ export default function SettingsPage({
             <div className="space-y-4">
               <div
                 className="rounded-[22px] border border-border bg-background p-5 shadow-[0_14px_36px_rgba(15,23,42,0.08)]"
-                data-tour-capture="settings-help"
               >
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-soft">
                   Tutorial replay

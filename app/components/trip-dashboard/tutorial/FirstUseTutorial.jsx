@@ -4,6 +4,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { homeTourSteps } from "./tutorialContent.js";
 
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "textarea:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",");
+
 function TutorialStepDot({ active }) {
   return (
     <span
@@ -19,6 +28,8 @@ function TutorialStepDot({ active }) {
 export default function FirstUseTutorial({ open, onClose, getCapture }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [captures, setCaptures] = useState({});
+  const dialogRef = useRef(null);
+  const previousFocusRef = useRef(null);
   const captureRequestIdRef = useRef(0);
 
   useEffect(() => {
@@ -28,6 +39,85 @@ export default function FirstUseTutorial({ open, onClose, getCapture }) {
     setActiveIndex(0);
     setCaptures({});
   }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const dialog = dialogRef.current;
+    const firstFocusable = dialog?.querySelector(FOCUSABLE_SELECTOR);
+    if (firstFocusable instanceof HTMLElement) {
+      firstFocusable.focus();
+    } else {
+      dialog?.focus();
+    }
+
+    return () => {
+      const previousFocus = previousFocusRef.current;
+      if (previousFocus instanceof HTMLElement && document.contains(previousFocus)) {
+        previousFocus.focus();
+      }
+      previousFocusRef.current = null;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose?.();
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const dialog = dialogRef.current;
+      if (!dialog) {
+        return;
+      }
+
+      const focusableElements = Array.from(dialog.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
+        (element) => element instanceof HTMLElement && !element.hasAttribute("disabled"),
+      );
+
+      if (!focusableElements.length) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+
+      if (!dialog.contains(document.activeElement)) {
+        event.preventDefault();
+        firstFocusable.focus();
+        return;
+      }
+
+      if (event.shiftKey && document.activeElement === firstFocusable) {
+        event.preventDefault();
+        lastFocusable.focus();
+      } else if (!event.shiftKey && document.activeElement === lastFocusable) {
+        event.preventDefault();
+        firstFocusable.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose, open]);
 
   const activeStep = homeTourSteps[activeIndex] ?? homeTourSteps[0];
   const activeCapture = captures[activeStep.id];
@@ -107,9 +197,11 @@ export default function FirstUseTutorial({ open, onClose, getCapture }) {
       />
 
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="first-use-tutorial-title"
+        tabIndex={-1}
         className="relative z-10 w-full max-w-6xl overflow-hidden rounded-[32px] border border-white/10 bg-[#08131a] text-white shadow-[0_32px_120px_rgba(2,8,23,0.55)]"
       >
         <div className="grid lg:grid-cols-[1.06fr_0.94fr]">
@@ -149,11 +241,20 @@ export default function FirstUseTutorial({ open, onClose, getCapture }) {
                 </div>
                 <div className="aspect-[16/10] overflow-hidden">
                   {activeCapture?.status === "failed" ? (
-                    <div className="flex h-full flex-col items-center justify-center bg-[#0b171e] p-6 text-center">
-                      <p className="text-sm font-semibold text-white">Live preview unavailable</p>
-                      <p className="mt-2 max-w-sm text-sm leading-6 text-white/60">
-                        You can continue the guide while Voyage refreshes this preview.
-                      </p>
+                    <div className="relative h-full bg-[#0b171e]">
+                      {activeStep.fallbackImage ? (
+                        <img
+                          src={activeStep.fallbackImage}
+                          alt={activeStep.alt}
+                          className="h-full w-full object-cover opacity-55"
+                        />
+                      ) : null}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0b171e]/78 p-6 text-center">
+                        <p className="text-sm font-semibold text-white">Live preview unavailable</p>
+                        <p className="mt-2 max-w-sm text-sm leading-6 text-white/70">
+                          You can continue the guide while Voyage refreshes this preview.
+                        </p>
+                      </div>
                     </div>
                   ) : activeCapture?.status === "ready" && activeCapture.src ? (
                     <img

@@ -1,7 +1,5 @@
 "use client";
 
-import html2canvas from "html2canvas";
-
 const CAPTURE_RETRY_DELAY_MS = 120;
 
 function waitForCaptureTarget(captureTarget, attempt = 0) {
@@ -30,6 +28,7 @@ export async function captureTutorialTarget(captureTarget) {
     throw new Error(`Tutorial capture target "${captureTarget}" was not found.`);
   }
 
+  const { default: html2canvas } = await import("html2canvas");
   const canvas = await html2canvas(element, {
     backgroundColor: null,
     logging: false,

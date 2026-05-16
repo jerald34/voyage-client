@@ -869,6 +869,41 @@ describe("Agency portfolio HomePage", () => {
     });
   });
 
+  it("closes the first-use tutorial with Escape and stores completion", async () => {
+    localStorage.removeItem("voyage-home-tour-completed-v1");
+
+    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    expect(await screen.findByRole("dialog", { name: "First-use tutorial" })).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(localStorage.getItem("voyage-home-tour-completed-v1")).toBe("true");
+    });
+
+    expect(screen.queryByRole("dialog", { name: "First-use tutorial" })).not.toBeInTheDocument();
+  });
+
+  it("keeps Tab focus inside the first-use tutorial", async () => {
+    localStorage.removeItem("voyage-home-tour-completed-v1");
+
+    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    const dialog = await screen.findByRole("dialog", { name: "First-use tutorial" });
+    const skipButton = screen.getByRole("button", { name: "Skip tutorial" });
+    const nextButton = screen.getByRole("button", { name: "Next" });
+    const focusableElements = Array.from(dialog.querySelectorAll("button:not([disabled])"));
+
+    skipButton.focus();
+    fireEvent.keyDown(dialog, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(focusableElements.at(-1));
+
+    nextButton.focus();
+    fireEvent.keyDown(dialog, { key: "Tab" });
+    expect(dialog).toContainElement(document.activeElement);
+  });
+
   it("captures the workspace target when the user advances the tutorial", async () => {
     localStorage.removeItem("voyage-home-tour-completed-v1");
 
@@ -998,6 +1033,10 @@ describe("Agency portfolio HomePage", () => {
     expect(await screen.findByRole("dialog", { name: "First-use tutorial" })).toBeInTheDocument();
 
     expect(await screen.findByText("Live preview unavailable")).toBeInTheDocument();
+    expect(await screen.findByAltText("Live capture of the homepage controls")).toHaveAttribute(
+      "src",
+      "/tutorial/home-tour-1.svg",
+    );
     expect(screen.getByText("You can continue the guide while Voyage refreshes this preview.")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
