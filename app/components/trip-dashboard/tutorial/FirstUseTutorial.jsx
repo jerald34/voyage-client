@@ -218,7 +218,7 @@ export default function FirstUseTutorial({ open, onClose, getCapture }) {
                   Welcome to Voyage
                 </p>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65 sm:text-[15px]">
-                  A short walkthrough of the homepage, workspace, and review flow. Use the screenshots to orient yourself, then jump into the real trip planning tools.
+                  A short walkthrough of the homepage, workspace, and review flow. Use the live previews to orient yourself, then jump into the real trip planning tools.
                 </p>
               </div>
 
@@ -329,7 +329,7 @@ export default function FirstUseTutorial({ open, onClose, getCapture }) {
                 Need this later?
               </p>
               <p className="mt-2 text-sm leading-6 text-white/72">
-                Open Settings any time to replay the tutorial and review the help section with the same screenshots.
+                Open Settings any time to replay the tutorial and review the help section with the same step-by-step guide.
               </p>
             </div>
 

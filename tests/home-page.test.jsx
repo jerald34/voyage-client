@@ -838,6 +838,7 @@ describe("Agency portfolio HomePage", () => {
     });
 
     expect(html2CanvasMock.mock.calls[0][0]).toHaveAttribute("data-tour-capture", "home-header");
+    expect(html2CanvasMock.mock.calls[0][1]).toMatchObject({ foreignObjectRendering: true });
     expect(await screen.findByAltText("Live capture of the homepage controls")).toHaveAttribute(
       "src",
       "data:image/png;base64,dynamic-tour-capture",

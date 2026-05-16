@@ -31,6 +31,7 @@ export async function captureTutorialTarget(captureTarget) {
   const { default: html2canvas } = await import("html2canvas");
   const canvas = await html2canvas(element, {
     backgroundColor: null,
+    foreignObjectRendering: true,
     logging: false,
     scale: Math.min(window.devicePixelRatio || 1, 2),
     useCORS: true,
