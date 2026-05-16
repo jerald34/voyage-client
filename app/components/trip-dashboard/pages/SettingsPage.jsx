@@ -425,62 +425,57 @@ export default function SettingsPage({
           title="First-use tutorial"
           description="Replay the homepage walkthrough anytime or use the quick reference below to remember where each action lives."
         >
-          <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="space-y-4">
-              <div
-                className="rounded-[22px] border border-border bg-background p-5 shadow-[0_14px_36px_rgba(15,23,42,0.08)]"
-              >
+          <div className="rounded-[22px] border border-border bg-surface/80 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/70 pb-4">
+              <div className="max-w-2xl">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-soft">
                   Tutorial replay
                 </p>
-                <h3 className="mt-3 text-lg font-semibold tracking-[-0.02em] text-text-primary">
+                <h3 className="mt-2 text-lg font-semibold tracking-[-0.02em] text-text-primary">
                   Walk through the live dashboard
                 </h3>
-                <p className="mt-2 text-sm leading-6 text-text-soft">
-                  The guide highlights real controls in place, so each step points to the same system the user is using.
+                <p className="mt-1 text-sm leading-6 text-text-soft">
+                  A compact reference for the same guided tour that highlights real controls in place.
                 </p>
               </div>
 
-              <ul className="space-y-3">
-                {homeTourHelpBullets.map((bullet) => (
-                  <li
-                    key={bullet}
-                    className="rounded-2xl border border-border bg-surface-elevated/60 px-4 py-3 text-sm leading-6 text-text-soft"
-                  >
-                    {bullet}
-                  </li>
-                ))}
-              </ul>
+              <button
+                type="button"
+                className="min-h-11 rounded-pill bg-secondary px-5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => onReplayTutorial?.()}
+                disabled={!onReplayTutorial}
+              >
+                Replay tutorial
+              </button>
             </div>
 
-            <div className="flex flex-col gap-4 rounded-[22px] border border-border bg-surface/80 p-4">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-soft">Quick steps</p>
-                <div className="mt-3 space-y-3">
-                  {homeTourSteps.map((step, index) => (
-                    <div key={step.title} className="rounded-2xl border border-border bg-background px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-soft">
-                        Step {index + 1}
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-text-primary">{step.title}</p>
-                      <p className="mt-1 text-sm leading-6 text-text-soft">{step.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-auto flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  className="rounded-pill bg-secondary px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-                  onClick={() => onReplayTutorial?.()}
-                  disabled={!onReplayTutorial}
+            <ul className="mt-4 grid gap-2 md:grid-cols-3">
+              {homeTourHelpBullets.map((bullet) => (
+                <li
+                  key={bullet}
+                  className="rounded-2xl border border-border bg-background px-3 py-2.5 text-sm leading-5 text-text-soft"
                 >
-                  Replay tutorial
-                </button>
-                <p className="text-sm leading-6 text-text-soft">
-                  The same guide opens over the homepage, so you can revisit the flow without leaving Settings.
-                </p>
+                  {bullet}
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-soft">Quick steps</p>
+              <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                {homeTourSteps.map((step, index) => (
+                  <article
+                    key={step.title}
+                    className="rounded-2xl border border-border bg-background px-3.5 py-3"
+                    aria-label={`Step ${index + 1}: ${step.title}`}
+                  >
+                    <p className="inline-flex h-6 items-center rounded-pill bg-secondary/10 px-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary">
+                      Step {index + 1}
+                    </p>
+                    <h4 className="mt-2 text-sm font-semibold leading-5 text-text-primary">{step.title}</h4>
+                    <p className="mt-1 text-xs leading-5 text-text-soft">{step.description}</p>
+                  </article>
+                ))}
               </div>
             </div>
           </div>
