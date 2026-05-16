@@ -831,6 +831,10 @@ describe("Agency portfolio HomePage", () => {
     expect(screen.getByRole("heading", { name: "Create a new itinerary" })).toBeInTheDocument();
     expect(document.querySelector('[data-tour-target="new-itinerary"]')).toBeInTheDocument();
     expect(document.querySelector('[data-tour-spotlight="new-itinerary"]')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: "Close tutorial backdrop" })).toHaveLength(4);
+    });
+    expect(document.querySelector('[data-tour-spotlight="new-itinerary"]')).not.toHaveClass("backdrop-blur-[2px]");
     expect(screen.getByRole("button", { name: "Next" })).toBeInTheDocument();
 
     for (let step = 0; step < 4; step += 1) {

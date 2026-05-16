@@ -112,6 +112,65 @@ function TutorialProgress({ activeIndex }) {
   );
 }
 
+function TutorialBackdrop({ onClose, spotlightStyle }) {
+  if (spotlightStyle?.display === "none") {
+    return (
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Close tutorial backdrop"
+        className="absolute inset-0 bg-slate-950/62 backdrop-blur-[2px]"
+        onClick={onClose}
+      />
+    );
+  }
+
+  const top = Number(spotlightStyle.top) || 0;
+  const left = Number(spotlightStyle.left) || 0;
+  const width = Number(spotlightStyle.width) || 0;
+  const height = Number(spotlightStyle.height) || 0;
+  const bottomTop = top + height;
+  const rightLeft = left + width;
+  const segmentClass = "absolute bg-slate-950/62 backdrop-blur-[2px]";
+
+  return (
+    <>
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Close tutorial backdrop"
+        className={segmentClass}
+        style={{ top: 0, left: 0, right: 0, height: top }}
+        onClick={onClose}
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Close tutorial backdrop"
+        className={segmentClass}
+        style={{ top, left: 0, width: left, height }}
+        onClick={onClose}
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Close tutorial backdrop"
+        className={segmentClass}
+        style={{ top, left: rightLeft, right: 0, height }}
+        onClick={onClose}
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Close tutorial backdrop"
+        className={segmentClass}
+        style={{ top: bottomTop, left: 0, right: 0, bottom: 0 }}
+        onClick={onClose}
+      />
+    </>
+  );
+}
+
 export default function FirstUseTutorial({ open, onClose, onStepChange }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
@@ -306,15 +365,10 @@ export default function FirstUseTutorial({ open, onClose, onStepChange }) {
 
   return (
     <div className="fixed inset-0 z-[180]">
-      <button
-        type="button"
-        aria-label="Close tutorial backdrop"
-        className="absolute inset-0 bg-slate-950/62 backdrop-blur-[2px]"
-        onClick={handleClose}
-      />
+      <TutorialBackdrop onClose={handleClose} spotlightStyle={spotlightStyle} />
 
       <div
-        className="pointer-events-none fixed rounded-[22px] border-2 border-secondary bg-secondary/10 shadow-[0_0_0_9999px_rgba(2,8,23,0.48),0_0_0_8px_rgba(215,122,97,0.16),0_18px_46px_rgba(0,0,0,0.28)] transition-all duration-200"
+        className="pointer-events-none fixed rounded-[22px] border-2 border-secondary bg-transparent shadow-[0_0_0_8px_rgba(215,122,97,0.16),0_18px_46px_rgba(0,0,0,0.28)] transition-all duration-200"
         data-tour-spotlight={activeStep.target}
         style={spotlightStyle}
       />
