@@ -3,9 +3,25 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import { fetchPublicItinerary, postPublicComment } from "../../../lib/api.js";
+import { fetchPublicItinerary, postPublicComment } from "../../../lib/api/index.js";
 import { generateItineraryPdf, titleToFilename } from "../../../lib/pdfExport.js";
 import ThemeToggle from "../../../components/theme/ThemeToggle";
+import Spinner from "../../../components/ui/Spinner";
+import {
+  PlaneIcon,
+  HotelIcon,
+  ForkKnifeIcon,
+  CarIcon,
+  MapPinIcon,
+  ChatIcon,
+  UserIcon,
+  CheckIcon,
+  CalendarIcon,
+  UsersIcon,
+  ListIcon,
+  MapIcon,
+  CloseIcon,
+} from "../../../components/icons/index.js";
 
 const ItineraryLiveMap = dynamic(
   () =>
@@ -64,46 +80,18 @@ function buildGoogleMapsUrl(placeSnapshot) {
 function itemTypeIcon(type) {
   switch (type?.toUpperCase()) {
     case "FLIGHT":
-      return (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
-        </svg>
-      );
+      return <PlaneIcon width={16} height={16} />;
     case "HOTEL":
     case "ACCOMMODATION":
-      return (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" />
-          <path d="M9 22v-4h6v4" />
-          <path d="M8 6h.01" /><path d="M16 6h.01" /><path d="M12 6h.01" />
-          <path d="M12 10h.01" /><path d="M12 14h.01" /><path d="M16 10h.01" />
-          <path d="M16 14h.01" /><path d="M8 10h.01" /><path d="M8 14h.01" />
-        </svg>
-      );
+      return <HotelIcon width={16} height={16} />;
     case "RESTAURANT":
     case "DINING":
-      return (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
-          <path d="M7 2v20" />
-          <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
-        </svg>
-      );
+      return <ForkKnifeIcon width={16} height={16} />;
     case "TRANSPORT":
     case "TRANSFER":
-      return (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
-          <circle cx="7" cy="17" r="2" /><circle cx="17" cy="17" r="2" />
-        </svg>
-      );
+      return <CarIcon width={16} height={16} />;
     default:
-      return (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z" />
-          <circle cx="12" cy="10" r="3" />
-        </svg>
-      );
+      return <MapPinIcon width={16} height={16} />;
   }
 }
 
@@ -122,10 +110,7 @@ function MapPinLink({ placeSnapshot }) {
       title="Open in Google Maps"
       aria-label={`Open ${placeSnapshot.name || "location"} in Google Maps`}
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z" />
-        <circle cx="12" cy="10" r="3" />
-      </svg>
+      <MapPinIcon width={14} height={14} strokeWidth={2.5} />
     </a>
   );
 }
@@ -133,11 +118,7 @@ function MapPinLink({ placeSnapshot }) {
 /* ── chat bubble icon ────────────────────────────────────────── */
 
 function ChatBubbleIcon({ size = 14 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
-  );
+  return <ChatIcon width={size} height={size} />;
 }
 
 /* ── name prompt banner ──────────────────────────────────────── */
@@ -166,10 +147,7 @@ function NamePromptBanner({ onComplete }) {
   return (
     <div className="flex items-start gap-3 px-[18px] py-4 mb-6 bg-primary/[0.04] border border-border border-l-[3px] border-l-secondary rounded-sm">
       <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-full bg-secondary/[0.12] text-secondary mt-px hidden sm:flex">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
+        <UserIcon width={18} height={18} />
       </div>
       <div className="flex-1 min-w-0 grid gap-[10px]">
         <p className="m-0 text-[13px] leading-[1.5] text-text-soft">
@@ -246,9 +224,7 @@ function CommentForm({ token, dayNumber, itemId, commenterName, commenterEmail, 
     <form className="grid gap-2 p-3 bg-primary/[0.03] border border-border rounded-sm mt-1" onSubmit={handleSubmit}>
       {status === "success" ? (
         <div className="inline-flex items-center gap-[7px] py-[10px] text-[13px] font-semibold text-[#2a7a4f]">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#2a7a4f] flex-shrink-0">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+          <CheckIcon width={14} height={14} strokeWidth={2.5} className="text-[#2a7a4f] flex-shrink-0" />
           Comment sent!
         </div>
       ) : (
@@ -500,7 +476,7 @@ export default function PublicItineraryPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-dvh bg-background gap-5">
-        <div className="w-9 h-9 border-[3px] border-border border-t-secondary rounded-full animate-spin" />
+        <Spinner size="lg" />
         <p className="text-[14px] text-text-soft font-medium m-0">Loading your itinerary...</p>
       </div>
     );
@@ -513,16 +489,9 @@ export default function PublicItineraryPage() {
         <div className="grid gap-3 justify-items-center text-center max-w-[400px] px-8 py-10 bg-surface border border-border rounded-lg shadow-soft">
           <div className="mb-1">
             {error.type === "expired" ? (
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--voyage-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
+              <CalendarIcon width={48} height={48} strokeWidth={1.5} />
             ) : (
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--voyage-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="15" y1="9" x2="9" y2="15" />
-                <line x1="9" y1="9" x2="15" y2="15" />
-              </svg>
+              <CloseIcon width={48} height={48} strokeWidth={1.5} />
             )}
           </div>
           <h1 className="font-serif text-2xl font-normal text-primary m-0">
@@ -583,25 +552,14 @@ export default function PublicItineraryPage() {
           className={`flex-1 inline-flex items-center justify-center gap-[6px] py-3 border-none bg-none text-[13px] font-semibold cursor-pointer transition-all duration-150 relative after:content-[''] after:absolute after:bottom-0 after:left-4 after:right-4 after:h-[2px] after:rounded-sm after:transition-colors after:duration-200 ${mobileTab === "itinerary" ? "text-primary after:bg-secondary" : "text-text-soft after:bg-transparent"}`}
           onClick={() => setMobileTab("itinerary")}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-            <line x1="8" y1="6" x2="21" y2="6" />
-            <line x1="8" y1="12" x2="21" y2="12" />
-            <line x1="8" y1="18" x2="21" y2="18" />
-            <line x1="3" y1="6" x2="3.01" y2="6" />
-            <line x1="3" y1="12" x2="3.01" y2="12" />
-            <line x1="3" y1="18" x2="3.01" y2="18" />
-          </svg>
+          <ListIcon width={16} height={16} className="flex-shrink-0" />
           Itinerary
         </button>
         <button
           className={`flex-1 inline-flex items-center justify-center gap-[6px] py-3 border-none bg-none text-[13px] font-semibold cursor-pointer transition-all duration-150 relative after:content-[''] after:absolute after:bottom-0 after:left-4 after:right-4 after:h-[2px] after:rounded-sm after:transition-colors after:duration-200 ${mobileTab === "map" ? "text-primary after:bg-secondary" : "text-text-soft after:bg-transparent"}`}
           onClick={() => setMobileTab("map")}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
-            <line x1="8" y1="2" x2="8" y2="18" />
-            <line x1="16" y1="6" x2="16" y2="22" />
-          </svg>
+          <MapIcon width={16} height={16} className="flex-shrink-0" />
           Map
         </button>
       </div>
@@ -628,23 +586,13 @@ export default function PublicItineraryPage() {
             <div className="flex flex-wrap gap-4 mb-2 max-sm:gap-3">
               {(trip.startDate || trip.endDate) && (
                 <span className="inline-flex items-center gap-[6px] text-[13px] text-text-soft font-medium">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 text-text-soft">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
+                  <CalendarIcon width={14} height={14} className="flex-shrink-0 text-text-soft" />
                   {formatDateRange(trip.startDate, trip.endDate)}
                 </span>
               )}
               {trip.travelerCount > 0 && (
                 <span className="inline-flex items-center gap-[6px] text-[13px] text-text-soft font-medium">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 text-text-soft">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
+                  <UsersIcon width={14} height={14} className="flex-shrink-0 text-text-soft" />
                   {trip.travelerCount} {trip.travelerCount === 1 ? "traveler" : "travelers"}
                 </span>
               )}
@@ -657,7 +605,7 @@ export default function PublicItineraryPage() {
             >
               {pdfLoading ? (
                 <>
-                  <span className="inline-block w-[13px] h-[13px] border-2 border-border border-t-secondary rounded-full animate-spin flex-shrink-0" />
+                  <Spinner size="sm" />
                   Generating PDF...
                 </>
               ) : (
@@ -780,10 +728,7 @@ export default function PublicItineraryPage() {
 
                           {item.placeSnapshot?.name && (
                             <div className="flex items-start gap-[6px] pl-9 text-[12px] text-text-soft leading-[1.4]">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-[1px]">
-                                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z" />
-                                <circle cx="12" cy="10" r="3" />
-                              </svg>
+                              <MapPinIcon width={12} height={12} className="flex-shrink-0 mt-[1px]" />
                               <span>{item.placeSnapshot.name}</span>
                               {item.placeSnapshot.formattedAddress && (
                                 <span className="block mt-px text-text-soft opacity-80">
@@ -795,9 +740,7 @@ export default function PublicItineraryPage() {
 
                           {item.clientNotes && (
                             <div className="flex items-start gap-[6px] px-3 py-2 ml-9 mt-[2px] bg-secondary/[0.06] rounded-sm border-l-[3px] border-secondary text-[12px] text-text-muted leading-[1.5]">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-[1px] text-secondary">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                              </svg>
+                              <ChatIcon width={12} height={12} className="flex-shrink-0 mt-[1px] text-secondary" />
                               <span>{item.clientNotes}</span>
                             </div>
                           )}
