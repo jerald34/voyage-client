@@ -103,12 +103,14 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
     setDraftThreadStates,
     draftThreadOrder,
     setDraftThreadOrder,
+    bootstrapTrips,
     isSending,
     isCreatingDraftThread,
     agentError,
     setAgentError,
     runTargetRef,
     ensureTripThreadState,
+    ensureDraftThreadState,
     loadInitialThreads,
     dispatchMessage,
     createPlanningContext,
@@ -255,31 +257,23 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   }, [agencyId, persistUser]);
 
   useEffect(() => {
-    if (!agencyId) return;
-    let cancelled = false;
-    listAgencyTrips(agencyId)
-      .then((res) => {
-        if (cancelled) return;
-        const trips = Array.isArray(res?.trips) ? res.trips : [];
-        setFetchedTrips(
-          trips.map((t) => {
-            const firstItinerary = Array.isArray(t.itineraries) ? t.itineraries[0] : null;
-            return {
-              id: t.id,
-              clientName: t.clientName ?? t.title,
-              destination: t.destinationSummary ?? t.title,
-              travelWindow: formatTripDates(t.startDate, t.endDate),
-              status: t.status?.toLowerCase() === "archived" ? "archived" : "active",
-              approvalStatus: mapTripStatus(t.status),
-              itineraryId: firstItinerary?.id ?? null,
-              itineraryVersion: firstItinerary?.version ?? null,
-            };
-          })
-        );
+    if (!Array.isArray(bootstrapTrips)) return;
+    setFetchedTrips(
+      bootstrapTrips.map((t) => {
+        const firstItinerary = Array.isArray(t.itineraries) ? t.itineraries[0] : null;
+        return {
+          id: t.id,
+          clientName: t.clientName ?? t.title,
+          destination: t.destinationSummary ?? t.title,
+          travelWindow: formatTripDates(t.startDate, t.endDate),
+          status: t.status?.toLowerCase() === "archived" ? "archived" : "active",
+          approvalStatus: mapTripStatus(t.status),
+          itineraryId: firstItinerary?.id ?? null,
+          itineraryVersion: firstItinerary?.version ?? null,
+        };
       })
-      .catch((err) => console.error("Failed to load agency trips:", err));
-    return () => { cancelled = true; };
-  }, [agencyId]);
+    );
+  }, [bootstrapTrips]);
 
   // Context management
   useEffect(() => {
@@ -299,8 +293,12 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   }, [activeContext, agencyTrips, tripStates]);
 
   useEffect(() => {
-    if (!agencyId || activeContext?.type !== "trip" || !activeContext.id) return;
-    ensureTripThreadState(activeContext.id).catch(e => console.error(e));
+    if (!agencyId || !activeContext?.id) return;
+    if (activeContext.type === "trip") {
+      ensureTripThreadState(activeContext.id).catch(e => console.error(e));
+    } else if (activeContext.type === "draft") {
+      ensureDraftThreadState(activeContext.id).catch(e => console.error(e));
+    }
   }, [activeContext, agencyId]);
 
   // Clear stale refs from previous runs so they don't pollute the current

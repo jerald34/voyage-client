@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  bootstrapAgentWorkspace,
   createAgentThread,
   fetchItineraryDraft,
-  listAgentThreads,
+  fetchThreadMessages,
   sendMessage,
 } from "../lib/api.js";
 
@@ -36,9 +37,9 @@ export function isLikelyItineraryAssistantContent(content) {
   );
 }
 
-export function normalizeThreadMessages(thread, itineraryId = null) {
-  const normalized = Array.isArray(thread?.messages)
-    ? thread.messages
+function normalizeMessagesArray(rawMessages, itineraryId = null) {
+  const normalized = Array.isArray(rawMessages)
+    ? rawMessages
       .filter((message) => message?.role === "USER" || message?.role === "ASSISTANT")
       .map((message) => ({
         id: message.id,
@@ -49,7 +50,7 @@ export function normalizeThreadMessages(thread, itineraryId = null) {
       }))
     : [];
 
-  const targetItineraryId = String(itineraryId ?? thread?.itineraryId ?? "").trim();
+  const targetItineraryId = String(itineraryId ?? "").trim();
   if (!targetItineraryId) return normalized;
 
   for (let index = normalized.length - 1; index >= 0; index -= 1) {
@@ -64,16 +65,26 @@ export function normalizeThreadMessages(thread, itineraryId = null) {
   return normalized;
 }
 
+export function normalizeThreadMessages(thread, itineraryId = null) {
+  return normalizeMessagesArray(
+    thread?.messages,
+    itineraryId ?? thread?.itineraryId ?? null,
+  );
+}
+
 function getThreadTripId(thread) {
   return thread?.tripId ?? thread?.trip?.id ?? thread?.context?.tripId ?? thread?.metadata?.tripId ?? null;
 }
 
-function getThreadItineraryId(thread) {
+// Fallback for thread responses that still ship events (createAgentThread POST,
+// fetchAgentThread GET). The bootstrap endpoint provides thread.itineraryId
+// directly, so loadInitialThreads no longer needs to walk events.
+function getThreadItineraryIdFromEvents(thread) {
+  if (thread?.itineraryId) return thread.itineraryId;
   const events = Array.isArray(thread?.events) ? thread.events : [];
   const itineraryUpdateEvent = [...events]
     .reverse()
     .find((event) => (event?.type === "itinerary.updated" || event?.type === "itinerary.created") && event?.payload?.itineraryId);
-
   return itineraryUpdateEvent?.payload?.itineraryId ?? null;
 }
 
@@ -84,13 +95,31 @@ function normalizeItineraryResponse(responseData) {
 function normalizeDraftThreadState(thread, itinerary = null) {
   if (!thread?.id) return null;
 
+  const itineraryId = getThreadItineraryIdFromEvents(thread);
+
   return {
     threadId: thread.id,
     title: String(thread.title ?? thread.name ?? "").trim(),
     tripId: null,
-    messages: normalizeThreadMessages(thread, getThreadItineraryId(thread)),
+    messages: normalizeThreadMessages(thread, itineraryId),
     itinerary,
     loaded: true,
+  };
+}
+
+async function hydrateContext(agencyId, threadId, itineraryId) {
+  const [messagesResult, itineraryResult] = await Promise.all([
+    fetchThreadMessages(agencyId, threadId, { limit: 50 }),
+    itineraryId ? fetchItineraryDraft(agencyId, itineraryId) : Promise.resolve(null),
+  ]);
+  const rawMessages = Array.isArray(messagesResult?.messages) ? messagesResult.messages : [];
+  // Server returns DESC (newest first); UI renders ASC.
+  const ascending = [...rawMessages].reverse();
+  const itinerary = itineraryResult ? normalizeItineraryResponse(itineraryResult) : null;
+  return {
+    messages: normalizeMessagesArray(ascending, itineraryId),
+    itinerary,
+    nextCursor: messagesResult?.nextCursor ?? null,
   };
 }
 
@@ -99,6 +128,7 @@ export function useTripPlanning(agencyId) {
   const [tripStates, setTripStates] = useState({});
   const [draftThreadStates, setDraftThreadStates] = useState({});
   const [draftThreadOrder, setDraftThreadOrder] = useState([]);
+  const [bootstrapTrips, setBootstrapTrips] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const [isCreatingDraftThread, setIsCreatingDraftThread] = useState(false);
   const [agentError, setAgentError] = useState("");
@@ -107,7 +137,9 @@ export function useTripPlanning(agencyId) {
   const tripStatesRef = useRef(tripStates);
   const draftThreadStatesRef = useRef(draftThreadStates);
   const tripStatePromisesRef = useRef(new Map());
+  const draftStatePromisesRef = useRef(new Map());
   const hasLoadedInitialThreadRef = useRef(false);
+  const loadInitialThreadsPromiseRef = useRef(null);
   const runTargetRef = useRef(null);
 
   useEffect(() => {
@@ -125,6 +157,12 @@ export function useTripPlanning(agencyId) {
   const ensureTripThreadState = async (tripId) => {
     if (!agencyId || !tripId) return null;
 
+    // Wait for any in-flight bootstrap so we don't create a duplicate thread for
+    // a trip whose thread is about to be populated from the bootstrap response.
+    if (loadInitialThreadsPromiseRef.current) {
+      await loadInitialThreadsPromiseRef.current.catch(() => null);
+    }
+
     const existingState = tripStatesRef.current[tripId];
     if (existingState?.loaded) return existingState;
 
@@ -132,27 +170,22 @@ export function useTripPlanning(agencyId) {
     if (pending) return pending;
 
     const promise = (async () => {
-      const threadsResult = await listAgentThreads(agencyId);
-      const threads = Array.isArray(threadsResult?.threads) ? threadsResult.threads : [];
-      const matchingThread = threads.find((thread) => getThreadTripId(thread) === tripId);
+      let threadId = existingState?.threadId ?? null;
+      let itineraryId = existingState?.itinerary?.id ?? null;
 
-      let thread = matchingThread ?? null;
-      if (thread?.id) {
-        // listAgentThreads already returns the thread payload we need for hydration.
-      } else {
+      if (!threadId) {
         const createdResult = await createAgentThread(agencyId, tripId);
-        thread = createdResult?.thread ?? null;
+        const thread = createdResult?.thread ?? null;
+        if (!thread?.id) return null;
+        threadId = thread.id;
+        itineraryId = itineraryId ?? getThreadItineraryIdFromEvents(thread);
       }
 
-      if (!thread) return null;
-
-      const itineraryId = getThreadItineraryId(thread);
-      const itineraryResult = itineraryId ? await fetchItineraryDraft(agencyId, itineraryId) : null;
-      const itinerary = itineraryResult ? normalizeItineraryResponse(itineraryResult) : null;
+      const hydrated = await hydrateContext(agencyId, threadId, itineraryId);
       const nextState = {
-        threadId: thread.id,
-        messages: normalizeThreadMessages(thread, itineraryId),
-        itinerary,
+        threadId,
+        messages: hydrated.messages,
+        itinerary: hydrated.itinerary ?? existingState?.itinerary ?? null,
         loaded: true,
       };
 
@@ -173,6 +206,46 @@ export function useTripPlanning(agencyId) {
     }
   };
 
+  const ensureDraftThreadState = async (draftId) => {
+    if (!agencyId || !draftId) return null;
+    if (String(draftId).startsWith("pending-")) return null;
+
+    if (loadInitialThreadsPromiseRef.current) {
+      await loadInitialThreadsPromiseRef.current.catch(() => null);
+    }
+
+    const existingState = draftThreadStatesRef.current[draftId];
+    if (existingState?.loaded) return existingState;
+    if (!existingState?.threadId) return null;
+
+    const pending = draftStatePromisesRef.current.get(draftId);
+    if (pending) return pending;
+
+    const promise = (async () => {
+      const itineraryId = existingState?.itinerary?.id ?? null;
+      const hydrated = await hydrateContext(agencyId, existingState.threadId, itineraryId);
+      const nextState = {
+        ...existingState,
+        messages: hydrated.messages,
+        itinerary: hydrated.itinerary ?? existingState.itinerary ?? null,
+        loaded: true,
+      };
+      setDraftThreadStates((previous) => ({
+        ...previous,
+        [draftId]: nextState,
+      }));
+      return nextState;
+    })();
+
+    draftStatePromisesRef.current.set(draftId, promise);
+
+    try {
+      return await promise;
+    } finally {
+      draftStatePromisesRef.current.delete(draftId);
+    }
+  };
+
   const createDraftThread = async () => {
     if (!agencyId) return null;
 
@@ -182,7 +255,7 @@ export function useTripPlanning(agencyId) {
       const thread = createdResult?.thread ?? null;
       if (!thread?.id) return null;
 
-      const itineraryId = getThreadItineraryId(thread);
+      const itineraryId = getThreadItineraryIdFromEvents(thread);
       const itineraryResult = itineraryId ? await fetchItineraryDraft(agencyId, itineraryId) : null;
       const itinerary = itineraryResult ? normalizeItineraryResponse(itineraryResult) : null;
       const nextState = normalizeDraftThreadState(thread, itinerary);
@@ -201,12 +274,23 @@ export function useTripPlanning(agencyId) {
   };
 
   const loadInitialThreads = async () => {
-    if (!agencyId || hasLoadedInitialThreadRef.current) return;
+    if (!agencyId) return null;
+    if (hasLoadedInitialThreadRef.current) {
+      return loadInitialThreadsPromiseRef.current ?? null;
+    }
     hasLoadedInitialThreadRef.current = true;
 
-    try {
-      const threadsResult = await listAgentThreads(agencyId);
-      const threads = Array.isArray(threadsResult?.threads) ? threadsResult.threads.filter((thread) => thread?.id) : [];
+    const promise = (async () => {
+      try {
+        const result = await bootstrapAgentWorkspace(agencyId);
+      const trips = Array.isArray(result?.trips) ? result.trips : [];
+      const threads = Array.isArray(result?.threads) ? result.threads.filter((t) => t?.id) : [];
+      const summaries = (result?.itinerarySummaries && typeof result.itinerarySummaries === "object")
+        ? result.itinerarySummaries
+        : {};
+
+      setBootstrapTrips(trips);
+
       if (threads.length === 0) return;
 
       const nextTripStates = {};
@@ -214,43 +298,44 @@ export function useTripPlanning(agencyId) {
       const nextDraftOrder = [];
       let fallbackContext = null;
 
-      const hydratedThreads = await Promise.all(
-        threads.map(async (thread) => {
-          const tripId = getThreadTripId(thread);
-          const itineraryId = getThreadItineraryId(thread);
-          const itineraryResult = itineraryId ? await fetchItineraryDraft(agencyId, itineraryId) : null;
-          const itinerary = itineraryResult ? normalizeItineraryResponse(itineraryResult) : null;
-          return { thread, tripId, itineraryId, itinerary };
-        })
-      );
-
-      for (const hydrated of hydratedThreads) {
-        const { thread, tripId, itineraryId, itinerary } = hydrated;
+      for (const thread of threads) {
+        const tripId = getThreadTripId(thread);
+        const itineraryId = thread.itineraryId ?? null;
+        const itinerarySummary = itineraryId ? (summaries[itineraryId] ?? null) : null;
 
         if (tripId) {
           nextTripStates[tripId] = {
             threadId: thread.id,
-            messages: normalizeThreadMessages(thread, itineraryId),
-            itinerary,
-            loaded: true,
+            messages: [],
+            itinerary: itinerarySummary,
+            loaded: false,
           };
           fallbackContext ??= createPlanningContext("trip", tripId);
           continue;
         }
 
-        const draftState = normalizeDraftThreadState(thread, itinerary);
-        if (!draftState) continue;
-
-        nextDraftStates[thread.id] = draftState;
+        nextDraftStates[thread.id] = {
+          threadId: thread.id,
+          title: String(thread.title ?? "").trim(),
+          tripId: null,
+          messages: [],
+          itinerary: itinerarySummary,
+          loaded: false,
+        };
         nextDraftOrder.push(thread.id);
         fallbackContext ??= createPlanningContext("draft", thread.id);
       }
 
       if (Object.keys(nextTripStates).length > 0) {
+        // Update the ref synchronously so ensureTripThreadState (which awaits
+        // this promise) can see bootstrap-populated threadIds without waiting
+        // for the React commit + tripStatesRef-syncing useEffect.
+        tripStatesRef.current = { ...tripStatesRef.current, ...nextTripStates };
         setTripStates((previous) => ({ ...previous, ...nextTripStates }));
       }
 
       if (Object.keys(nextDraftStates).length > 0) {
+        draftThreadStatesRef.current = { ...draftThreadStatesRef.current, ...nextDraftStates };
         setDraftThreadStates((previous) => ({ ...previous, ...nextDraftStates }));
         setDraftThreadOrder((previous) => {
           const existing = previous.filter((threadId) => !nextDraftOrder.includes(threadId));
@@ -261,9 +346,12 @@ export function useTripPlanning(agencyId) {
       if (!activeContextRef.current && fallbackContext) {
         setActiveContext(fallbackContext);
       }
-    } catch (error) {
-      console.error("Failed to load latest agent thread", error);
-    }
+      } catch (error) {
+        console.error("Failed to bootstrap agent workspace", error);
+      }
+    })();
+    loadInitialThreadsPromiseRef.current = promise;
+    return promise;
   };
 
   const dispatchMessage = async (content, startStream) => {
@@ -286,7 +374,9 @@ export function useTripPlanning(agencyId) {
         currentContext = createPlanningContext("draft", ensuredState?.threadId ?? null);
         setActiveContext(currentContext);
       } else if (currentContext.type === "draft") {
-        ensuredState = draftThreadStatesRef.current[currentContext.id] ?? null;
+        ensuredState = (await ensureDraftThreadState(currentContext.id))
+          ?? draftThreadStatesRef.current[currentContext.id]
+          ?? null;
       } else {
         ensuredState = await ensureTripThreadState(currentContext.id);
       }
@@ -336,12 +426,14 @@ export function useTripPlanning(agencyId) {
     setDraftThreadStates,
     draftThreadOrder,
     setDraftThreadOrder,
+    bootstrapTrips,
     isSending,
     isCreatingDraftThread,
     agentError,
     setAgentError,
     runTargetRef,
     ensureTripThreadState,
+    ensureDraftThreadState,
     createDraftThread,
     loadInitialThreads,
     dispatchMessage,

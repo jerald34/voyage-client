@@ -101,6 +101,18 @@ export async function fetchItineraryDraft(agencyId, itineraryId) {
   return fetchApi(`/agencies/${agencyId}/itineraries/${itineraryId}`);
 }
 
+export async function bootstrapAgentWorkspace(agencyId) {
+  return fetchApi(`/agencies/${agencyId}/workspace/bootstrap`);
+}
+
+export async function fetchThreadMessages(agencyId, threadId, { cursor, limit } = {}) {
+  const params = new URLSearchParams();
+  if (cursor) params.set("cursor", cursor);
+  if (limit) params.set("limit", String(limit));
+  const qs = params.toString();
+  return fetchApi(`/agencies/${agencyId}/agent/threads/${threadId}/messages${qs ? `?${qs}` : ""}`);
+}
+
 // Admin API
 
 export async function fetchPendingAgencies() {

@@ -84,6 +84,24 @@ const mocks = vi.hoisted(() => ({
     },
   })),
   listAgencyTripsMock: vi.fn(async () => ({ trips: [] })),
+  bootstrapAgentWorkspaceMock: vi.fn(async () => ({
+    trips: [],
+    threads: [
+      { id: "thread-1", tripId: "trip-1", title: "", status: "ACTIVE", itineraryId: "itinerary-1" },
+      { id: "thread-2", tripId: "trip-2", title: "", status: "ACTIVE", itineraryId: "itinerary-2" },
+    ],
+    itinerarySummaries: {
+      "itinerary-1": { id: "itinerary-1", tripId: "trip-1", title: "", summary: null, status: "DRAFT", version: 1 },
+      "itinerary-2": { id: "itinerary-2", tripId: "trip-2", title: "", summary: null, status: "DRAFT", version: 2 },
+    },
+  })),
+  fetchThreadMessagesMock: vi.fn(async (_agencyId, threadId) => ({
+    messages:
+      threadId === "thread-2"
+        ? [{ id: "m-2", role: "ASSISTANT", content: "Second thread ready" }]
+        : [{ id: "m-1", role: "ASSISTANT", content: "First thread ready" }],
+    nextCursor: null,
+  })),
   approveAgentThreadItineraryMock: vi.fn(async (_agencyId, threadId, payload) => ({
     thread: {
       id: threadId,
@@ -206,6 +224,26 @@ function resetApiMocks() {
   }));
   mocks.listAgencyTripsMock.mockReset();
   mocks.listAgencyTripsMock.mockImplementation(async () => ({ trips: [] }));
+  mocks.bootstrapAgentWorkspaceMock.mockReset();
+  mocks.bootstrapAgentWorkspaceMock.mockImplementation(async () => ({
+    trips: [],
+    threads: [
+      { id: "thread-1", tripId: "trip-1", title: "", status: "ACTIVE", itineraryId: "itinerary-1" },
+      { id: "thread-2", tripId: "trip-2", title: "", status: "ACTIVE", itineraryId: "itinerary-2" },
+    ],
+    itinerarySummaries: {
+      "itinerary-1": { id: "itinerary-1", tripId: "trip-1", title: "", summary: null, status: "DRAFT", version: 1 },
+      "itinerary-2": { id: "itinerary-2", tripId: "trip-2", title: "", summary: null, status: "DRAFT", version: 2 },
+    },
+  }));
+  mocks.fetchThreadMessagesMock.mockReset();
+  mocks.fetchThreadMessagesMock.mockImplementation(async (_agencyId, threadId) => ({
+    messages:
+      threadId === "thread-2"
+        ? [{ id: "m-2", role: "ASSISTANT", content: "Second thread ready" }]
+        : [{ id: "m-1", role: "ASSISTANT", content: "First thread ready" }],
+    nextCursor: null,
+  }));
   mocks.approveAgentThreadItineraryMock.mockReset();
   mocks.approveAgentThreadItineraryMock.mockImplementation(async (_agencyId, threadId, payload) => ({
     thread: {
@@ -271,10 +309,12 @@ vi.mock("../app/hooks/useAuth.js", () => ({
 
 vi.mock("../app/lib/api.js", () => ({
   approveAgentThreadItinerary: (...args) => mocks.approveAgentThreadItineraryMock(...args),
+  bootstrapAgentWorkspace: (...args) => mocks.bootstrapAgentWorkspaceMock(...args),
   createAgentThread: (...args) => mocks.createAgentThreadMock(...args),
   deleteAgentThread: (...args) => mocks.deleteAgentThreadMock(...args),
   fetchAgentThread: (...args) => mocks.fetchAgentThreadMock(...args),
   fetchItineraryDraft: (...args) => mocks.fetchItineraryDraftMock(...args),
+  fetchThreadMessages: (...args) => mocks.fetchThreadMessagesMock(...args),
   listAgencyTrips: (...args) => mocks.listAgencyTripsMock(...args),
   listAgentThreads: (...args) => mocks.listAgentThreadsMock(...args),
   updateAgencySettings: (...args) => mocks.updateAgencySettingsMock(...args),
@@ -518,28 +558,22 @@ describe("Agency portfolio HomePage", () => {
   });
 
   it("shows existing no-client draft threads in the dropdown after initial load", async () => {
-    mocks.listAgentThreadsMock.mockResolvedValue({
+    mocks.bootstrapAgentWorkspaceMock.mockResolvedValue({
+      trips: [],
       threads: [
-        {
-          id: "draft-refresh",
-          tripId: null,
-          title: "Refresh draft",
-          messages: [{ id: "draft-message", role: "ASSISTANT", content: "Refresh draft ready" }],
-          events: [{ type: "itinerary.updated", payload: { itineraryId: "draft-itinerary" } }],
-        },
-        {
-          id: "thread-1",
-          tripId: "trip-1",
-          messages: [{ id: "m-1", role: "ASSISTANT", content: "First thread ready" }],
-          events: [{ type: "itinerary.updated", payload: { itineraryId: "itinerary-1" } }],
-        },
+        { id: "draft-refresh", tripId: null, title: "Refresh draft", status: "ACTIVE", itineraryId: "draft-itinerary" },
+        { id: "thread-1", tripId: "trip-1", title: "", status: "ACTIVE", itineraryId: "itinerary-1" },
       ],
+      itinerarySummaries: {
+        "draft-itinerary": { id: "draft-itinerary", tripId: "trip-1", title: "", summary: null, status: "DRAFT", version: 1 },
+        "itinerary-1": { id: "itinerary-1", tripId: "trip-1", title: "", summary: null, status: "DRAFT", version: 1 },
+      },
     });
 
     render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
     await waitFor(() => {
-      expect(mocks.listAgentThreadsMock).toHaveBeenCalledWith("agency-1");
+      expect(mocks.bootstrapAgentWorkspaceMock).toHaveBeenCalledWith("agency-1");
     });
 
     expect(screen.getByRole("button", { name: "Current client: Santos Family" })).toBeInTheDocument();
