@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "../hooks/useAuth";
+import LegalModal from "../components/auth/LegalModal.jsx";
 
 const socialProviders = [
   {
@@ -15,15 +16,6 @@ const socialProviders = [
         <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
         <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
         <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-      </svg>
-    ),
-  },
-  {
-    id: "apple",
-    label: "Continue with Apple",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--voyage-primary)">
-        <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C4.24 16.7 4.89 10.64 8.8 10.4c1.17.06 1.99.68 2.69.72.97-.2 1.9-.77 2.93-.69 1.24.1 2.17.58 2.78 1.47-2.55 1.53-1.95 4.89.63 5.82-.5 1.3-.73 1.87-1.78 3.56zM12.03 10.34c-.12-2.35 1.84-4.39 4.04-4.59.29 2.65-2.38 4.72-4.04 4.59z"/>
       </svg>
     ),
   },
@@ -45,9 +37,16 @@ const agencyLocationOptions = {
   Malaysia: ["Kuala Lumpur", "Penang", "Langkawi"]
 };
 const agencyCountryOptions = Object.keys(agencyLocationOptions);
+const authFieldSurfaceClass = "border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)]";
+const authFieldBaseClass =
+  "w-full text-[16px] leading-[1.25] font-medium text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft placeholder:font-normal";
 
 function sanitizeBusinessPhoneInput(value) {
   return String(value ?? "").replace(/\D/g, "");
+}
+
+function sanitizeEmailInput(value) {
+  return String(value ?? "").toLowerCase();
 }
 
 function getPasswordSimilarityError(emailValue, nameValue, passwordValue) {
@@ -116,16 +115,39 @@ function FloatingOrb({ delay, size, left, top }) {
 }
 
 function WizardProgress({ step }) {
+  const accountActive = step >= 1;
+  const agencyActive = step >= 2;
+
   return (
-    <div className="flex items-center justify-center gap-0 mb-7">
-      <div className={`flex items-center gap-2 transition-opacity duration-250 ${step >= 1 ? "opacity-100" : "opacity-40"}`}>
-        <span className="w-7 h-7 rounded-full bg-border text-text-muted flex items-center justify-center text-xs font-semibold transition-colors duration-250" style={step >= 1 ? { backgroundColor: "var(--voyage-secondary)", color: "#fff" } : {}}>1</span>
-        <span className={`text-xs font-medium transition-colors duration-250 ${step >= 1 ? "text-text-primary" : "text-text-muted"}`}>Account</span>
+    <div className="flex items-center justify-center gap-0">
+      <div className="flex items-center gap-2 shrink-0">
+        <span
+          className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black tabular-nums leading-none transition-colors duration-250 ${
+            accountActive
+              ? "bg-secondary text-white"
+              : "bg-[rgba(148,163,184,0.32)] text-text-soft"
+          }`}
+        >
+          1
+        </span>
+        <span className={`text-xs font-medium whitespace-nowrap transition-colors duration-250 ${accountActive ? "text-text-primary" : "text-text-soft"}`}>
+          Account
+        </span>
       </div>
       <div className="w-12 h-0.5 bg-border mx-3" />
-      <div className={`flex items-center gap-2 transition-opacity duration-250 ${step >= 2 ? "opacity-100" : "opacity-40"}`}>
-        <span className="w-7 h-7 rounded-full bg-border text-text-muted flex items-center justify-center text-xs font-semibold transition-colors duration-250" style={step >= 2 ? { backgroundColor: "var(--voyage-secondary)", color: "#fff" } : {}}>2</span>
-        <span className={`text-xs font-medium transition-colors duration-250 ${step >= 2 ? "text-text-primary" : "text-text-muted"}`}>Agency</span>
+      <div className="flex items-center gap-2 shrink-0">
+        <span
+          className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black tabular-nums leading-none transition-colors duration-250 ${
+            agencyActive
+              ? "bg-secondary text-white"
+              : "bg-[rgba(148,163,184,0.32)] text-text-soft"
+          }`}
+        >
+          2
+        </span>
+        <span className={`text-xs font-medium whitespace-nowrap transition-colors duration-250 ${agencyActive ? "text-text-primary" : "text-text-soft"}`}>
+          Agency
+        </span>
       </div>
     </div>
   );
@@ -160,6 +182,7 @@ function LoginForm() {
 
   // Whether user is already authenticated (OAuth return)
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [legalDoc, setLegalDoc] = useState(null);
 
   useEffect(() => {
     setMounted(true);
@@ -298,6 +321,9 @@ function LoginForm() {
     auth.login({ email, password });
   };
 
+  const openLegalDoc = (doc) => setLegalDoc(doc);
+  const closeLegalDoc = () => setLegalDoc(null);
+
   const isRegister = mode === "register";
   const isRegisterFieldError = registerValidationErrorCodes.has(auth.error?.code);
   const fullNameError = step1Errors.fullName || serverStep1Errors.fullName;
@@ -353,7 +379,7 @@ function LoginForm() {
           </Link>
         </div>
 
-        <div className="flex-1 flex flex-col justify-center max-w-[440px] w-full mx-auto">
+        <div className="flex-1 flex flex-col justify-start max-w-[440px] w-full mx-auto">
           {/* Mode toggle */}
           {!isAuthenticated && (
             <div className="relative grid grid-cols-2 p-1 mb-9 bg-[rgba(34,56,67,0.05)] dark:bg-[rgba(255,255,255,0.05)] border border-border rounded-pill">
@@ -382,8 +408,10 @@ function LoginForm() {
             </div>
           )}
 
-          {/* Wizard progress for register mode */}
-          {isRegister && <WizardProgress step={wizardStep} />}
+          {/* Reserve the same vertical space in both modes so the headline aligns */}
+          <div className="mb-7 min-h-[28px] flex items-center justify-center">
+            {isRegister ? <WizardProgress step={wizardStep} /> : <div aria-hidden="true" className="h-[28px]" />}
+          </div>
 
           <div className={`flex flex-col gap-0 ${isTransitioning ? "[animation:auth-slide-out_0.22s_ease_forwards]" : "[animation:auth-slide-in_0.32s_ease_forwards]"}`}>
 
@@ -395,11 +423,11 @@ function LoginForm() {
                   <p className="text-[1.08rem] text-text-muted mb-0">Sign in to pick up where you left off.</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="flex flex-col gap-3 mb-6">
                   {socialProviders.map((provider) => (
                     <button
                       key={provider.id}
-                      className="flex items-center justify-center gap-2.5 px-4 py-3.5 bg-white dark:bg-surface-elevated border border-border rounded-md text-text-primary text-xs font-bold cursor-pointer transition-all duration-160 hover:border-border-strong hover:shadow-[0_4px_16px_rgba(34,56,67,0.08)] hover:-translate-y-0.5"
+                      className="flex w-full sm:max-w-[320px] sm:mx-auto items-center justify-center gap-2.5 px-4 py-3.5 bg-white dark:bg-surface-elevated border border-border rounded-md text-text-primary text-xs font-bold cursor-pointer transition-all duration-160 hover:border-border-strong hover:shadow-[0_4px_16px_rgba(34,56,67,0.08)] hover:-translate-y-0.5"
                       type="button"
                       onClick={() => auth.startOAuth(provider.id)}
                     >
@@ -423,7 +451,7 @@ function LoginForm() {
                         <rect x="2" y="4" width="20" height="16" rx="2" />
                         <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                       </svg>
-                      <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => setEmail(sanitizeEmailInput(e.target.value))} autoComplete="email" className={`!pl-[46px] pr-[18px] py-[15px] ${authFieldSurfaceClass} ${authFieldBaseClass}`} />
                     </div>
                   </div>
 
@@ -439,7 +467,7 @@ function LoginForm() {
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
-                      <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" className="w-full !pl-[46px] !pr-14 py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" className={`!pl-[46px] !pr-14 py-[15px] ${authFieldSurfaceClass} ${authFieldBaseClass}`} />
                       <button type="button" className="absolute right-3.5 flex items-center justify-center w-8.5 h-8.5 bg-none border-none text-text-soft cursor-pointer rounded-sm transition-all duration-160 hover:text-secondary hover:bg-[rgba(215,122,97,0.06)]" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>
                         {showPassword ? (
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
@@ -468,11 +496,11 @@ function LoginForm() {
                   <p className="text-[1.08rem] text-text-muted mb-0">Start planning unforgettable trips today.</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="flex flex-col gap-3 mb-6">
                   {socialProviders.map((provider) => (
                     <button
                       key={provider.id}
-                      className="flex items-center justify-center gap-2.5 px-4 py-3.5 bg-white dark:bg-surface-elevated border border-border rounded-md text-text-primary text-xs font-bold cursor-pointer transition-all duration-160 hover:border-border-strong hover:shadow-[0_4px_16px_rgba(34,56,67,0.08)] hover:-translate-y-0.5"
+                      className="flex w-full sm:max-w-[320px] sm:mx-auto items-center justify-center gap-2.5 px-4 py-3.5 bg-white dark:bg-surface-elevated border border-border rounded-md text-text-primary text-xs font-bold cursor-pointer transition-all duration-160 hover:border-border-strong hover:shadow-[0_4px_16px_rgba(34,56,67,0.08)] hover:-translate-y-0.5"
                       type="button"
                       onClick={() => auth.startOAuth(provider.id)}
                     >
@@ -495,7 +523,7 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
                       </svg>
-                      <input id="auth-fullname" type="text" placeholder="Your full name" value={fullName} onChange={(e) => { setFullName(e.target.value); setStep1Errors({}); setServerStep1Errors({}); }} autoComplete="name" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-fullname" type="text" placeholder="Your full name" value={fullName} onChange={(e) => { setFullName(e.target.value); setStep1Errors({}); setServerStep1Errors({}); }} autoComplete="name" className={`!pl-[46px] pr-[18px] py-[15px] ${authFieldSurfaceClass} ${authFieldBaseClass}`} />
                     </div>
                     {fullNameError && <span className="text-[0.8rem] text-status-danger mt-0.5">{fullNameError}</span>}
                   </div>
@@ -506,7 +534,7 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                       </svg>
-                      <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => { setEmail(e.target.value); setStep1Errors({}); setServerStep1Errors({}); }} autoComplete="email" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => { setEmail(sanitizeEmailInput(e.target.value)); setStep1Errors({}); setServerStep1Errors({}); }} autoComplete="email" className={`!pl-[46px] pr-[18px] py-[15px] ${authFieldSurfaceClass} ${authFieldBaseClass}`} />
                     </div>
                     {emailError && <span className="text-[0.8rem] text-status-danger mt-0.5">{emailError}</span>}
                   </div>
@@ -517,7 +545,7 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
-                      <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="At least 8 characters" value={password} onChange={(e) => { setPassword(e.target.value); setStep1Errors({}); setServerStep1Errors({}); }} autoComplete="new-password" className="w-full !pl-[46px] !pr-14 py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-password" type={showPassword ? "text" : "password"} placeholder="At least 8 characters" value={password} onChange={(e) => { setPassword(e.target.value); setStep1Errors({}); setServerStep1Errors({}); }} autoComplete="new-password" className={`!pl-[46px] !pr-14 py-[15px] ${authFieldSurfaceClass} ${authFieldBaseClass}`} />
                       <button type="button" className="absolute right-3.5 flex items-center justify-center w-8.5 h-8.5 bg-none border-none text-text-soft cursor-pointer rounded-sm transition-all duration-160 hover:text-secondary hover:bg-[rgba(215,122,97,0.06)]" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>
                         {showPassword ? (
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
@@ -535,7 +563,7 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                       </svg>
-                      <input id="auth-confirm-password" type="password" placeholder="Repeat your password" value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setStep1Errors({}); setServerStep1Errors({}); }} autoComplete="new-password" className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-confirm-password" type="password" placeholder="Repeat your password" value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setStep1Errors({}); setServerStep1Errors({}); }} autoComplete="new-password" className={`!pl-[46px] pr-[18px] py-[15px] ${authFieldSurfaceClass} ${authFieldBaseClass}`} />
                     </div>
                     {confirmPasswordError && <span className="text-[0.8rem] text-status-danger mt-0.5">{confirmPasswordError}</span>}
                   </div>
@@ -550,8 +578,13 @@ function LoginForm() {
                     />
                     <span className="text-[0.92rem] text-text-muted leading-tight">
                       I agree to the{" "}
-                      <a href="#" className="text-secondary font-semibold hover:underline">Terms of Service</a> and{" "}
-                      <a href="#" className="text-secondary font-semibold hover:underline">Privacy Policy</a>
+                      <button type="button" className="text-secondary font-semibold hover:underline" onClick={() => openLegalDoc("terms")}>
+                        Terms of Service
+                      </button>{" "}
+                      and{" "}
+                      <button type="button" className="text-secondary font-semibold hover:underline" onClick={() => openLegalDoc("privacy")}>
+                        Privacy Policy
+                      </button>
                     </span>
                   </label>
                   {termsError && <span className="text-[0.8rem] text-status-danger mt-0.5">{termsError}</span>}
@@ -581,7 +614,7 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
                       </svg>
-                      <input id="auth-agency-name" type="text" placeholder="e.g. Wanderlust Travel Co." value={agencyName} onChange={(e) => { setAgencyName(e.target.value); setStep2Errors((prev) => ({ ...prev, agencyName: undefined })); }} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-agency-name" type="text" placeholder="e.g. Wanderlust Travel Co." value={agencyName} onChange={(e) => { setAgencyName(e.target.value); setStep2Errors((prev) => ({ ...prev, agencyName: undefined })); }} required className={`!pl-[46px] pr-[18px] py-[15px] ${authFieldSurfaceClass} ${authFieldBaseClass}`} />
                     </div>
                     {step2Errors.agencyName && <span className="text-[0.8rem] text-status-danger mt-0.5">{step2Errors.agencyName}</span>}
                   </div>
@@ -607,7 +640,7 @@ function LoginForm() {
                           setStep2Errors((prev) => ({ ...prev, businessPhone: undefined }));
                         }}
                         required
-                        className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft"
+                        className={`!pl-[46px] pr-[18px] py-[15px] ${authFieldSurfaceClass} ${authFieldBaseClass}`}
                       />
                     </div>
                     {step2Errors.businessPhone && <span className="text-[0.8rem] text-status-danger mt-0.5">{step2Errors.businessPhone}</span>}
@@ -621,7 +654,7 @@ function LoginForm() {
                       <svg className="absolute left-4 text-text-soft pointer-events-none transition-colors duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                       </svg>
-                      <input id="auth-business-email" type="email" placeholder="info@youragency.com" value={businessEmail} onChange={(e) => { setBusinessEmail(e.target.value); setStep2Errors((prev) => ({ ...prev, businessEmail: undefined })); }} required className="w-full !pl-[46px] pr-[18px] py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] placeholder:text-text-soft" />
+                      <input id="auth-business-email" type="email" placeholder="info@youragency.com" value={businessEmail} onChange={(e) => { setBusinessEmail(sanitizeEmailInput(e.target.value)); setStep2Errors((prev) => ({ ...prev, businessEmail: undefined })); }} required className={`!pl-[46px] pr-[18px] py-[15px] ${authFieldSurfaceClass} ${authFieldBaseClass}`} />
                     </div>
                     {step2Errors.businessEmail && <span className="text-[0.8rem] text-status-danger mt-0.5">{step2Errors.businessEmail}</span>}
                   </div>
@@ -644,7 +677,7 @@ function LoginForm() {
                             setStep2Errors((prev) => ({ ...prev, country: undefined, city: undefined }));
                           }}
                           required
-                          className="w-full appearance-none !pl-[46px] !pr-12 py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)]"
+                          className={`w-full appearance-none !pl-[46px] !pr-12 py-[15px] ${authFieldSurfaceClass} ${authFieldBaseClass}`}
                         >
                           <option value="">Select country</option>
                           {agencyCountryOptions.map((option) => (
@@ -677,7 +710,7 @@ function LoginForm() {
                           }}
                           required
                           disabled={!country}
-                          className="w-full appearance-none !pl-[46px] !pr-12 py-[15px] border border-border rounded-md bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(26,29,33,0.88)] text-text-primary shadow-inner transition-all duration-160 focus:outline-none focus:border-[rgba(32,178,170,0.6)] focus:shadow-[0_0_0_4px_rgba(32,178,170,0.12)] disabled:opacity-60 disabled:cursor-not-allowed"
+                          className={`w-full appearance-none !pl-[46px] !pr-12 py-[15px] ${authFieldSurfaceClass} ${authFieldBaseClass} disabled:opacity-60 disabled:cursor-not-allowed`}
                         >
                           <option value="">{country ? "Select city" : "Select country first"}</option>
                           {countryCityOptions.map((option) => (
@@ -725,6 +758,14 @@ function LoginForm() {
                 {mode === "login" ? "Create one" : "Sign in"}
               </button>
             </p>
+          )}
+
+          {legalDoc && (
+            <LegalModal
+              activeDoc={legalDoc}
+              onClose={closeLegalDoc}
+              onSelectDoc={setLegalDoc}
+            />
           )}
         </div>
       </div>
