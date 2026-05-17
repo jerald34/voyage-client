@@ -116,6 +116,7 @@ export default function ChatMessage({
 }) {
   const shouldRenderRichItinerary = !isUser && renderAsItinerary && itinerary;
   const isMobile = useMobileViewport();
+  const isStreamingMessage = Boolean(message?.isStreaming || message?.id === "streaming");
 
   return (
     <div className={`group flex gap-3 max-w-full ${isUser ? "flex-row-reverse" : "flex-row"}`}>
@@ -215,6 +216,12 @@ export default function ChatMessage({
               onPlaceSelect={onPlaceSelect}
               showPlaceCards={false}
             />
+          )}
+          {!isUser && isStreamingMessage && (
+            <div className="mt-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.08em] font-bold text-secondary/80">
+              <span className="w-1.5 h-1.5 rounded-full bg-current motion-safe:animate-pulse" aria-hidden="true" />
+              <span>Live</span>
+            </div>
           )}
         </div>
       </div>
