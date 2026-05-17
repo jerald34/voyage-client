@@ -31,7 +31,7 @@ function getPrefersReducedMotion() {
 }
 
 function getCompactViewport() {
-  return window.matchMedia?.("(max-width: 760px)")?.matches ?? window.innerWidth <= 760;
+  return window.matchMedia?.("(max-width: 820px)")?.matches ?? window.innerWidth <= 820;
 }
 
 function getCoachPosition(rect, step, isCompact) {
@@ -135,13 +135,13 @@ function getCoachPosition(rect, step, isCompact) {
 
 function TutorialProgress({ activeIndex, steps }) {
   return (
-    <div className="flex items-center gap-1.5" aria-hidden="true">
+    <div className="flex items-center gap-1 max-[820px]:gap-0.75" aria-hidden="true">
       {steps.map((step, index) => (
         <span
           key={step.id}
           className={[
-            "h-1.5 rounded-full transition-all",
-            index === activeIndex ? "w-7 bg-secondary" : "w-2 bg-white/25",
+            "h-1 rounded-full transition-all max-[820px]:h-[3px]",
+            index === activeIndex ? "w-7 bg-secondary max-[820px]:w-5" : "w-2 bg-white/25 max-[820px]:w-1.5",
           ].join(" ")}
         />
       ))}
@@ -467,41 +467,41 @@ export default function FirstUseTutorial({
         aria-labelledby="first-use-tutorial-title"
         aria-describedby="first-use-tutorial-description"
         tabIndex={-1}
-        className="fixed z-10 max-h-[calc(100vh-32px)] overflow-y-auto rounded-[22px] border border-white/12 bg-[#0b171e] p-4 text-white shadow-[0_24px_80px_rgba(2,8,23,0.5)] outline-none max-[760px]:rounded-[24px] max-[760px]:p-4"
+        className="fixed z-10 max-h-[calc(100dvh-32px)] overflow-y-auto rounded-[22px] border border-white/12 bg-[#0b171e] p-4 text-white shadow-[0_24px_80px_rgba(2,8,23,0.5)] outline-none max-[820px]:max-h-[calc(100dvh-20px)] max-[820px]:rounded-[20px] max-[820px]:p-3"
         style={coachStyle}
       >
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4 max-[820px]:gap-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary/90">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary/90 max-[820px]:text-[10px] max-[820px]:tracking-[0.16em]">
               Step {activeIndex + 1} of {steps.length}
             </p>
-            <h2 id="first-use-tutorial-title" className="mt-1 text-xl font-semibold tracking-[-0.02em] text-white">
+            <h2 id="first-use-tutorial-title" className="mt-1 text-xl font-semibold tracking-[-0.02em] text-white max-[820px]:mt-0.5 max-[820px]:text-[1rem]">
               {title}
             </h2>
           </div>
           <TutorialProgress activeIndex={activeIndex} steps={steps} />
         </div>
 
-        <h3 className="mt-4 text-lg font-semibold leading-6 tracking-[-0.01em] text-white">
+        <h3 className="mt-4 text-lg font-semibold leading-6 tracking-[-0.01em] text-white max-[820px]:mt-3 max-[820px]:text-[0.98rem] max-[820px]:leading-5">
           {activeStep.title}
         </h3>
-        <p id="first-use-tutorial-description" className="mt-2 text-sm leading-6 text-white/70">
+        <p id="first-use-tutorial-description" className="mt-2 text-sm leading-6 text-white/70 max-[820px]:mt-1.5 max-[820px]:text-[0.78rem] max-[820px]:leading-5">
           {activeStep.description}
         </p>
 
-        <ul className="mt-4 space-y-2">
+        <ul className="mt-4 space-y-2 max-[820px]:mt-3 max-[820px]:space-y-1.5">
           {activeStep.bullets.map((bullet) => (
-            <li key={bullet} className="flex gap-2 text-sm leading-6 text-white/72">
-              <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-secondary" aria-hidden="true" />
+            <li key={bullet} className="flex gap-2 text-sm leading-6 text-white/72 max-[820px]:text-[0.78rem] max-[820px]:leading-5">
+              <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-secondary max-[820px]:mt-[7px] max-[820px]:h-1 max-[820px]:w-1" aria-hidden="true" />
               <span>{bullet}</span>
             </li>
           ))}
         </ul>
 
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 max-[820px]:mt-4 max-[820px]:gap-2">
           <button
             type="button"
-            className="min-h-11 rounded-pill border border-white/15 bg-white/5 px-4 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10"
+            className="min-h-11 rounded-pill border border-white/15 bg-white/5 px-4 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10 max-[820px]:min-h-10 max-[820px]:px-3 max-[820px]:text-[0.78rem]"
             onClick={handleClose}
           >
             Skip tutorial
@@ -510,7 +510,7 @@ export default function FirstUseTutorial({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="min-h-11 rounded-pill border border-white/15 bg-white/5 px-4 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+              className="min-h-11 rounded-pill border border-white/15 bg-white/5 px-4 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 max-[820px]:min-h-10 max-[820px]:px-3 max-[820px]:text-[0.78rem]"
               onClick={() => setActiveIndex((current) => Math.max(current - 1, 0))}
               disabled={activeIndex === 0}
             >
@@ -519,7 +519,7 @@ export default function FirstUseTutorial({
             {isLastStep ? (
               <button
                 type="button"
-                className="min-h-11 rounded-pill bg-secondary px-5 text-sm font-semibold text-white transition hover:brightness-110"
+                className="min-h-11 rounded-pill bg-secondary px-5 text-sm font-semibold text-white transition hover:brightness-110 max-[820px]:min-h-10 max-[820px]:px-4 max-[820px]:text-[0.78rem]"
                 onClick={handleClose}
               >
                 Finish tutorial
@@ -527,7 +527,7 @@ export default function FirstUseTutorial({
             ) : (
               <button
                 type="button"
-                className="min-h-11 rounded-pill bg-secondary px-5 text-sm font-semibold text-white transition hover:brightness-110"
+                className="min-h-11 rounded-pill bg-secondary px-5 text-sm font-semibold text-white transition hover:brightness-110 max-[820px]:min-h-10 max-[820px]:px-4 max-[820px]:text-[0.78rem]"
                 onClick={() => setActiveIndex((current) => Math.min(current + 1, steps.length - 1))}
               >
                 Next
