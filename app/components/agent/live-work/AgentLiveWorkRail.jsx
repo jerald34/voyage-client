@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AgentTaskList from './AgentTaskList';
 import AgentToolCallList from './AgentToolCallList';
 import AgentSourcesDrawer from '../sources/AgentSourcesDrawer';
@@ -33,6 +33,10 @@ export default function AgentLiveWorkRail({
   routeEstimates = [],
 }) {
   const [activeTab, setActiveTab] = useState('work');
+
+  useEffect(() => {
+    if (itinerary) setActiveTab('itinerary');
+  }, [itinerary]);
   const latestRouteEstimate = Array.isArray(routeEstimates) && routeEstimates.length > 0 ? routeEstimates[routeEstimates.length - 1] : null;
   const routeDistance = formatDistance(latestRouteEstimate?.distanceMeters);
   const routeDuration = formatDuration(latestRouteEstimate?.durationSeconds);
