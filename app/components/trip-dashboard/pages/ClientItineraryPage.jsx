@@ -353,7 +353,14 @@ function CommentsPanel({ agencyId, tripId, onClose }) {
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
-export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDeleteTrip, onTourStateChange, tourMobilePaneOverride = null }) {
+export default function ClientItineraryPage({
+  agencyTrips = [],
+  agencyId,
+  onDeleteTrip,
+  onTourStateChange,
+  tourMobilePaneOverride = null,
+  onAddTripForClient,
+}) {
   const { theme } = useTheme();
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [selectedTripId, setSelectedTripId] = useState(null);
@@ -906,15 +913,29 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                   </button>
 
                   {selectedClient && selectedItineraryId ? (
-                    <div className="flex items-center gap-2" data-tour-target="cip-actions">
-                      <button
-                        className={`inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 ${showCommentsPanel
-                          ? "bg-secondary text-white border-secondary"
-                          : "bg-surface-elevated text-text-primary border-border/20"
-                          }`}
-                        onClick={() => setShowCommentsPanel((v) => !v)}
-                        aria-label="Comments"
-                      >
+                    <div className="flex items-center gap-2">
+                      {onAddTripForClient && (
+                        <button
+                          type="button"
+                          onClick={() => onAddTripForClient(selectedClient.name)}
+                          className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-secondary/30 bg-secondary/10 text-secondary transition-all duration-200"
+                          aria-label={`New trip for ${selectedClient.name}`}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </svg>
+                        </button>
+                      )}
+                      <div className="flex items-center gap-2" data-tour-target="cip-actions">
+                        <button
+                          className={`inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 ${showCommentsPanel
+                            ? "bg-secondary text-white border-secondary"
+                            : "bg-surface-elevated text-text-primary border-border/20"
+                            }`}
+                          onClick={() => setShowCommentsPanel((v) => !v)}
+                          aria-label="Comments"
+                        >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                         </svg>
@@ -946,6 +967,7 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                           </svg>
                         )}
                       </button>
+                      </div>
                     </div>
                   ) : null}
                 </div>
@@ -1213,6 +1235,20 @@ export default function ClientItineraryPage({ agencyTrips = [], agencyId, onDele
                   {selectedClient.trips.length} saved
                 </span>
               </div>
+              {selectedClient && onAddTripForClient && (
+                <button
+                  type="button"
+                  onClick={() => onAddTripForClient(selectedClient.name)}
+                  className="inline-flex items-center gap-1.5 min-h-[40px] px-3.5 rounded-lg border border-secondary/30 bg-secondary/10 text-secondary text-[0.85rem] font-bold cursor-pointer transition-all duration-200 hover:bg-secondary/20 hover:border-secondary/50"
+                  title={`Start a new trip for ${selectedClient.name}`}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  <span className="truncate max-w-[12ch]">New trip for {selectedClient.name}</span>
+                </button>
+              )}
               <div data-tour-target="cip-actions" className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                 {selectedTrip && <StatusChip trip={selectedTrip} />}
                 {selectedItineraryId && (

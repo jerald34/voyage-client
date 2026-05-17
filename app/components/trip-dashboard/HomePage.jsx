@@ -94,6 +94,21 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   const agencyTrips = agencyTripsProp;
   const savedTripsForPortfolio = fetchedTrips ?? [];
 
+  const existingClientNames = useMemo(() => {
+    if (!fetchedTrips?.length) return [];
+    const seen = new Set();
+    const out = [];
+    for (const t of fetchedTrips) {
+      const name = String(t.clientName ?? "").trim();
+      const key = name.toLowerCase();
+      if (name && !seen.has(key)) {
+        seen.add(key);
+        out.push(name);
+      }
+    }
+    return out.sort((a, b) => a.localeCompare(b));
+  }, [fetchedTrips]);
+
   const {
     activeContext,
     setActiveContext,
@@ -132,6 +147,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   const [activeTourSteps, setActiveTourSteps] = useState(voyageTourSteps);
   const [tourMobilePaneOverride, setTourMobilePaneOverride] = useState(null);
   const [tourGlassSheetSnap, setTourGlassSheetSnap] = useState(null);
+  const [pendingClientName, setPendingClientName] = useState(null);
   const [cipTourState, setCipTourState] = useState({
     hasSelectedClient: false,
     hasMultipleTrips: false,
@@ -581,9 +597,9 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   useEffect(() => {
     function handleOutsideClick(event) {
       if (!clientMenuRef.current) return;
-      if (!clientMenuRef.current.contains(event.target)) {
-        setIsClientMenuOpen(false);
-      }
+      if (clientMenuRef.current.contains(event.target)) return;
+      if (event.target.closest?.("[data-clientmenu-portal]")) return;
+      setIsClientMenuOpen(false);
     }
     document.addEventListener("mousedown", handleOutsideClick);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
@@ -592,6 +608,11 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
 
   // Actions
   const handleNewItinerary = async () => {
+    // NOTE: pendingClientName is intentionally NOT cleared here. The top-level
+    // "+ New Itinerary" header button clears it via its onNewItinerary wrapper
+    // below; the "+ New trip for {client}" entry point in ClientItineraryPage
+    // sets it just before calling this — clearing here would race with that
+    // setter and erase the seed (same-event setState calls take the last value).
     // Reset to "command-center" tab so user sees the new draft being created
     setActiveTab("command-center");
     
@@ -677,6 +698,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
         .catch((err) => console.error("Failed to refresh agency trips:", err));
 
       setIsApprovalModalOpen(false);
+      setPendingClientName(null);
     } catch (e) { setApprovalError(e.message); } finally { setIsApprovingDraft(false); }
   };
 
@@ -694,7 +716,9 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
           itinerary={activeTripState?.itinerary ?? null}
           isSaving={isApprovingDraft}
           error={approvalError}
-          onCancel={() => { if (!isApprovingDraft) { setIsApprovalModalOpen(false); setApprovalError(""); } }}
+          initialClientName={pendingClientName ?? undefined}
+          existingClientNames={existingClientNames}
+          onCancel={() => { if (!isApprovingDraft) { setIsApprovalModalOpen(false); setApprovalError(""); setPendingClientName(null); } }}
           onSubmit={submitDraftApproval}
         />
       )}
@@ -710,7 +734,10 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
           displayName={user?.displayName || "Traveler"}
           agencyId={agencyId}
           activeTab={activeTab}
-          onNewItinerary={handleNewItinerary}
+          onNewItinerary={() => {
+            setPendingClientName(null);
+            handleNewItinerary();
+          }}
           isCreatingDraftThread={isCreatingDraftThread}
           isClientMenuOpen={isClientMenuOpen}
           setIsClientMenuOpen={setIsClientMenuOpen}
@@ -854,6 +881,10 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
               agencyId={agencyId}
               onTourStateChange={setCipTourState}
               tourMobilePaneOverride={tourMobilePaneOverride}
+              onAddTripForClient={(clientName) => {
+                setPendingClientName(clientName);
+                handleNewItinerary();
+              }}
               onDeleteTrip={async (aid, tripId) => {
                 await deleteAgencyTrip(aid, tripId);
                 setFetchedTrips(prev => (prev || []).filter(t => t.id !== tripId));

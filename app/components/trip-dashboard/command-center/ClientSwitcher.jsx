@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 export default function ClientSwitcher({
   isClientMenuOpen,
@@ -17,9 +18,55 @@ export default function ClientSwitcher({
   onPlanningOptionChange,
   clientMenuEmptyBody,
 }) {
+  const triggerRef = useRef(null);
+  const [dropdownPos, setDropdownPos] = useState(null);
+
+  useEffect(() => {
+    if (!isClientMenuOpen) {
+      setDropdownPos(null);
+      return;
+    }
+    const compute = () => {
+      const el = triggerRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const isCompact = window.innerWidth <= 900;
+      if (isCompact) {
+        setDropdownPos({
+          position: "fixed",
+          top: 48,
+          left: 12,
+          right: 12,
+          maxHeight: "70vh",
+        });
+      } else {
+        const desiredWidth = Math.max(320, r.width);
+        const left = Math.min(
+          Math.max(12, r.left),
+          Math.max(12, window.innerWidth - desiredWidth - 12),
+        );
+        setDropdownPos({
+          position: "fixed",
+          top: r.bottom + 8,
+          left,
+          width: desiredWidth,
+          maxHeight: 420,
+        });
+      }
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    window.addEventListener("scroll", compute, true);
+    return () => {
+      window.removeEventListener("resize", compute);
+      window.removeEventListener("scroll", compute, true);
+    };
+  }, [isClientMenuOpen]);
+
   return (
     <div className="relative min-w-0" ref={clientMenuRef}>
       <button
+        ref={triggerRef}
         className={`flex items-center gap-3 h-11 px-3 pr-2.5 rounded-pill border text-text-primary min-w-0 max-w-[340px] cursor-pointer transition-all max-[900px]:h-8 max-[900px]:px-2 max-[900px]:pr-1.5 max-[900px]:gap-1.5 max-[900px]:max-w-[160px] ${
           isClientMenuOpen
             ? "border-secondary bg-white/10 shadow-soft"
@@ -53,9 +100,11 @@ export default function ClientSwitcher({
         </svg>
       </button>
 
-      {isClientMenuOpen && (
+      {isClientMenuOpen && typeof document !== "undefined" && createPortal(
         <div
-          className="absolute top-full mt-2 left-0 right-0 min-w-[320px] max-h-[420px] overflow-y-auto rounded-md bg-surface-elevated border border-border/20 shadow-strong z-50 max-[900px]:fixed max-[900px]:top-12 max-[900px]:left-3 max-[900px]:right-3 max-[900px]:w-auto max-[900px]:min-w-0 max-[900px]:mt-0 max-[900px]:max-h-[70vh]"
+          data-clientmenu-portal
+          className="min-w-[320px] overflow-y-auto rounded-md bg-surface-elevated border border-border/20 shadow-strong z-[200]"
+          style={dropdownPos ?? undefined}
           role="listbox"
           aria-label="Current client"
         >
@@ -133,7 +182,8 @@ export default function ClientSwitcher({
               <p className="mt-1 text-xs text-text-muted">{clientMenuEmptyBody}</p>
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
