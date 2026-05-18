@@ -41,8 +41,10 @@ export {
   listShareComments,
   replyToShareComment,
   getUnreadCommentCount,
+  getUnreadCommentCountsByTrip,
   fetchPublicItinerary,
   postPublicComment,
+  listPublicComments,
 } from "./shares.js";
 
 // Admin

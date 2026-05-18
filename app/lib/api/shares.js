@@ -46,6 +46,10 @@ export async function getUnreadCommentCount(agencyId) {
   return fetchApi(`/agencies/${agencyId}/shares/unread-count`);
 }
 
+export async function getUnreadCommentCountsByTrip(agencyId) {
+  return fetchApi(`/agencies/${agencyId}/shares/unread-counts-by-trip`);
+}
+
 export async function fetchPublicItinerary(token) {
   const url = `${API_URL}/shared/${token}`;
   const response = await fetch(url, {
@@ -55,6 +59,23 @@ export async function fetchPublicItinerary(token) {
   if (!response.ok) {
     const error = new Error(
       data.error?.message || "Itinerary not available",
+    );
+    error.code = data.error?.code || "UNKNOWN_ERROR";
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+
+export async function listPublicComments(token) {
+  const url = `${API_URL}/shared/${token}/comments`;
+  const response = await fetch(url, {
+    headers: { "Content-Type": "application/json" },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(
+      data.error?.message || "Failed to load comments",
     );
     error.code = data.error?.code || "UNKNOWN_ERROR";
     error.status = response.status;

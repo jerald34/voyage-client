@@ -63,6 +63,7 @@ export default function ItineraryDayView({
             <CommentsPanel
               agencyId={agencyId}
               tripId={selectedTripId}
+              itinerary={fullItinerary}
               onClose={() => setShowCommentsPanel(false)}
             />
           )}

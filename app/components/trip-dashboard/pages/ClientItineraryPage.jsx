@@ -4,6 +4,7 @@ import { useTheme } from "../../theme/ThemeProvider.jsx";
 import {
   fetchItineraryDraft,
   getUnreadCommentCount,
+  getUnreadCommentCountsByTrip,
 } from "../../../lib/api/index.js";
 import { getItineraryPlaceEntityId } from "../../../lib/trip-dashboard/placeEntities.js";
 import { getReadablePlaceType } from "../../../lib/trip-dashboard/richItinerary.js";
@@ -70,6 +71,7 @@ export default function ClientItineraryPage({
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showCommentsPanel, setShowCommentsPanel] = useState(false);
   const [unreadCommentCount, setUnreadCommentCount] = useState(0);
+  const [unreadByTrip, setUnreadByTrip] = useState({});
   const [pdfLoading, setPdfLoading] = useState(false);
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [selectedPlaceId, setSelectedPlaceId] = useState("");
@@ -180,7 +182,43 @@ export default function ClientItineraryPage({
         if (!cancelled) setUnreadCommentCount(0);
       });
     return () => { cancelled = true; };
-  }, [agencyId, selectedTripId]);
+  }, [agencyId, selectedTripId, showCommentsPanel]);
+
+  // Fetch per-trip unread counts so the Client Directory can badge each client.
+  // Refreshes whenever the panel is opened/closed (reply mutates server state)
+  // and whenever the agency or active trip changes.
+  useEffect(() => {
+    if (!agencyId) {
+      setUnreadByTrip({});
+      return;
+    }
+    let cancelled = false;
+    getUnreadCommentCountsByTrip(agencyId)
+      .then((res) => {
+        if (cancelled) return;
+        const map = {};
+        (res?.counts || []).forEach(({ tripId, count }) => {
+          map[tripId] = count;
+        });
+        setUnreadByTrip(map);
+      })
+      .catch(() => {
+        if (!cancelled) setUnreadByTrip({});
+      });
+    return () => { cancelled = true; };
+  }, [agencyId, selectedTripId, showCommentsPanel]);
+
+  const unreadByClientId = useMemo(() => {
+    const out = {};
+    clients.forEach((c) => {
+      let sum = 0;
+      c.trips.forEach((t) => {
+        sum += unreadByTrip[t.id] || 0;
+      });
+      if (sum > 0) out[c.id] = sum;
+    });
+    return out;
+  }, [clients, unreadByTrip]);
 
   // Reset per-trip UI state when trip changes
   useEffect(() => {
@@ -374,6 +412,7 @@ export default function ClientItineraryPage({
                   filteredClients.map((c) => {
                     const initials = c.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
                     const isSelected = selectedClientId === c.id;
+                    const unread = unreadByClientId[c.id] || 0;
                     return (
                       <button
                         key={c.id}
@@ -388,9 +427,19 @@ export default function ClientItineraryPage({
                           setMobilePane("detail");
                         }}
                       >
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[0.8rem] flex-shrink-0 ${isSelected ? "bg-secondary text-white" : "bg-secondary/40 text-white"
-                          }`}>
-                          {initials}
+                        <div className="relative flex-shrink-0">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[0.8rem] ${isSelected ? "bg-secondary text-white" : "bg-secondary/40 text-white"
+                            }`}>
+                            {initials}
+                          </div>
+                          {unread > 0 && (
+                            <span
+                              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 inline-flex items-center justify-center rounded-full bg-[#dc2626] text-white text-[0.65rem] font-extrabold leading-none ring-2 ring-surface"
+                              title={`${unread} unread comment${unread === 1 ? "" : "s"}`}
+                            >
+                              {unread > 99 ? "99+" : unread}
+                            </span>
+                          )}
                         </div>
                         <div className="flex flex-col gap-0.5 min-w-0">
                           <strong className={`text-[0.9rem] font-bold tracking-tight truncate ${isSelected ? "text-secondary" : "text-text-primary"}`}>
@@ -519,7 +568,7 @@ export default function ClientItineraryPage({
                   {/* Comments panel */}
                   {showCommentsPanel && (
                     <div className="px-4 py-2 flex-shrink-0">
-                      <CommentsPanel agencyId={agencyId} tripId={selectedTripId} onClose={() => setShowCommentsPanel(false)} />
+                      <CommentsPanel agencyId={agencyId} tripId={selectedTripId} itinerary={fullItinerary} onClose={() => setShowCommentsPanel(false)} />
                     </div>
                   )}
 
@@ -586,6 +635,7 @@ export default function ClientItineraryPage({
           selectedClientId={selectedClientId}
           onSelectClient={handleSelectClient}
           onRequestDeleteClient={handleDeleteClient}
+          unreadByClientId={unreadByClientId}
         />
       </aside>
 
