@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import ThemeToggle from "../theme/ThemeToggle";
+import VideoModal from "./VideoModal";
 import {
   SparkleIcon,
   UsersIcon,
@@ -22,6 +24,10 @@ function IconPlay({ className = "w-4 h-4" }) {
     </svg>
   );
 }
+
+/* Replace with your Cloudinary video URL, e.g.:
+   https://res.cloudinary.com/{cloud_name}/video/upload/{public_id}.mp4 */
+const DEMO_VIDEO_URL = "https://res.cloudinary.com/dseh3ykul/video/upload/v1779104257/voyage-client-promo-review_yrrfzh.mp4";
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -52,6 +58,8 @@ const agencyBenefits = [
 /* ------------------------------------------------------------------ */
 
 export default function LandingPage({ onLogin, onContinue }) {
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
+
   return (
     <div className="flex flex-col min-h-screen font-sans text-text-primary bg-background overflow-x-hidden">
 
@@ -130,6 +138,7 @@ export default function LandingPage({ onLogin, onContinue }) {
           </button>
           <button
             type="button"
+            onClick={() => setIsVideoOpen(true)}
             className="inline-flex items-center gap-2 border border-border/20 text-text-primary rounded-pill px-6 py-3 text-sm font-extrabold bg-transparent transition-colors duration-150 hover:bg-accent/[0.08] cursor-pointer"
           >
             <IconPlay className="w-3.5 h-3.5" />
@@ -301,6 +310,11 @@ export default function LandingPage({ onLogin, onContinue }) {
         </div>
       </section>
 
+      <VideoModal
+        isOpen={isVideoOpen}
+        onClose={() => setIsVideoOpen(false)}
+        videoUrl={DEMO_VIDEO_URL}
+      />
     </div>
   );
 }
