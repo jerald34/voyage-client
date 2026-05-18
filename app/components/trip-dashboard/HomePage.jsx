@@ -21,6 +21,7 @@ import {
   getUrgentDepartures,
 } from "../../lib/agency-dashboard/selectors.js";
 import { buildPlaceEntities, getItineraryPlaceEntityId } from "../../lib/trip-dashboard/placeEntities.js";
+import { getSavedItineraryTrips } from "../../lib/trip-dashboard/savedItineraries.js";
 
 import dynamic from "next/dynamic";
 import AgentCommandCenter from "./command-center/AgentCommandCenter.jsx";
@@ -36,6 +37,11 @@ import MobileGlassSheet from "./mobile/MobileGlassSheet.jsx";
 import useMobileViewport from "./mobile/useMobileViewport.js";
 import ChatInput from "./command-center/ChatInput.jsx";
 import FirstUseTutorial from "./tutorial/FirstUseTutorial.jsx";
+import {
+  TUTORIAL_MOCK_TRIPS,
+  TUTORIAL_MOCK_PLANNING_OPTIONS,
+  TUTORIAL_MOCK_TRIP_STATE,
+} from "./tutorial/tutorialMockData.js";
 
 import {
   getInitials,
@@ -338,14 +344,21 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
 
   const activeOption = useMemo(() => activeContext ? planningOptions.find(o => o.type === activeContext.type && o.id === activeContext.id) : planningOptions[0], [activeContext, planningOptions]);
 
+  const tutorialCCMock = isFirstUseTutorialOpen && planningOptions.length === 0;
+  const tutorialCIPMock = isFirstUseTutorialOpen && getSavedItineraryTrips(savedTripsForPortfolio).length === 0;
+  const effectivePlanningOptions = tutorialCCMock ? TUTORIAL_MOCK_PLANNING_OPTIONS : planningOptions;
+  const effectiveActiveOption = tutorialCCMock ? TUTORIAL_MOCK_PLANNING_OPTIONS[0] : activeOption;
+  const effectiveTripState = tutorialCCMock ? TUTORIAL_MOCK_TRIP_STATE : activeTripState;
+  const tripsForCip = tutorialCIPMock ? TUTORIAL_MOCK_TRIPS : savedTripsForPortfolio;
+
   const activeContextKey = createRunTargetKey(activeContext);
   const isVisible = Boolean(activeContextKey && activeContextKey === runTargetRef.current);
   const liveStatus = getRunStatusLabel(isVisible ? runStatus : "idle", isVisible ? streamError : null);
   const visibleMapMarkers = isVisible ? mapMarkers : [];
   const visibleRouteEstimates = isVisible ? routeEstimates : [];
   const placeEntities = useMemo(
-    () => buildPlaceEntities({ itinerary: activeTripState?.itinerary ?? null, liveMarkers: visibleMapMarkers }),
-    [activeTripState?.itinerary, visibleMapMarkers],
+    () => buildPlaceEntities({ itinerary: effectiveTripState?.itinerary ?? null, liveMarkers: visibleMapMarkers }),
+    [effectiveTripState?.itinerary, visibleMapMarkers],
   );
   const agencyMapFallback = useMemo(() => getAgencyMapFallbackFromUser(user), [user]);
   const activeMembership = useMemo(() => (
@@ -382,9 +395,9 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
     setComposerInput("");
   }
 
-  const activeTripClientName = String(activeOption?.clientName ?? activeOption?.label ?? "").trim();
+  const activeTripClientName = String(effectiveActiveOption?.clientName ?? effectiveActiveOption?.label ?? "").trim();
   const activeTripInitials = activeTripClientName ? getInitials(activeTripClientName) : "";
-  const activeTripOrganizerInitials = activeOption?.assignedOrganizer ? getInitials(activeOption.assignedOrganizer) : "";
+  const activeTripOrganizerInitials = effectiveActiveOption?.assignedOrganizer ? getInitials(effectiveActiveOption.assignedOrganizer) : "";
   const clientMenuEmptyTitle = "No client trips available";
   const clientMenuEmptyBody = "Use New Itinerary to create the first trip.";
 
@@ -507,7 +520,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
 
       {isApprovalModalOpen && activeContext?.type === "draft" && (
         <ApproveItineraryModal
-          itinerary={activeTripState?.itinerary ?? null}
+          itinerary={effectiveTripState?.itinerary ?? null}
           isSaving={isApprovingDraft}
           error={approvalError}
           initialClientName={pendingClientName ?? undefined}
@@ -536,14 +549,14 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
           isClientMenuOpen={isClientMenuOpen}
           setIsClientMenuOpen={setIsClientMenuOpen}
           clientMenuRef={clientMenuRef}
-          hasOptions={planningOptions.length > 0}
+          hasOptions={effectivePlanningOptions.length > 0}
           activeTripClientName={activeTripClientName}
           activeTripInitials={activeTripInitials}
           activeTripOrganizerInitials={activeTripOrganizerInitials}
           clientMenuEmptyTitle={clientMenuEmptyTitle}
           clientMenuEmptyBody={clientMenuEmptyBody}
-          safeOptions={activeTab === "itineraries" ? planningOptions.filter(o => o.type !== "draft") : planningOptions}
-          activeOption={activeOption}
+          safeOptions={activeTab === "itineraries" ? effectivePlanningOptions.filter(o => o.type !== "draft") : effectivePlanningOptions}
+          activeOption={effectiveActiveOption}
           onPlanningOptionDelete={handleDeleteOption}
           deletingThreadId={deletingThreadId}
           onPlanningOptionChange={(ctx) => { setActiveContext(createPlanningContext(ctx?.type, ctx?.id)); setComposerInput(""); }}
@@ -577,7 +590,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                 <ItineraryLiveMap
                   theme={theme}
                   agencyLocation={agencyMapFallback}
-                  items={activeTripState?.itinerary?.days?.reduce((acc, day) => {
+                  items={effectiveTripState?.itinerary?.days?.reduce((acc, day) => {
                     (day?.items || []).forEach((item, idx) => acc.push({
                       ...item,
                       __dayNumber: day?.dayNumber,
@@ -604,7 +617,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                   className="w-full lg:w-[520px] h-full pointer-events-auto transition-all duration-500 ease-in-out"
                 >
                   <AgentCommandCenter
-                    messages={activeTripState?.messages ?? []}
+                    messages={effectiveTripState?.messages ?? []}
                     isStreaming={isVisible ? isStreaming : false}
                     assistantMessage={isVisible ? assistantMessage : ""}
                     toolCalls={isVisible ? toolCalls : []}
@@ -616,7 +629,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                     isSending={isSending}
                     agentError={agentError}
                     user={user}
-                    itinerary={activeTripState?.itinerary ?? null}
+                    itinerary={effectiveTripState?.itinerary ?? null}
                     placeEntities={placeEntities}
                     selectedPlaceId={selectedPlaceId}
                     onPlaceSelect={setSelectedPlaceId}
@@ -647,7 +660,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                   }
                 >
                   <AgentCommandCenter
-                    messages={activeTripState?.messages ?? []}
+                    messages={effectiveTripState?.messages ?? []}
                     isStreaming={isVisible ? isStreaming : false}
                     assistantMessage={isVisible ? assistantMessage : ""}
                     toolCalls={isVisible ? toolCalls : []}
@@ -659,7 +672,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                     isSending={isSending}
                     agentError={agentError}
                     user={user}
-                    itinerary={activeTripState?.itinerary ?? null}
+                    itinerary={effectiveTripState?.itinerary ?? null}
                     placeEntities={placeEntities}
                     selectedPlaceId={selectedPlaceId}
                     onPlaceSelect={setSelectedPlaceId}
@@ -671,7 +684,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
             </section>
           ) : activeTab === "itineraries" ? (
             <ClientItineraryPage
-              agencyTrips={savedTripsForPortfolio}
+              agencyTrips={tripsForCip}
               agencyId={agencyId}
               onTourStateChange={setCipTourState}
               tourMobilePaneOverride={tourMobilePaneOverride}
