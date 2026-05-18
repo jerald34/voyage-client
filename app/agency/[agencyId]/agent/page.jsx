@@ -5,7 +5,7 @@ import AgentChatPanel from '@/app/components/agent/chat/AgentChatPanel';
 import AgentLiveWorkRail from '@/app/components/agent/live-work/AgentLiveWorkRail';
 import AgentReviewBar from '@/app/components/agent/layout/AgentReviewBar';
 import { useAgentRunStream } from '@/app/hooks/useAgentRunStream';
-import { createAgentThread, sendMessage, fetchItineraryDraft } from '@/app/lib/api';
+import { createAgentThread, sendMessage, fetchItineraryDraft } from '@/app/lib/api/index.js';
 
 export default function AgencyAgentPage({ params }) {
   const { agencyId } = use(params);

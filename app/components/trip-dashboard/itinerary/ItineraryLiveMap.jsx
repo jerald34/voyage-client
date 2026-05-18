@@ -1,17 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   APIProvider,
   Map,
-  useMap,
   AdvancedMarker,
   Pin,
   InfoWindow,
-  useMapsLibrary,
 } from "@vis.gl/react-google-maps";
 import { getReadablePlaceType } from "../../../lib/trip-dashboard/richItinerary.js";
-import { getGoogleMapsPlaceUrl } from "../../../lib/trip-dashboard/placeEntities.js";
+import Polyline from "./map/MapPolylineLayer.jsx";
+import {
+  FitBounds,
+  FocusActiveStop,
+  FocusLiveMarker,
+  FocusSelectedPlace,
+  MapHandler,
+} from "./map/MapMarkerLayer.jsx";
+import { ResolveClientRoute, ResolveAgencyFallbackPoint } from "./map/MapControls.jsx";
+import PlaceDetailPanel from "./map/PlaceDetailPanel.jsx";
+import RouteSummaryPanel from "./map/RouteSummaryPanel.jsx";
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "a1950eb4eae71842fa9590f9";
@@ -279,132 +287,8 @@ export function shouldShowPlannedPathFallback() {
   return false;
 }
 
-/**
- * Custom Polyline component for react-google-maps
- */
-function Polyline({ points, color = "#3b82f6", weight = 3, opacity = 0.5, dashArray, zIndex }) {
-  const map = useMap();
-  const maps = useMapsLibrary("maps");
-  const polylineRef = useRef(null);
-
-  useEffect(() => {
-    if (!map || !maps || !points.length) return;
-
-    if (polylineRef.current) {
-      polylineRef.current.setMap(null);
-    }
-
-    const polyline = new maps.Polyline({
-      path: points,
-      geodesic: true,
-      strokeColor: color,
-      strokeOpacity: opacity,
-      strokeWeight: weight,
-      zIndex,
-      icons: dashArray ? [{
-        icon: { path: "M 0,-1 0,1", strokeOpacity: 1, scale: 2 },
-        offset: "0",
-        repeat: "10px"
-      }] : []
-    });
-
-    polyline.setMap(map);
-    polylineRef.current = polyline;
-
-    return () => {
-      polyline.setMap(null);
-    };
-  }, [map, maps, points, color, weight, opacity, dashArray, zIndex]);
-
-  return null;
-}
-
-function FitBounds({ points, sidebarWidth, bottomPadding = 0 }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!map || !points.length) return;
-
-    const bounds = new google.maps.LatLngBounds();
-    points.forEach((point) => bounds.extend(point));
-
-    map.fitBounds(bounds, {
-      top: 60,
-      right: 60,
-      bottom: bottomPadding > 0 ? bottomPadding + 20 : 60,
-      left: sidebarWidth > 0 ? sidebarWidth + 40 : 60,
-    });
-  }, [map, points, sidebarWidth, bottomPadding]);
-
-  return null;
-}
-
-function FocusActiveStop({ points, activeIndex, sidebarWidth }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!map || !Number.isInteger(activeIndex) || activeIndex < 0 || activeIndex >= points.length) return;
-    const activePoint = points[activeIndex];
-    if (!activePoint) return;
-
-    map.panTo(activePoint);
-    if (sidebarWidth > 0) map.panBy(-(sidebarWidth / 2), 0);
-    const currentZoom = map.getZoom();
-    if (currentZoom < 14) {
-      map.setZoom(14);
-    }
-  }, [activeIndex, map, points, sidebarWidth]);
-
-  return null;
-}
-
-function FocusLiveMarker({ liveMarkers }) {
-  const map = useMap();
-  const latestMarker = liveMarkers[liveMarkers.length - 1] || null;
-
-  useEffect(() => {
-    if (!map || !latestMarker) return;
-    map.panTo({ lat: latestMarker.lat, lng: latestMarker.lng });
-    map.setZoom(15);
-  }, [latestMarker, map]);
-
-  return null;
-}
-
-function FocusSelectedPlace({ selectedPlace, sidebarWidth, bottomPadding = 0 }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!map || !selectedPlace) return;
-    map.panTo({ lat: selectedPlace.lat, lng: selectedPlace.lng });
-    if (sidebarWidth > 0) map.panBy(-(sidebarWidth / 2), 0);
-    if (bottomPadding > 0) {
-      map.panBy(0, Math.min(260, Math.round(bottomPadding * 0.5)));
-    }
-    const currentZoom = map.getZoom();
-    if (!currentZoom || currentZoom < 15) {
-      map.setZoom(15);
-    }
-  }, [bottomPadding, map, selectedPlace, sidebarWidth]);
-
-  return null;
-}
-
 function pointToLatLngLiteral(point) {
   return { lat: point.lat, lng: point.lng };
-}
-
-function latLngToPoint(latLng) {
-  if (!latLng) return null;
-
-  const lat = typeof latLng.lat === "function" ? latLng.lat() : Number(latLng.lat);
-  const lng = typeof latLng.lng === "function" ? latLng.lng() : Number(latLng.lng);
-
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return null;
-  }
-
-  return { lat, lng };
 }
 
 export function buildClientRouteRequest(points, travelMode) {
@@ -434,247 +318,6 @@ export function buildClientRouteRequest(points, travelMode) {
     travelMode: travelMode ?? "DRIVING",
     fields: ["path"],
   };
-}
-
-function ResolveClientRoute({ points, enabled, onRoute }) {
-  const routes = useMapsLibrary("routes");
-
-  useEffect(() => {
-    if (!enabled || !Array.isArray(points) || points.length <= 1) {
-      onRoute([], "idle");
-      return;
-    }
-
-    const Route = routes?.Route ?? globalThis.google?.maps?.routes?.Route;
-    const TravelMode = routes?.TravelMode ?? globalThis.google?.maps?.TravelMode;
-
-    if (!Route || !TravelMode) {
-      onRoute([], routes ? "unavailable" : "loading");
-      return;
-    }
-
-    let cancelled = false;
-    onRoute([], "loading");
-
-    const request = buildClientRouteRequest(points, TravelMode.DRIVING ?? "DRIVING");
-    if (!request) {
-      onRoute([], "failed");
-      return;
-    }
-
-    Promise.resolve(Route.computeRoutes(request))
-      .then((response) => {
-        if (cancelled) return;
-
-        const route = response?.routes?.[0];
-        const routePath = route?.path;
-        if (!Array.isArray(routePath) || routePath.length <= 1) {
-          onRoute([], "failed");
-          return;
-        }
-
-        onRoute(routePath.map(latLngToPoint).filter(Boolean), "ready");
-      })
-      .catch(() => {
-        if (cancelled) return;
-        onRoute([], "failed");
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled, onRoute, points, routes]);
-
-  return null;
-}
-
-function ResolveAgencyFallbackPoint({ fallback, enabled, onResolved }) {
-  const map = useMap();
-  const geocoding = useMapsLibrary("geocoding");
-
-  useEffect(() => {
-    if (!enabled || !fallback) {
-      onResolved(null);
-      return;
-    }
-
-    if (Number.isFinite(fallback.lat) && Number.isFinite(fallback.lng)) {
-      const point = {
-        id: fallback.id,
-        name: fallback.label,
-        title: fallback.label,
-        description: "Agency registered location",
-        formattedAddress: fallback.query,
-        lat: fallback.lat,
-        lng: fallback.lng,
-        source: "agency",
-      };
-      onResolved(point);
-      if (map) {
-        map.panTo({ lat: point.lat, lng: point.lng });
-        map.setZoom(11);
-      }
-      return;
-    }
-
-    if (!geocoding || !fallback.query) return;
-
-    let cancelled = false;
-    const geocoder = new geocoding.Geocoder();
-    geocoder.geocode({ address: fallback.query }, (results, status) => {
-      if (cancelled) return;
-      if (status !== "OK" || !Array.isArray(results) || !results[0]?.geometry?.location) {
-        onResolved(null);
-        return;
-      }
-
-      const location = results[0].geometry.location;
-      const point = {
-        id: fallback.id,
-        name: fallback.label,
-        title: fallback.label,
-        description: "Agency registered location",
-        formattedAddress: results[0].formatted_address || fallback.query,
-        lat: location.lat(),
-        lng: location.lng(),
-        source: "agency",
-      };
-
-      onResolved(point);
-      if (map) {
-        map.panTo({ lat: point.lat, lng: point.lng });
-        map.setZoom(11);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled, fallback, geocoding, map, onResolved]);
-
-  return null;
-}
-
-function PlaceDetailPanel({ place, onClose }) {
-  if (!place) return null;
-
-  const mapsUrl = getGoogleMapsPlaceUrl(place);
-
-  return (
-    <aside
-      className="absolute left-[18px] bottom-[18px] z-[520] grid gap-2 w-[min(360px,calc(100%-36px))] p-4 rounded-[18px] bg-[rgba(15,23,42,0.92)] text-white shadow-[0_18px_40px_rgba(15,23,42,0.28)] backdrop-blur-[12px]"
-      aria-live="polite"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <span className="text-[11px] font-bold tracking-[0.04em] uppercase text-white/60">
-            {place.source === "live" ? "Live map result" : place.dayLabel || "Itinerary stop"}
-          </span>
-          <h3 className="mt-0.5 text-xl leading-tight text-white font-serif">{place.name}</h3>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close place detail"
-          className="w-8 h-8 border-0 rounded-full bg-white/10 text-white cursor-pointer text-xl leading-none hover:bg-white/20 transition-colors"
-        >
-          ×
-        </button>
-      </div>
-      {place.formattedAddress ? <p className="m-0 text-[13px] leading-[1.45] text-white/70">{place.formattedAddress}</p> : null}
-      {place.timeLabel ? <small className="text-[11px] font-bold tracking-[0.04em] uppercase text-white/60">{place.timeLabel}</small> : null}
-      {mapsUrl ? (
-        <a
-          href={mapsUrl}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="inline-flex justify-center mt-1 rounded-full bg-[#dbeafe] text-[#0f3f86] py-[9px] px-3 text-[13px] font-extrabold no-underline hover:opacity-90 transition-opacity"
-        >
-          Open in Google Maps
-        </a>
-      ) : null}
-    </aside>
-  );
-}
-
-function formatRouteDistance(meters) {
-  const value = Number(meters);
-  if (!Number.isFinite(value)) return "";
-  if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)} km`;
-  return `${Math.round(value)} m`;
-}
-
-function formatRouteDuration(seconds) {
-  const value = Number(seconds);
-  if (!Number.isFinite(value)) return "";
-  const minutes = Math.max(1, Math.round(value / 60));
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  const remainder = minutes % 60;
-  return remainder ? `${hours} hr ${remainder} min` : `${hours} hr`;
-}
-
-function RouteSummaryPanel({ route }) {
-  if (!route?.origin || !route?.destination) return null;
-
-  const directionsUrl = buildDirectionsUrl(route);
-  const originLabel = getRoutePointLabel(route.origin, "Point A");
-  const destinationLabel = getRoutePointLabel(route.destination, "Point B");
-  const distance = formatRouteDistance(route.distanceMeters);
-  const duration = formatRouteDuration(route.durationSeconds);
-
-  return (
-    <aside className="absolute right-[18px] bottom-[18px] z-[520] grid gap-2 w-[min(360px,calc(100%-36px))] p-4 rounded-[18px] bg-[rgba(15,23,42,0.92)] text-white shadow-[0_18px_40px_rgba(15,23,42,0.28)] backdrop-blur-[12px]">
-      <span className="text-[11px] font-bold tracking-[0.04em] uppercase text-white/60">Latest route</span>
-      <strong className="text-[15px] leading-snug">
-        {originLabel} to {destinationLabel}
-      </strong>
-      {(distance || duration) && (
-        <span className="text-[13px] text-white/70">
-          {[distance, duration].filter(Boolean).join(" | ")}
-        </span>
-      )}
-      {directionsUrl ? (
-        <a
-          href={directionsUrl}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="inline-flex justify-center mt-1 rounded-full bg-[#dbeafe] text-[#0f3f86] py-[9px] px-3 text-[13px] font-extrabold no-underline hover:opacity-90 transition-opacity"
-        >
-          Open route in Google Maps
-        </a>
-      ) : null}
-    </aside>
-  );
-}
-
-function MapHandler({ selectedPlaceId, viewportPoints, setSelectedPoint, sidebarWidth, bottomPadding = 0 }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!selectedPlaceId) {
-      setSelectedPoint(null);
-      return;
-    }
-
-    const point = viewportPoints.find((p) => p.id === selectedPlaceId);
-    if (point) {
-      setSelectedPoint(point);
-      if (map) {
-        map.panTo({ lat: point.lat, lng: point.lng });
-        if (sidebarWidth > 0) map.panBy(-(sidebarWidth / 2), 0);
-        if (bottomPadding > 0) {
-          map.panBy(0, Math.min(260, Math.round(bottomPadding * 0.5)));
-        }
-        const currentZoom = map.getZoom();
-        if (!currentZoom || currentZoom < 14) {
-          map.setZoom(14);
-        }
-      }
-    }
-  }, [bottomPadding, selectedPlaceId, viewportPoints, map, setSelectedPoint, sidebarWidth]);
-
-  return null;
 }
 
 // Triggering rebuild to clear stale map hook state

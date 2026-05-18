@@ -5,7 +5,7 @@ import {
   fetchItineraryDraft,
   fetchThreadMessages,
   sendMessage,
-} from "../lib/api.js";
+} from "../lib/api/index.js";
 
 function createPlanningContext(type, id) {
   if (!id || (type !== "trip" && type !== "draft")) return null;

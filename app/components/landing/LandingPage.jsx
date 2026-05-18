@@ -1,76 +1,19 @@
 "use client";
 
 import ThemeToggle from "../theme/ThemeToggle";
+import {
+  SparkleIcon,
+  UsersIcon,
+  ZapIcon,
+  ArrowRightIcon,
+  ShareIcon,
+  CheckCircleIcon,
+  ShieldIcon,
+} from "../icons/index.js";
 
 /* ------------------------------------------------------------------ */
-/*  Inline SVG icon components (no external icon library dependency)   */
+/*  Inline SVG icon component (not in icon library yet)               */
 /* ------------------------------------------------------------------ */
-
-function IconSparkle({ className = "w-5 h-5" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3v1m0 16v1m-7.07-2.93l.71-.71M18.36 5.64l.71-.71M3 12h1m16 0h1M5.64 5.64l-.71-.71m13.43 13.43l-.71-.71" />
-      <circle cx="12" cy="12" r="4" />
-    </svg>
-  );
-}
-
-function IconUsers({ className = "w-5 h-5" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-
-function IconZap({ className = "w-5 h-5" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-    </svg>
-  );
-}
-
-function IconShare({ className = "w-5 h-5" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="18" cy="5" r="3" />
-      <circle cx="6" cy="12" r="3" />
-      <circle cx="18" cy="19" r="3" />
-      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-    </svg>
-  );
-}
-
-function IconCheckCircle({ className = "w-5 h-5" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  );
-}
-
-function IconShield({ className = "w-5 h-5" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    </svg>
-  );
-}
-
-function IconArrowRight({ className = "w-4 h-4" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="5" y1="12" x2="19" y2="12" />
-      <polyline points="12 5 19 12 12 19" />
-    </svg>
-  );
-}
 
 function IconPlay({ className = "w-4 h-4" }) {
   return (
@@ -98,10 +41,10 @@ const workflowSteps = [
 ];
 
 const agencyBenefits = [
-  { icon: IconUsers, title: "Multi-client management", description: "Handle dozens of active trips across your whole team from one dashboard." },
-  { icon: IconShare, title: "Branded share screens", description: "Client-facing itineraries match your agency's look and feel." },
-  { icon: IconCheckCircle, title: "Team collaboration", description: "Assign trips to agents, leave notes, and co-edit in real time." },
-  { icon: IconShield, title: "Approval workflows", description: "Built-in review stages so nothing ships without sign-off." },
+  { icon: UsersIcon, title: "Multi-client management", description: "Handle dozens of active trips across your whole team from one dashboard." },
+  { icon: ShareIcon, title: "Branded share screens", description: "Client-facing itineraries match your agency's look and feel." },
+  { icon: CheckCircleIcon, title: "Team collaboration", description: "Assign trips to agents, leave notes, and co-edit in real time." },
+  { icon: ShieldIcon, title: "Approval workflows", description: "Built-in review stages so nothing ships without sign-off." },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -183,7 +126,7 @@ export default function LandingPage({ onLogin, onContinue }) {
             className="inline-flex items-center gap-2 bg-secondary text-white rounded-pill px-6 py-3 text-sm font-extrabold border border-transparent transition-opacity duration-150 hover:opacity-90 cursor-pointer"
           >
             Get Early Access
-            <IconArrowRight className="w-4 h-4" />
+            <ArrowRightIcon className="w-4 h-4" />
           </button>
           <button
             type="button"
@@ -226,7 +169,7 @@ export default function LandingPage({ onLogin, onContinue }) {
           <div className="group relative overflow-hidden bg-surface rounded-lg shadow-soft border border-border/[0.08] p-6 flex flex-col justify-end min-h-[220px] hover:-translate-y-1 transition-transform duration-200">
             <div className="absolute inset-0 bg-gradient-to-br from-accent/[0.15] to-secondary/[0.06]" />
             <div className="relative">
-              <IconZap className="w-8 h-8 text-secondary mb-3" />
+              <ZapIcon className="w-8 h-8 text-secondary mb-3" />
               <h3 className="font-serif text-xl text-text-primary mb-1.5">
                 Client-Ready in Seconds
               </h3>
@@ -240,7 +183,7 @@ export default function LandingPage({ onLogin, onContinue }) {
           <div className="group relative overflow-hidden bg-surface rounded-lg shadow-soft border border-border/[0.08] p-6 flex flex-col justify-end min-h-[220px] hover:-translate-y-1 transition-transform duration-200">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.04] to-accent/[0.08]" />
             <div className="relative">
-              <IconUsers className="w-8 h-8 text-secondary mb-3" />
+              <UsersIcon className="w-8 h-8 text-secondary mb-3" />
               <h3 className="font-serif text-xl text-text-primary mb-1.5">
                 Centralized Client Directory
               </h3>
@@ -327,7 +270,7 @@ export default function LandingPage({ onLogin, onContinue }) {
             <div className="absolute inset-0 bg-gradient-to-br from-accent/30 via-secondary/[0.12] to-primary/[0.06]" />
             {/* Glassmorphic card overlay */}
             <div className="absolute inset-6 md:inset-10 bg-surface/60 backdrop-blur-md border border-border/[0.12] rounded-md shadow-soft flex flex-col items-center justify-center gap-4 p-8 text-center">
-              <IconSparkle className="w-10 h-10 text-secondary" />
+              <SparkleIcon className="w-10 h-10 text-secondary" />
               <p className="font-serif text-xl text-text-primary">Agency Dashboard Preview</p>
               <p className="text-text-muted text-sm max-w-[32ch]">
                 See your entire client portfolio, upcoming departures, and agent workload at a glance.
@@ -353,7 +296,7 @@ export default function LandingPage({ onLogin, onContinue }) {
             className="inline-flex items-center gap-2 bg-secondary text-white rounded-pill px-8 py-3.5 text-sm font-extrabold border border-transparent transition-opacity duration-150 hover:opacity-90 cursor-pointer"
           >
             Request Early Access
-            <IconArrowRight className="w-4 h-4" />
+            <ArrowRightIcon className="w-4 h-4" />
           </button>
         </div>
       </section>
