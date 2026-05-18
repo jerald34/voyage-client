@@ -14,6 +14,10 @@ import {
   normalizeItineraryResponse,
   resolveSavedPortfolioSelection,
 } from "../../../lib/trip-dashboard/savedItineraries.js";
+import {
+  TUTORIAL_ITINERARY_ID_PREFIX,
+  TUTORIAL_MOCK_FULL_ITINERARY,
+} from "../tutorial/tutorialMockData.js";
 import ShareDialog from "../itinerary/ShareDialog.jsx";
 import { generateItineraryPdf, titleToFilename } from "../../../lib/pdfExport.js";
 import MobileGlassSheet from "../mobile/MobileGlassSheet.jsx";
@@ -127,6 +131,13 @@ export default function ClientItineraryPage({
 
     if (!agencyId || !selectedTrip || !selectedItineraryId) {
       setFullItinerary(null);
+      setIsLoadingItinerary(false);
+      setItineraryError(null);
+      return () => { cancelled = true; };
+    }
+
+    if (selectedItineraryId.startsWith(TUTORIAL_ITINERARY_ID_PREFIX)) {
+      setFullItinerary(TUTORIAL_MOCK_FULL_ITINERARY);
       setIsLoadingItinerary(false);
       setItineraryError(null);
       return () => { cancelled = true; };
