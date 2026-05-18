@@ -27,6 +27,7 @@ export {
   fetchAgentThread,
   deleteAgentThread,
   sendMessage,
+  uploadChatImages,
   approveAgentThreadItinerary,
   fetchThreadMessages,
   cancelAgentRun,

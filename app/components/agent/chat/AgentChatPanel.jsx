@@ -12,6 +12,10 @@ export default function AgentChatPanel({
   activeToolLabel = null,
   toolCalls = [],
   onStop,
+  attachments = [],
+  onAddFiles,
+  onRemoveAttachment,
+  fileInputRef,
 }) {
   const [editState, setEditState] = useState(null); // { content, version }
 
@@ -63,13 +67,17 @@ export default function AgentChatPanel({
 
       <div className="flex-shrink-0">
         <AgentComposer
-          onSend={(content) => {
+          onSend={(content, files) => {
             setEditState(null);
-            onSend(content);
+            onSend(content, files);
           }}
           isLoading={isLoading}
           onStop={onStop}
           editMessage={editState}
+          attachments={attachments}
+          onAddFiles={onAddFiles}
+          onRemoveAttachment={onRemoveAttachment}
+          fileInputRef={fileInputRef}
         />
       </div>
     </div>

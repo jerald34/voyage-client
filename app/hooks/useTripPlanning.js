@@ -5,6 +5,7 @@ import {
   fetchItineraryDraft,
   fetchThreadMessages,
   sendMessage,
+  uploadChatImages,
 } from "../lib/api/index.js";
 
 function createPlanningContext(type, id) {
@@ -354,13 +355,14 @@ export function useTripPlanning(agencyId) {
     return promise;
   };
 
-  const dispatchMessage = async (content, startStream) => {
+  const dispatchMessage = async (content, startStream, imageFiles = []) => {
     if (!agencyId) {
       setAgentError("Missing agency context. Refresh and log in again.");
       return;
     }
     const cleanContent = content.trim();
-    if (!cleanContent || isSending) return;
+    const hasImages = Array.isArray(imageFiles) && imageFiles.length > 0;
+    if ((!cleanContent && !hasImages) || isSending) return;
 
     setAgentError("");
     setIsSending(true);
@@ -386,8 +388,24 @@ export function useTripPlanning(agencyId) {
 
       runTargetRef.current = createRunTargetKey(currentContext);
 
+      // Upload images to Cloudinary (if any) before sending the message.
+      let imageUrls = [];
+      if (hasImages) {
+        try {
+          const uploadResult = await uploadChatImages(agencyId, currentThreadId, imageFiles);
+          imageUrls = (uploadResult.images || []).map((img) => img.url);
+        } catch (uploadError) {
+          console.error("Failed to upload images", uploadError);
+          setAgentError("Failed to upload images. Please try again.");
+          setIsSending(false);
+          return;
+        }
+      }
+
       // Optimistic update
-      const message = { id: `user-${Date.now()}`, role: "user", content: cleanContent };
+      const messageContent = cleanContent || (hasImages ? "Sent image(s)" : "");
+      const metadata = imageUrls.length > 0 ? { imageUrls } : undefined;
+      const message = { id: `user-${Date.now()}`, role: "user", content: messageContent, metadata };
       if (currentContext.type === "draft") {
         setDraftThreadStates((prev) => ({
           ...prev,
@@ -406,7 +424,7 @@ export function useTripPlanning(agencyId) {
         }));
       }
 
-      const sendResult = await sendMessage(agencyId, currentThreadId, cleanContent);
+      const sendResult = await sendMessage(agencyId, currentThreadId, messageContent, imageUrls);
       const runId = sendResult?.runId || sendResult?.run?.id;
       if (runId && startStream) startStream(runId);
     } catch (error) {

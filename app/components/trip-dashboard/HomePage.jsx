@@ -623,7 +623,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                     toolCalls={isVisible ? toolCalls : []}
                     activeToolLabel={isVisible ? activeToolLabel : null}
                     streamingItinerary={isVisible ? streamingItinerary : null}
-                    dispatchAgentMessage={(prompt) => dispatchMessage(prompt, startStream)}
+                    dispatchAgentMessage={(prompt, files) => dispatchMessage(prompt, startStream, files)}
                     composerInput={composerInput}
                     setComposerInput={setComposerInput}
                     isSending={isSending}
@@ -666,7 +666,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                     toolCalls={isVisible ? toolCalls : []}
                     activeToolLabel={isVisible ? activeToolLabel : null}
                     streamingItinerary={isVisible ? streamingItinerary : null}
-                    dispatchAgentMessage={(prompt) => dispatchMessage(prompt, startStream)}
+                    dispatchAgentMessage={(prompt, files) => dispatchMessage(prompt, startStream, files)}
                     composerInput={composerInput}
                     setComposerInput={setComposerInput}
                     isSending={isSending}
