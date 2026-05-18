@@ -6,7 +6,7 @@ import prototypeData from "./data/prototype/trip-dashboard.js";
 import { usePrototypeState } from "./hooks/usePrototypeState.js";
 import { useTripDashboard } from "./hooks/useTripDashboard.js";
 import { useAuth } from "./hooks/useAuth.js";
-import { fetchApi } from "./lib/api";
+import { fetchApi } from "./lib/api/index.js";
 
 import LandingPage from "./components/landing/LandingPage.jsx";
 import HomePage from "./components/trip-dashboard/HomePage.jsx";

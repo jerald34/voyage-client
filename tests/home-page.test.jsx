@@ -10,6 +10,19 @@ if (!HTMLElement.prototype.scrollIntoView) {
   HTMLElement.prototype.scrollIntoView = vi.fn();
 }
 
+if (!window.matchMedia) {
+  window.matchMedia = vi.fn().mockImplementation((query) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn()
+  }));
+}
+
 const mocks = vi.hoisted(() => ({
   startStreamMock: vi.fn(),
   streamState: {
@@ -71,6 +84,24 @@ const mocks = vi.hoisted(() => ({
     },
   })),
   listAgencyTripsMock: vi.fn(async () => ({ trips: [] })),
+  bootstrapAgentWorkspaceMock: vi.fn(async () => ({
+    trips: [],
+    threads: [
+      { id: "thread-1", tripId: "trip-1", title: "", status: "ACTIVE", itineraryId: "itinerary-1" },
+      { id: "thread-2", tripId: "trip-2", title: "", status: "ACTIVE", itineraryId: "itinerary-2" },
+    ],
+    itinerarySummaries: {
+      "itinerary-1": { id: "itinerary-1", tripId: "trip-1", title: "", summary: null, status: "DRAFT", version: 1 },
+      "itinerary-2": { id: "itinerary-2", tripId: "trip-2", title: "", summary: null, status: "DRAFT", version: 2 },
+    },
+  })),
+  fetchThreadMessagesMock: vi.fn(async (_agencyId, threadId) => ({
+    messages:
+      threadId === "thread-2"
+        ? [{ id: "m-2", role: "ASSISTANT", content: "Second thread ready" }]
+        : [{ id: "m-1", role: "ASSISTANT", content: "First thread ready" }],
+    nextCursor: null,
+  })),
   approveAgentThreadItineraryMock: vi.fn(async (_agencyId, threadId, payload) => ({
     thread: {
       id: threadId,
@@ -193,6 +224,26 @@ function resetApiMocks() {
   }));
   mocks.listAgencyTripsMock.mockReset();
   mocks.listAgencyTripsMock.mockImplementation(async () => ({ trips: [] }));
+  mocks.bootstrapAgentWorkspaceMock.mockReset();
+  mocks.bootstrapAgentWorkspaceMock.mockImplementation(async () => ({
+    trips: [],
+    threads: [
+      { id: "thread-1", tripId: "trip-1", title: "", status: "ACTIVE", itineraryId: "itinerary-1" },
+      { id: "thread-2", tripId: "trip-2", title: "", status: "ACTIVE", itineraryId: "itinerary-2" },
+    ],
+    itinerarySummaries: {
+      "itinerary-1": { id: "itinerary-1", tripId: "trip-1", title: "", summary: null, status: "DRAFT", version: 1 },
+      "itinerary-2": { id: "itinerary-2", tripId: "trip-2", title: "", summary: null, status: "DRAFT", version: 2 },
+    },
+  }));
+  mocks.fetchThreadMessagesMock.mockReset();
+  mocks.fetchThreadMessagesMock.mockImplementation(async (_agencyId, threadId) => ({
+    messages:
+      threadId === "thread-2"
+        ? [{ id: "m-2", role: "ASSISTANT", content: "Second thread ready" }]
+        : [{ id: "m-1", role: "ASSISTANT", content: "First thread ready" }],
+    nextCursor: null,
+  }));
   mocks.approveAgentThreadItineraryMock.mockReset();
   mocks.approveAgentThreadItineraryMock.mockImplementation(async (_agencyId, threadId, payload) => ({
     thread: {
@@ -258,10 +309,12 @@ vi.mock("../app/hooks/useAuth.js", () => ({
 
 vi.mock("../app/lib/api.js", () => ({
   approveAgentThreadItinerary: (...args) => mocks.approveAgentThreadItineraryMock(...args),
+  bootstrapAgentWorkspace: (...args) => mocks.bootstrapAgentWorkspaceMock(...args),
   createAgentThread: (...args) => mocks.createAgentThreadMock(...args),
   deleteAgentThread: (...args) => mocks.deleteAgentThreadMock(...args),
   fetchAgentThread: (...args) => mocks.fetchAgentThreadMock(...args),
   fetchItineraryDraft: (...args) => mocks.fetchItineraryDraftMock(...args),
+  fetchThreadMessages: (...args) => mocks.fetchThreadMessagesMock(...args),
   listAgencyTrips: (...args) => mocks.listAgencyTripsMock(...args),
   listAgentThreads: (...args) => mocks.listAgentThreadsMock(...args),
   updateAgencySettings: (...args) => mocks.updateAgencySettingsMock(...args),
@@ -322,6 +375,7 @@ function DashboardHookHarness() {
 describe("useTripDashboard", () => {
   beforeEach(() => {
     resetApiMocks();
+    localStorage.setItem("voyage-home-tour-completed-v1", "true");
   });
 
   it("updates dashboard progress and derived highlights after mutations", () => {
@@ -423,6 +477,16 @@ describe("Agency portfolio HomePage", () => {
     expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
   });
 
+  it("gives settings its own scroll container for mobile dashboard layouts", async () => {
+    localStorage.setItem("voyage-home-tour-completed-v1", "true");
+
+    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+
+    expect(await screen.findByTestId("settings-page")).toHaveClass("overflow-y-auto");
+  });
+
   it("wires the New Itinerary button through the homepage", () => {
     const onNewItinerary = vi.fn();
 
@@ -494,28 +558,22 @@ describe("Agency portfolio HomePage", () => {
   });
 
   it("shows existing no-client draft threads in the dropdown after initial load", async () => {
-    mocks.listAgentThreadsMock.mockResolvedValue({
+    mocks.bootstrapAgentWorkspaceMock.mockResolvedValue({
+      trips: [],
       threads: [
-        {
-          id: "draft-refresh",
-          tripId: null,
-          title: "Refresh draft",
-          messages: [{ id: "draft-message", role: "ASSISTANT", content: "Refresh draft ready" }],
-          events: [{ type: "itinerary.updated", payload: { itineraryId: "draft-itinerary" } }],
-        },
-        {
-          id: "thread-1",
-          tripId: "trip-1",
-          messages: [{ id: "m-1", role: "ASSISTANT", content: "First thread ready" }],
-          events: [{ type: "itinerary.updated", payload: { itineraryId: "itinerary-1" } }],
-        },
+        { id: "draft-refresh", tripId: null, title: "Refresh draft", status: "ACTIVE", itineraryId: "draft-itinerary" },
+        { id: "thread-1", tripId: "trip-1", title: "", status: "ACTIVE", itineraryId: "itinerary-1" },
       ],
+      itinerarySummaries: {
+        "draft-itinerary": { id: "draft-itinerary", tripId: "trip-1", title: "", summary: null, status: "DRAFT", version: 1 },
+        "itinerary-1": { id: "itinerary-1", tripId: "trip-1", title: "", summary: null, status: "DRAFT", version: 1 },
+      },
     });
 
     render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
 
     await waitFor(() => {
-      expect(mocks.listAgentThreadsMock).toHaveBeenCalledWith("agency-1");
+      expect(mocks.bootstrapAgentWorkspaceMock).toHaveBeenCalledWith("agency-1");
     });
 
     expect(screen.getByRole("button", { name: "Current client: Santos Family" })).toBeInTheDocument();
@@ -707,7 +765,7 @@ describe("Agency portfolio HomePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send message" }));
     await screen.findByRole("button", { name: "Current client: Draft itinerary 1" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Save to Client" }));
+    fireEvent.click(screen.getByRole("button", { name: /save.*client/i }));
     fireEvent.change(screen.getByLabelText("Client name"), { target: { value: "Garcia Family" } });
     fireEvent.change(screen.getByLabelText("Destination"), { target: { value: "Olongapo City" } });
     fireEvent.click(screen.getByRole("button", { name: "Save client plan" }));
@@ -778,7 +836,7 @@ describe("Agency portfolio HomePage", () => {
                 id: "agency-1",
                 name: "Olongapo Travel Studio",
                 status: "VERIFIED",
-                businessPhone: "+63 900 111 2222",
+                businessPhone: "639001112222",
                 businessEmail: "hello@olongapo.example",
                 city: "Olongapo City",
                 country: "Philippines",
@@ -794,8 +852,114 @@ describe("Agency portfolio HomePage", () => {
     expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
     expect(screen.getByDisplayValue("Agency Owner")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Olongapo Travel Studio")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("+63 900 111 2222")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("639001112222")).toBeInTheDocument();
     expect(screen.getByDisplayValue("hello@olongapo.example")).toBeInTheDocument();
+  });
+
+  it("shows an anchored first-use guided tour until it is dismissed", async () => {
+    localStorage.removeItem("voyage-home-tour-completed-v1");
+
+    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    expect(await screen.findByRole("dialog", { name: "First-use tutorial" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Create a new itinerary" })).toBeInTheDocument();
+    expect(document.querySelector('[data-tour-target="new-itinerary"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-tour-spotlight="new-itinerary"]')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: "Close tutorial backdrop" })).toHaveLength(4);
+    });
+    expect(document.querySelector('[data-tour-spotlight="new-itinerary"]')).not.toHaveClass("backdrop-blur-[2px]");
+    expect(screen.getByRole("button", { name: "Next" })).toBeInTheDocument();
+
+    for (let step = 0; step < 4; step += 1) {
+      fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    }
+
+    fireEvent.click(screen.getByRole("button", { name: "Finish tutorial" }));
+
+    await waitFor(() => {
+      expect(localStorage.getItem("voyage-home-tour-completed-v1")).toBe("true");
+    });
+
+    expect(screen.queryByRole("dialog", { name: "First-use tutorial" })).not.toBeInTheDocument();
+  });
+
+  it("stores completion when the first-use tutorial is skipped", async () => {
+    localStorage.removeItem("voyage-home-tour-completed-v1");
+
+    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    expect(await screen.findByRole("dialog", { name: "First-use tutorial" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
+
+    await waitFor(() => {
+      expect(localStorage.getItem("voyage-home-tour-completed-v1")).toBe("true");
+    });
+  });
+
+  it("closes the first-use tutorial with Escape and stores completion", async () => {
+    localStorage.removeItem("voyage-home-tour-completed-v1");
+
+    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    expect(await screen.findByRole("dialog", { name: "First-use tutorial" })).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(localStorage.getItem("voyage-home-tour-completed-v1")).toBe("true");
+    });
+
+    expect(screen.queryByRole("dialog", { name: "First-use tutorial" })).not.toBeInTheDocument();
+  });
+
+  it("keeps Tab focus inside the first-use tutorial controls", async () => {
+    localStorage.removeItem("voyage-home-tour-completed-v1");
+
+    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    const dialog = await screen.findByRole("dialog", { name: "First-use tutorial" });
+    const skipButton = screen.getByRole("button", { name: "Skip tutorial" });
+    const nextButton = screen.getByRole("button", { name: "Next" });
+    const focusableElements = Array.from(dialog.querySelectorAll("button:not([disabled])"));
+
+    skipButton.focus();
+    fireEvent.keyDown(dialog, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(focusableElements.at(-1));
+
+    nextButton.focus();
+    fireEvent.keyDown(dialog, { key: "Tab" });
+    expect(dialog).toContainElement(document.activeElement);
+  });
+
+  it("moves the guided tour spotlight through real dashboard targets", async () => {
+    localStorage.removeItem("voyage-home-tour-completed-v1");
+
+    render(<HomePage user={user} agencyTrips={agencyTrips} onContinue={vi.fn()} />);
+
+    expect(await screen.findByRole("dialog", { name: "First-use tutorial" })).toBeInTheDocument();
+    expect(document.querySelector('[data-tour-spotlight="new-itinerary"]')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("heading", { name: "Switch active clients" })).toBeInTheDocument();
+    expect(document.querySelector('[data-tour-spotlight="client-switcher"]')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("heading", { name: "Work in the planning space" })).toBeInTheDocument();
+    expect(document.querySelector('[data-tour-spotlight="workspace"]')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("heading", { name: "Use the map context" })).toBeInTheDocument();
+    expect(document.querySelector('[data-tour-spotlight="workspace-map"]')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("heading", { name: "Replay the guide later" })).toBeInTheDocument();
+    expect(document.querySelector('[data-tour-spotlight="settings-replay"]')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.getByRole("heading", { name: "Use the map context" })).toBeInTheDocument();
+    expect(document.querySelector('[data-tour-spotlight="workspace-map"]')).toBeInTheDocument();
   });
 
   it("normalizes saved workspace fields after a successful agency update", async () => {
@@ -804,7 +968,7 @@ describe("Agency portfolio HomePage", () => {
         id: "agency-1",
         name: "Voyage Travel Co",
         status: "VERIFIED",
-        businessPhone: "+63 900 111 2222",
+        businessPhone: "639001112222",
         businessEmail: "hello@voyage.example",
         city: "Olongapo City",
         country: "Philippines",
@@ -825,7 +989,7 @@ describe("Agency portfolio HomePage", () => {
           id: "agency-1",
           name: "Voyage Travel Studio",
           status: "VERIFIED",
-          businessPhone: "+63 900 111 2222",
+          businessPhone: "639001112222",
           businessEmail: "hello@voyage.example",
           city: "Olongapo City",
           country: "Philippines",
@@ -849,7 +1013,7 @@ describe("Agency portfolio HomePage", () => {
     await waitFor(() => {
       expect(onUpdateAgency).toHaveBeenCalledWith({
         name: "Voyage Travel Co",
-        businessPhone: "+63 900 111 2222",
+        businessPhone: "639001112222",
         businessEmail: "hello@voyage.example",
         city: "Olongapo City",
         country: "Philippines",
@@ -857,11 +1021,46 @@ describe("Agency portfolio HomePage", () => {
     });
 
     expect(screen.getByLabelText("Agency name")).toHaveValue("Voyage Travel Co");
-    expect(screen.getByLabelText("Business phone")).toHaveValue("+63 900 111 2222");
+    expect(screen.getByLabelText("Business phone")).toHaveValue("639001112222");
     expect(screen.getByLabelText("Business email")).toHaveValue("hello@voyage.example");
     expect(screen.getByLabelText("City")).toHaveValue("Olongapo City");
     expect(screen.getByLabelText("Country")).toHaveValue("Philippines");
     expect(screen.getByLabelText("Agency name")).not.toHaveValue("  Voyage Travel Co  ");
     expect(screen.getByRole("button", { name: "Save workspace changes" })).toBeDisabled();
+  });
+
+  it("offers a replay tutorial action from settings help", () => {
+    const onReplayTutorial = vi.fn();
+
+    render(
+      <SettingsPage
+        user={{
+          id: "user-1",
+          email: "owner@voyage.test",
+          displayName: "Agency Owner",
+          role: "USER",
+          status: "ACTIVE",
+          emailVerifiedAt: "2026-05-01T00:00:00.000Z",
+        }}
+        agency={{
+          id: "agency-1",
+          name: "Voyage Travel Studio",
+          status: "VERIFIED",
+          businessPhone: "639001112222",
+          businessEmail: "hello@voyage.example",
+          city: "Olongapo City",
+          country: "Philippines",
+        }}
+        membership={{ role: "OWNER", status: "ACTIVE" }}
+        logout={vi.fn()}
+        onUpdateProfile={vi.fn()}
+        onUpdateAgency={vi.fn()}
+        onReplayTutorial={onReplayTutorial}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Replay tutorial" }));
+
+    expect(onReplayTutorial).toHaveBeenCalledTimes(1);
   });
 });

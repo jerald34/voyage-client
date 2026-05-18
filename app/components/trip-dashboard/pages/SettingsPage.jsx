@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "../../theme/ThemeProvider";
+import { voyageTourHelpBullets, voyageTourSteps } from "../tutorial/tutorialContent.js";
 
 function formatReadOnlyValue(value) {
   const text = String(value ?? "").trim();
@@ -38,9 +39,13 @@ function getFieldClass(readOnly = false) {
   ].join(" ");
 }
 
-function Panel({ eyebrow, title, description, children }) {
+function sanitizeBusinessPhoneInput(value) {
+  return String(value ?? "").replace(/\D/g, "");
+}
+
+function Panel({ eyebrow, title, description, children, className = "" }) {
   return (
-    <section className="rounded-[24px] border border-border bg-surface/95 p-5 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
+    <section className={`rounded-[24px] border border-border bg-surface/95 p-5 shadow-[0_16px_40px_rgba(15,23,42,0.08)] ${className}`}>
       <div className="mb-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-soft">{eyebrow}</p>
         <h2 className="mt-1 text-lg font-semibold text-text-primary">{title}</h2>
@@ -60,24 +65,36 @@ function Field({ label, value, readOnly = false, id }) {
   );
 }
 
-function TextInputField({ label, id, value, onChange, placeholder, readOnly = false, autoComplete }) {
+function TextInputField({ label, id, value, onChange, placeholder, readOnly = false, autoComplete, type = "text", inputMode, pattern, maxLength }) {
   return (
     <label className="block">
       <span className="text-xs font-semibold uppercase tracking-[0.08em] text-text-soft">{label}</span>
       <input
         id={id}
         className={getFieldClass(readOnly)}
+        type={type}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
         readOnly={readOnly}
         autoComplete={autoComplete}
+        inputMode={inputMode}
+        pattern={pattern}
+        maxLength={maxLength}
       />
     </label>
   );
 }
 
-export default function SettingsPage({ user, agency, membership, logout, onUpdateProfile, onUpdateAgency }) {
+export default function SettingsPage({
+  user,
+  agency,
+  membership,
+  logout,
+  onUpdateProfile,
+  onUpdateAgency,
+  onReplayTutorial,
+}) {
   const { theme, setTheme } = useTheme();
 
   const [displayName, setDisplayName] = useState("");
@@ -108,7 +125,7 @@ export default function SettingsPage({ user, agency, membership, logout, onUpdat
 
   useEffect(() => {
     const nextAgencyName = String(agency?.name ?? "");
-    const nextBusinessPhone = String(agency?.businessPhone ?? "");
+    const nextBusinessPhone = sanitizeBusinessPhoneInput(agency?.businessPhone ?? "");
     const nextBusinessEmail = String(agency?.businessEmail ?? "");
     const nextCity = String(agency?.city ?? "");
     const nextCountry = String(agency?.country ?? "");
@@ -171,7 +188,7 @@ export default function SettingsPage({ user, agency, membership, logout, onUpdat
 
     const normalizedAgencyValues = {
       name: agencyName.trim(),
-      businessPhone: businessPhone.trim(),
+      businessPhone: sanitizeBusinessPhoneInput(businessPhone),
       businessEmail: businessEmail.trim(),
       city: city.trim(),
       country: country.trim(),
@@ -217,16 +234,49 @@ export default function SettingsPage({ user, agency, membership, logout, onUpdat
   };
 
   const workspaceFields = useMemo(() => ([
-    { label: "Agency name", value: agencyName },
-    { label: "Business phone", value: businessPhone },
-    { label: "Business email", value: businessEmail },
-    { label: "City", value: city },
-    { label: "Country", value: country },
+    {
+      label: "Agency name",
+      value: agencyName,
+      onChange: (event) => setAgencyName(event.target.value),
+      placeholder: "Enter agency name",
+    },
+    {
+      label: "Business phone",
+      value: businessPhone,
+      onChange: (event) => setBusinessPhone(sanitizeBusinessPhoneInput(event.target.value)),
+      placeholder: "Digits only",
+      inputMode: "numeric",
+      pattern: "[0-9]*",
+      maxLength: 30,
+      autoComplete: "tel-national",
+    },
+    {
+      label: "Business email",
+      value: businessEmail,
+      onChange: (event) => setBusinessEmail(event.target.value),
+      placeholder: "Enter business email",
+      autoComplete: "email",
+    },
+    {
+      label: "City",
+      value: city,
+      onChange: (event) => setCity(event.target.value),
+      placeholder: "Enter city",
+    },
+    {
+      label: "Country",
+      value: country,
+      onChange: (event) => setCountry(event.target.value),
+      placeholder: "Enter country",
+    },
     { label: "Membership role", value: formatReadOnlyValue(membership?.role) },
   ]), [agencyName, businessEmail, businessPhone, city, country, membership?.role]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 rounded-[28px] border border-border/10 bg-background p-4 text-text-primary">
+    <div
+      data-testid="settings-page"
+      className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain rounded-[28px] border border-border/10 bg-background p-4 pb-8 text-text-primary max-[900px]:rounded-none max-[900px]:border-0 max-[900px]:pb-[calc(2rem+env(safe-area-inset-bottom))]"
+    >
       <header className="flex flex-col gap-2 rounded-[24px] border border-border bg-gradient-to-r from-surface to-surface-elevated p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-soft">Workspace settings</p>
         <h1 className="text-2xl font-semibold tracking-[-0.02em]">Settings</h1>
@@ -298,21 +348,14 @@ export default function SettingsPage({ user, agency, membership, logout, onUpdat
                   label={field.label}
                   id={field.label.toLowerCase().replace(/\s+/g, "-")}
                   value={field.value || ""}
-                  onChange={
-                    field.label === "Agency name"
-                      ? (event) => setAgencyName(event.target.value)
-                      : field.label === "Business phone"
-                        ? (event) => setBusinessPhone(event.target.value)
-                        : field.label === "Business email"
-                          ? (event) => setBusinessEmail(event.target.value)
-                          : field.label === "City"
-                            ? (event) => setCity(event.target.value)
-                            : field.label === "Country"
-                              ? (event) => setCountry(event.target.value)
-                              : undefined
-                  }
+                  onChange={field.onChange}
                   readOnly={field.label === "Membership role" || !canEditWorkspace}
-                  placeholder={field.label}
+                  placeholder={field.placeholder || field.label}
+                  type={field.type}
+                  inputMode={field.inputMode}
+                  pattern={field.pattern}
+                  maxLength={field.maxLength}
+                  autoComplete={field.autoComplete}
                 />
               ))}
             </div>
@@ -376,6 +419,67 @@ export default function SettingsPage({ user, agency, membership, logout, onUpdat
               >
                 Logout
               </button>
+            </div>
+          </div>
+        </Panel>
+
+        <Panel
+          eyebrow="Help"
+          title="First-use tutorial"
+          description="Replay the homepage walkthrough anytime or use the quick reference below to remember where each action lives."
+          className="xl:col-span-2"
+        >
+          <div className="grid gap-4 rounded-[22px] border border-border bg-surface/80 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)] xl:grid-cols-[320px_minmax(0,1fr)]">
+            <div className="flex flex-col gap-4 xl:border-r xl:border-border/70 xl:pr-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-soft">Tutorial replay</p>
+                <h3 className="mt-2 text-lg font-semibold tracking-[-0.02em] text-text-primary">Walk through the live dashboard</h3>
+                <p className="mt-1 text-sm leading-6 text-text-soft">
+                  A compact reference for the guided tour that highlights real controls in place.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="min-h-11 w-fit rounded-pill bg-secondary px-5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => onReplayTutorial?.()}
+                disabled={!onReplayTutorial}
+              >
+                Replay tutorial
+              </button>
+
+              <ul className="grid gap-2">
+                {voyageTourHelpBullets.map((bullet) => (
+                  <li
+                    key={bullet}
+                    className="rounded-2xl border border-border bg-background px-3 py-2.5 text-sm leading-5 text-text-soft"
+                  >
+                    {bullet}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-soft">Quick steps</p>
+                <p className="hidden text-xs text-text-soft lg:block">{voyageTourSteps.length} guided stops</p>
+              </div>
+              <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+                {voyageTourSteps.map((step, index) => (
+                  <article
+                    key={step.title}
+                    className="min-h-[148px] rounded-2xl border border-border bg-background px-3.5 py-3"
+                    aria-label={`Step ${index + 1}: ${step.title}`}
+                  >
+                    <p className="inline-flex h-6 items-center rounded-pill bg-secondary/10 px-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary">
+                      Step {index + 1}
+                    </p>
+                    <h4 className="mt-2 text-sm font-semibold leading-5 text-text-primary">{step.title}</h4>
+                    <p className="mt-1 text-xs leading-5 text-text-soft">{step.description}</p>
+                  </article>
+                ))}
+              </div>
             </div>
           </div>
         </Panel>

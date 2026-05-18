@@ -1,17 +1,18 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import ClientNameCombobox from "./ClientNameCombobox.jsx";
 
 const normalizeText = (v) => (typeof v === "string" ? v.trim() : "");
 const normalizeNum = (v) => { const t = normalizeText(v); return t ? (Number.isFinite(Number(t)) ? Number(t) : undefined) : undefined; };
 const formatVal = (v) => (typeof v === "number" && Number.isFinite(v)) ? String(v) : (typeof v === "string" ? v : "");
 const formatDate = (v) => { const i = formatVal(v); return i ? (i.includes("T") ? i.split("T")[0] : i.slice(0, 10)) : ""; };
 
-export default function ApproveItineraryModal({ itinerary, isSaving, error, onCancel, onSubmit }) {
+export default function ApproveItineraryModal({ itinerary, isSaving, error, onCancel, onSubmit, initialClientName, existingClientNames }) {
   const initialValues = useMemo(() => {
     const trip = itinerary?.trip ?? {};
     return {
-      clientName: normalizeText(trip.clientName),
+      clientName: initialClientName ?? normalizeText(trip?.clientName) ?? "",
       destination: normalizeText(trip.destination) || normalizeText(trip.destinationSummary) || normalizeText(itinerary?.title ?? ""),
       startDate: formatDate(trip.startDate),
       endDate: formatDate(trip.endDate),
@@ -69,13 +70,13 @@ export default function ApproveItineraryModal({ itinerary, isSaving, error, onCa
           <div className="grid grid-cols-2 gap-3.5">
             <label className="grid gap-2 min-w-0">
               <span className="text-xs font-bold text-[#4b5563]">Client name</span>
-              <input
-                type="text"
+              <ClientNameCombobox
+                id="approve-client-name"
                 value={formState.clientName}
-                onChange={(e) => setFormState({...formState, clientName: e.target.value})}
-                required
+                onChange={(next) => setFormState({ ...formState, clientName: next })}
+                suggestions={existingClientNames ?? []}
                 placeholder="Enter client name"
-                className="w-full min-w-0 px-3 py-[11px] rounded-sm border border-[#dbe2ea] bg-white text-sm text-[#111827] transition-[border-color,box-shadow] duration-[150ms] ease placeholder:text-[#9ca3af] focus:outline-none focus:border-[#b65d48] focus:shadow-[0_0_0_4px_rgba(182,93,72,0.12)]"
+                required
               />
             </label>
             <label className="grid gap-2 min-w-0">

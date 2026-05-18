@@ -4,6 +4,13 @@ import ChatMessage from "./ChatMessage.jsx";
 import ChatInput from "./ChatInput.jsx";
 import RichItineraryMessage from "./RichItineraryMessage.jsx";
 
+function humanizeToolName(name) {
+  return String(name ?? "")
+    .replace(/[_\.]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function getInitials(name) {
   const parts = String(name ?? "")
     .trim()
@@ -171,37 +178,46 @@ export default function AgentCommandCenter({
 
         {isStreaming && (activeToolLabel != null || activeToolCalls.length > 0) && (
           <div className="flex gap-3 max-w-full">
-            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[11px] font-extrabold mt-1 bg-secondary text-white" aria-hidden="true">
+            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[11px] font-extrabold mt-1 bg-secondary text-white shadow-sm" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <path d="m16 10-4 4-4-4" />
               </svg>
             </div>
-            <div className="flex flex-col gap-1.5 max-w-[85%]">
-              <div className="px-4 py-3 rounded-md bg-[rgba(255,255,255,0.05)] backdrop-blur-md border border-white/10 flex flex-col gap-2.5 w-full" role="status" aria-live="polite">
-                {/* completed tools trail */}
-                {activeToolCalls.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {activeToolCalls.map((name) => (
-                      <span key={name} className="inline-flex items-center gap-1 text-[11px] text-text-soft bg-white/5 border border-white/10 rounded-full px-2 py-[2px]">
-                        <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#4ade80] flex-shrink-0">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        {String(name).replace(/[_.]+/g, ' ').trim()}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {/* animated dots + active label */}
-                <div className="flex items-center gap-2.5 text-sm text-text-primary">
-                  <span className="cc-thinking-dots" aria-hidden="true">
-                    <span /><span /><span />
-                  </span>
-                  <span>{activeToolLabel || 'Thinking...'}</span>
+            <div className="flex flex-col gap-1.5 max-w-[85%] min-w-0">
+              <div
+                className="cc-tool-status-card w-full rounded-[20px] rounded-bl-[4px] border border-white/10 bg-[rgba(255,255,255,0.06)] px-4 py-3.5 backdrop-blur-md shadow-[0_16px_40px_rgba(15,23,42,0.16)]"
+                role="status"
+                aria-live="polite"
+              >
+                <div className="flex flex-wrap gap-1.5">
+                  {activeToolCalls.map((name, index) => (
+                    <span
+                      key={name}
+                      className="cc-tool-chip inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-text-soft"
+                      style={{ animationDelay: `${index * 90}ms` }}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-secondary" aria-hidden="true" />
+                      {humanizeToolName(name)}
+                    </span>
+                  ))}
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.05em] font-bold text-secondary opacity-70">
-                  <span className="cc-live-dot w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true" />
-                  Live
+
+                <div className="mt-2.5 flex items-center gap-2.5 text-sm text-text-primary">
+                  <span className="cc-thinking-dots" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                  <span className="font-medium">{activeToolLabel || "Thinking..."}</span>
+                </div>
+
+                <div className="mt-2.5 flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.08em] font-bold text-text-soft">
+                  <span>{activeToolCalls.length > 0 ? "Tool activity" : "Live status"}</span>
+                  <span className="flex items-center gap-1.5 text-secondary/80">
+                    <span className="cc-live-dot w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true" />
+                    Live
+                  </span>
                 </div>
               </div>
             </div>
@@ -213,9 +229,19 @@ export default function AgentCommandCenter({
           .cc-thinking-dots span:nth-child(1){animation-delay:0s}
           .cc-thinking-dots span:nth-child(2){animation-delay:.15s}
           .cc-thinking-dots span:nth-child(3){animation-delay:.3s}
+          .cc-tool-status-card { animation: cc-card-breathe 3.4s ease-in-out infinite; transform-origin: center; }
+          .cc-tool-chip { animation: cc-chip-pop 320ms ease-out both; }
           .cc-live-dot{animation:cc-live-pulse 1.4s ease-in-out infinite}
           @keyframes cc-bounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
           @keyframes cc-live-pulse{0%,100%{transform:scale(.9);opacity:.7}50%{transform:scale(1);opacity:1}}
+          @keyframes cc-card-breathe{0%,100%{transform:translateY(0);box-shadow:0 16px 40px rgba(15,23,42,.16)}50%{transform:translateY(-1px);box-shadow:0 20px 50px rgba(15,23,42,.20)}}
+          @keyframes cc-chip-pop{0%{transform:translateY(4px) scale(.98);opacity:0}100%{transform:translateY(0) scale(1);opacity:1}}
+          @media (prefers-reduced-motion: reduce) {
+            .cc-tool-status-card,
+            .cc-tool-chip,
+            .cc-thinking-dots span,
+            .cc-live-dot { animation: none !important; }
+          }
         `}</style>
 
         {hasStreamingBubble && (
