@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import { fetchPublicItinerary, postPublicComment } from "../../../lib/api/index.js";
+import { fetchPublicItinerary, postPublicComment, listPublicComments } from "../../../lib/api/index.js";
+import { formatCommentTime } from "../../../lib/formatters.js";
 import { generateItineraryPdf, titleToFilename } from "../../../lib/pdfExport.js";
 import ThemeToggle from "../../../components/theme/ThemeToggle";
 import Spinner from "../../../components/ui/Spinner";
@@ -189,7 +190,7 @@ function NamePromptBanner({ onComplete }) {
 
 /* ── inline comment form ─────────────────────────────────────── */
 
-function CommentForm({ token, dayNumber, itemId, commenterName, commenterEmail, onCancel, onPosted }) {
+function CommentForm({ token, dayNumber, itemId, commenterName, commenterEmail, onCancel, onPosted, onRefresh }) {
   const [text, setText] = useState("");
   const [status, setStatus] = useState("idle"); // idle | submitting | success | error
   const textareaRef = useRef(null);
@@ -211,9 +212,10 @@ function CommentForm({ token, dayNumber, itemId, commenterName, commenterEmail, 
     if (itemId != null) payload.itemId = itemId;
 
     try {
-      await postPublicComment(token, payload);
+      const res = await postPublicComment(token, payload);
       setStatus("success");
-      onPosted({ content: trimmed, dayNumber, itemId, authorName: commenterName });
+      onPosted(res?.comment ?? { content: trimmed, dayNumber, itemId, authorName: commenterName, status: "PENDING", createdAt: new Date().toISOString() });
+      onRefresh?.();
       setTimeout(() => onCancel(), 2000);
     } catch {
       setStatus("error");
@@ -267,14 +269,32 @@ function CommentForm({ token, dayNumber, itemId, commenterName, commenterEmail, 
 
 /* ── submitted comment chip ──────────────────────────────────── */
 
-function PendingCommentChip({ comment }) {
+function CommentChip({ comment }) {
+  const isAddressed = comment.status === "ADDRESSED" && comment.agencyReply;
+  const wrapperCls = isAddressed
+    ? "grid gap-1 px-[14px] py-[10px] mt-[6px] bg-surface-elevated border border-border border-l-[3px] border-l-[#16a34a] rounded-sm"
+    : "grid gap-1 px-[14px] py-[10px] mt-[6px] bg-secondary/[0.06] border border-dashed border-secondary/30 rounded-sm";
+  const badgeCls = isAddressed
+    ? "inline-flex items-center px-[7px] py-px bg-[#16a34a]/15 text-[#16a34a] rounded-pill text-[10px] font-bold tracking-[0.04em] uppercase"
+    : "inline-flex items-center px-[7px] py-px bg-secondary/[0.12] text-secondary rounded-pill text-[10px] font-bold tracking-[0.04em] uppercase";
   return (
-    <div className="grid gap-1 px-[14px] py-[10px] mt-[6px] bg-[rgba(216,180,160,0.15)] border border-dashed border-secondary/30 rounded-sm">
+    <div className={wrapperCls}>
       <div className="flex items-center gap-2">
-        <span className="text-[12px] font-semibold text-primary">{comment.authorName}</span>
-        <span className="inline-flex items-center px-[7px] py-px bg-secondary/[0.12] text-secondary rounded-pill text-[10px] font-bold tracking-[0.04em] uppercase">Pending</span>
+        <span className="text-[12px] font-semibold text-text-primary">{comment.authorName}</span>
+        <span className={badgeCls}>{isAddressed ? "Replied" : "Pending"}</span>
       </div>
-      <p className="m-0 text-[13px] leading-[1.5] text-text-soft whitespace-pre-wrap">{comment.content}</p>
+      <p className="m-0 text-[13px] leading-[1.5] text-text-primary whitespace-pre-wrap">{comment.content}</p>
+      {isAddressed && (
+        <div className="mt-2 bg-background border-l-[3px] border-[#16a34a] rounded-sm px-3 py-2 flex flex-col gap-1">
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.04em] text-[#16a34a]">
+            Agency reply
+          </div>
+          <p className="m-0 text-[13px] leading-[1.5] text-text-primary whitespace-pre-wrap">{comment.agencyReply}</p>
+          {comment.agencyRepliedAt && (
+            <span className="text-[11px] text-text-soft">{formatCommentTime(comment.agencyRepliedAt)}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -322,8 +342,19 @@ export default function PublicItineraryPage() {
   /* active comment form: null | { type, dayNumber?, itemId? } */
   const [activeForm, setActiveForm] = useState(null);
 
-  /* session comments */
-  const [sessionComments, setSessionComments] = useState([]);
+  /* persisted comments (fetched from backend, includes agency replies) */
+  const [comments, setComments] = useState([]);
+
+  const refreshComments = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await listPublicComments(token);
+      const list = Array.isArray(res?.comments) ? res.comments : [];
+      setComments(list);
+    } catch {
+      /* swallow — keep previous state */
+    }
+  }, [token]);
 
   /* ── load commenter identity from localStorage ── */
   useEffect(() => {
@@ -370,6 +401,15 @@ export default function PublicItineraryPage() {
       cancelled = true;
     };
   }, [token]);
+
+  /* ── fetch persisted comments + agency replies ── */
+  useEffect(() => {
+    if (!token) return;
+    refreshComments();
+    const onFocus = () => refreshComments();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [token, refreshComments]);
 
   /* ── transform items for map ── */
   const mapItems = useMemo(() => {
@@ -442,23 +482,26 @@ export default function PublicItineraryPage() {
   }
 
   function handlePosted(comment) {
-    setSessionComments((prev) => [...prev, comment]);
+    setComments((prev) => {
+      if (comment?.id && prev.some((c) => c.id === comment.id)) return prev;
+      return [...prev, comment];
+    });
   }
 
   function getItemComments(dayNumber, itemId) {
-    return sessionComments.filter(
+    return comments.filter(
       (c) => c.dayNumber === dayNumber && c.itemId === itemId
     );
   }
 
   function getDayComments(dayNumber) {
-    return sessionComments.filter(
+    return comments.filter(
       (c) => c.dayNumber === dayNumber && c.itemId == null
     );
   }
 
   function getGeneralComments() {
-    return sessionComments.filter(
+    return comments.filter(
       (c) => c.dayNumber == null && c.itemId == null
     );
   }
@@ -658,6 +701,7 @@ export default function PublicItineraryPage() {
                       commenterEmail={commenterEmail}
                       onCancel={closeForm}
                       onPosted={handlePosted}
+                      onRefresh={refreshComments}
                     />
                   </div>
                 )}
@@ -665,7 +709,7 @@ export default function PublicItineraryPage() {
                 {/* pending day-level comments */}
                 {getDayComments(day.dayNumber).map((c, i) => (
                   <div key={i}>
-                    <PendingCommentChip comment={c} />
+                    <CommentChip comment={c} />
                   </div>
                 ))}
 
@@ -755,12 +799,13 @@ export default function PublicItineraryPage() {
                               commenterEmail={commenterEmail}
                               onCancel={closeForm}
                               onPosted={handlePosted}
+                      onRefresh={refreshComments}
                             />
                           )}
 
                           {/* pending item-level comments */}
                           {getItemComments(day.dayNumber, item.id).map((c, i) => (
-                            <PendingCommentChip key={i} comment={c} />
+                            <CommentChip key={i} comment={c} />
                           ))}
                         </div>
                       </div>
@@ -790,6 +835,7 @@ export default function PublicItineraryPage() {
                 commenterEmail={commenterEmail}
                 onCancel={closeForm}
                 onPosted={handlePosted}
+                      onRefresh={refreshComments}
               />
             ) : (
               <CommentTriggerBtn
@@ -799,7 +845,7 @@ export default function PublicItineraryPage() {
             )}
 
             {getGeneralComments().map((c, i) => (
-              <PendingCommentChip key={i} comment={c} />
+              <CommentChip key={i} comment={c} />
             ))}
           </div>
 

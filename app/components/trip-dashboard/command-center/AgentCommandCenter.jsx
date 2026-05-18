@@ -3,6 +3,7 @@ import ClientSwitcher from "./ClientSwitcher.jsx";
 import ChatMessage from "./ChatMessage.jsx";
 import ChatInput from "./ChatInput.jsx";
 import RichItineraryMessage from "./RichItineraryMessage.jsx";
+import useImageAttachments from "../../../hooks/useImageAttachments.js";
 
 function humanizeToolName(name) {
   return String(name ?? "")
@@ -51,6 +52,7 @@ export default function AgentCommandCenter({
 }) {
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+  const imageAttachments = useImageAttachments();
 
   const displayedMessages = useMemo(() => {
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -130,7 +132,8 @@ export default function AgentCommandCenter({
   function handleKeyDown(event) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      if (composerInput.trim() && !isSending) {
+      const hasContent = composerInput.trim() || imageAttachments.hasAttachments;
+      if (hasContent && !isSending) {
         submitComposer(event);
       }
     }
@@ -138,9 +141,12 @@ export default function AgentCommandCenter({
 
   function submitComposer(event) {
     event.preventDefault();
-    if (!composerInput.trim()) return;
-    void dispatchAgentMessage(composerInput);
+    const hasContent = composerInput.trim() || imageAttachments.hasAttachments;
+    if (!hasContent) return;
+    // Pass image URLs (will be [] if no attachments); the parent handles upload
+    void dispatchAgentMessage(composerInput, imageAttachments.attachments.map((a) => a.file));
     setComposerInput("");
+    imageAttachments.clear();
   }
 
   return (
@@ -274,6 +280,10 @@ export default function AgentCommandCenter({
           isSending={isSending || isStreaming}
           agentError={agentError}
           onStop={onStop}
+          attachments={imageAttachments.attachments}
+          onAddFiles={imageAttachments.addFiles}
+          onRemoveAttachment={imageAttachments.removeAttachment}
+          fileInputRef={imageAttachments.fileInputRef}
         />
       )}
 

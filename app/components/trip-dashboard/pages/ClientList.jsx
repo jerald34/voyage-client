@@ -12,6 +12,7 @@ export default function ClientList({
   selectedClientId,
   onSelectClient,
   onRequestDeleteClient,
+  unreadByClientId = {},
 }) {
   const [showClientDeleteConfirm, setShowClientDeleteConfirm] = useState(null);
   const [isDeletingClient, setIsDeletingClient] = useState(false);
@@ -51,6 +52,7 @@ export default function ClientList({
             const initials = c.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
             const isConfirming = showClientDeleteConfirm === c.id;
             const isSelected = selectedClientId === c.id;
+            const unread = unreadByClientId[c.id] || 0;
 
             return (
               <div
@@ -65,9 +67,19 @@ export default function ClientList({
                   onClick={() => onSelectClient?.(c)}
                   title={`View ${c.name}'s itineraries`}
                 >
-                  <div className={`w-11 h-11 rounded-full flex items-center justify-center font-extrabold text-[0.85rem] flex-shrink-0 shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-all duration-200 ${isSelected ? "bg-secondary text-white" : "bg-secondary/40 text-white"
-                    }`}>
-                    {initials}
+                  <div className="relative flex-shrink-0">
+                    <div className={`w-11 h-11 rounded-full flex items-center justify-center font-extrabold text-[0.85rem] shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-all duration-200 ${isSelected ? "bg-secondary text-white" : "bg-secondary/40 text-white"
+                      }`}>
+                      {initials}
+                    </div>
+                    {unread > 0 && (
+                      <span
+                        className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 inline-flex items-center justify-center rounded-full bg-[#dc2626] text-white text-[0.65rem] font-extrabold leading-none ring-2 ring-surface"
+                        title={`${unread} unread comment${unread === 1 ? "" : "s"}`}
+                      >
+                        {unread > 99 ? "99+" : unread}
+                      </span>
+                    )}
                   </div>
                   <div className="flex flex-col gap-0.5 min-w-0">
                     <strong className={`block text-[0.95rem] font-bold tracking-tight whitespace-nowrap overflow-hidden text-ellipsis transition-colors duration-200 ${isSelected ? "text-secondary font-black" : "text-text-primary"

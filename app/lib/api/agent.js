@@ -1,7 +1,7 @@
 /**
  * Agent thread and run API endpoints.
  */
-import { fetchApi } from "./client.js";
+import { fetchApi, API_URL } from "./client.js";
 
 export async function createAgentThread(agencyId, tripId = null) {
   const body = {};
@@ -26,11 +26,35 @@ export async function deleteAgentThread(agencyId, threadId) {
   });
 }
 
-export async function sendMessage(agencyId, threadId, content) {
+export async function sendMessage(agencyId, threadId, content, imageUrls = []) {
   return fetchApi(`/agencies/${agencyId}/agent/threads/${threadId}/messages`, {
     method: "POST",
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({
+      content,
+      ...(imageUrls.length > 0 ? { imageUrls } : {}),
+    }),
   });
+}
+
+export async function uploadChatImages(agencyId, threadId, files) {
+  const formData = new FormData();
+  files.forEach((file) => formData.append("images", file));
+
+  const url = `${API_URL}/agencies/${agencyId}/agent/threads/${threadId}/images`;
+  const response = await fetch(url, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.error?.message || "Failed to upload images");
+    error.code = data.error?.code || "UPLOAD_ERROR";
+    error.status = response.status;
+    throw error;
+  }
+  return data;
 }
 
 export async function approveAgentThreadItinerary(

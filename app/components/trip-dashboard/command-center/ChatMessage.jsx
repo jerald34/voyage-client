@@ -4,6 +4,7 @@ import { getMatchedPlaces, matchPlaceMentions, getItineraryPlaceEntityId } from 
 import RichItineraryMessage from "./RichItineraryMessage.jsx";
 import useMobileViewport from "../mobile/useMobileViewport.js";
 import CompactPlaceCard from "../mobile/CompactPlaceCard.jsx";
+import MessageImageGrid from "../../chat/MessageImageGrid";
 
 function PlaceLinkedText({ children, placeEntities, selectedPlaceId, onPlaceSelect }) {
   if (typeof children !== "string" && typeof children !== "number") {
@@ -162,7 +163,12 @@ export default function ChatMessage({
           }`}
         >
           {isUser ? (
-            <p className="m-0 font-medium">{message.content}</p>
+            <div>
+              <p className="m-0 font-medium">{message.content}</p>
+              {message.metadata?.imageUrls?.length > 0 && (
+                <MessageImageGrid imageUrls={message.metadata.imageUrls} />
+              )}
+            </div>
           ) : renderAsItinerary && itinerary ? (
             isMobile ? (
               <div className="flex flex-col gap-2">

@@ -9,7 +9,7 @@ import { formatCommentTime } from "../../../lib/formatters.js";
 import { Spinner } from "../../ui/index.js";
 import { CloseIcon, ChatIcon, ReplyIcon } from "../../icons/index.js";
 
-export default function CommentsPanel({ agencyId, tripId, onClose }) {
+export default function CommentsPanel({ agencyId, tripId, itinerary, onClose }) {
   const [comments, setComments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
@@ -58,40 +58,100 @@ export default function CommentsPanel({ agencyId, tripId, onClose }) {
     };
   }, [agencyId, tripId]);
 
-  // Group by dayNumber; null/undefined => "General"
-  const grouped = useMemo(() => {
+  // Lookup: itemId -> { title, dayNumber, sortOrder }
+  const itemLookup = useMemo(() => {
     const map = new Map();
-    map.set("general", []);
-    comments.forEach((c) => {
-      if (c.dayNumber != null) {
-        const key = String(c.dayNumber);
-        if (!map.has(key)) map.set(key, []);
-        map.get(key).push(c);
-      } else {
-        map.get("general").push(c);
-      }
+    const days = Array.isArray(itinerary?.days) ? itinerary.days : [];
+    days.forEach((day) => {
+      const items = Array.isArray(day?.items) ? day.items : [];
+      items.forEach((item) => {
+        if (item?.id) {
+          map.set(item.id, {
+            title: item.title || "Untitled activity",
+            dayNumber: day.dayNumber,
+            sortOrder: item.sortOrder ?? 0,
+          });
+        }
+      });
     });
-    const dayKeys = [...map.keys()]
+    return map;
+  }, [itinerary]);
+
+  // Two-level grouping: Day N -> [{ itemId|null, title, comments[] }]
+  const grouped = useMemo(() => {
+    // dayKey ("N" or "general") -> Map<itemKey, comments[]>
+    const dayMap = new Map();
+
+    const ensureDay = (dayKey) => {
+      if (!dayMap.has(dayKey)) dayMap.set(dayKey, new Map());
+      return dayMap.get(dayKey);
+    };
+
+    comments.forEach((c) => {
+      const dayKey = c.dayNumber != null ? String(c.dayNumber) : "general";
+      const itemKey = c.itemId ?? "__day__";
+      const itemMap = ensureDay(dayKey);
+      if (!itemMap.has(itemKey)) itemMap.set(itemKey, []);
+      itemMap.get(itemKey).push(c);
+    });
+
+    const dayKeys = [...dayMap.keys()]
       .filter((k) => k !== "general")
       .sort((a, b) => Number(a) - Number(b));
+
     const ordered = [];
-    dayKeys.forEach((k) => {
-      if (map.get(k).length > 0)
-        ordered.push({
-          key: k,
-          label: `Day ${k}`,
-          comments: map.get(k),
+
+    const buildSubgroups = (itemMap) => {
+      const subs = [];
+      for (const [itemKey, list] of itemMap) {
+        if (itemKey === "__day__") continue;
+        const meta = itemLookup.get(itemKey);
+        subs.push({
+          key: itemKey,
+          title: meta?.title || "Removed activity",
+          sortOrder: meta?.sortOrder ?? Number.MAX_SAFE_INTEGER,
+          comments: list,
         });
-    });
-    if (map.get("general").length > 0) {
+      }
+      subs.sort((a, b) => a.sortOrder - b.sortOrder);
+      if (itemMap.has("__day__")) {
+        subs.push({
+          key: "__day__",
+          title: "General",
+          sortOrder: Number.MAX_SAFE_INTEGER,
+          comments: itemMap.get("__day__"),
+        });
+      }
+      return subs;
+    };
+
+    dayKeys.forEach((k) => {
+      const itemMap = dayMap.get(k);
+      if (!itemMap.size) return;
       ordered.push({
-        key: "general",
-        label: "General",
-        comments: map.get("general"),
+        key: k,
+        label: `Day ${k}`,
+        subgroups: buildSubgroups(itemMap),
       });
+    });
+
+    if (dayMap.has("general")) {
+      const itemMap = dayMap.get("general");
+      if (itemMap.size) {
+        ordered.push({
+          key: "general",
+          label: "General",
+          subgroups: buildSubgroups(itemMap),
+        });
+      }
     }
     return ordered;
-  }, [comments]);
+  }, [comments, itemLookup]);
+
+  const getActivityTitle = (itemId) => {
+    if (!itemId) return null;
+    return itemLookup.get(itemId)?.title || "Removed activity";
+  };
 
   const handleReplyChange = (commentId, value) => {
     setReplyTexts((prev) => ({ ...prev, [commentId]: value }));
@@ -205,9 +265,9 @@ export default function CommentsPanel({ agencyId, tripId, onClose }) {
         )}
         {!isLoading &&
           !loadError &&
-          grouped.map(({ key, label, comments: groupComments }) => (
+          grouped.map(({ key, label, subgroups }) => (
             <div key={key} className="flex flex-col gap-3">
-              {/* Group label */}
+              {/* Day label */}
               <div
                 className={
                   "text-[0.75rem] font-extrabold uppercase " +
@@ -216,7 +276,18 @@ export default function CommentsPanel({ agencyId, tripId, onClose }) {
               >
                 {label}
               </div>
-              {groupComments.map((comment) => (
+              {subgroups.map((sub) => (
+                <div key={sub.key} className="flex flex-col gap-2">
+                  {/* Activity sub-heading */}
+                  <div
+                    className={
+                      "text-[0.7rem] font-bold uppercase " +
+                      "tracking-[0.05em] text-text-soft/80 pl-1"
+                    }
+                  >
+                    {sub.title}
+                  </div>
+                  {sub.comments.map((comment) => (
                 <div
                   key={comment.id}
                   className={
@@ -250,6 +321,19 @@ export default function CommentsPanel({ agencyId, tripId, onClose }) {
                           {formatCommentTime(comment.createdAt)}
                         </span>
                       </div>
+                      {comment.itemId && (
+                        <span
+                          className={
+                            "inline-flex items-center px-2 py-[3px] rounded-[6px] " +
+                            "text-[0.65rem] font-extrabold tracking-[0.04em] uppercase " +
+                            "flex-shrink-0 bg-[#eef2ff] text-[#3730a3] border border-[#e0e7ff] " +
+                            "max-w-[160px] truncate"
+                          }
+                          title={`On: ${getActivityTitle(comment.itemId)}`}
+                        >
+                          On: {getActivityTitle(comment.itemId)}
+                        </span>
+                      )}
                       <span
                         className={`inline-flex items-center px-2 py-[3px] rounded-[6px] text-[0.65rem] font-extrabold tracking-[0.04em] uppercase flex-shrink-0 ${getStatusClasses(comment.status)}`}
                       >
@@ -374,6 +458,8 @@ export default function CommentsPanel({ agencyId, tripId, onClose }) {
                       )}
                     </div>
                   )}
+                </div>
+              ))}
                 </div>
               ))}
             </div>

@@ -27,6 +27,7 @@ export {
   fetchAgentThread,
   deleteAgentThread,
   sendMessage,
+  uploadChatImages,
   approveAgentThreadItinerary,
   fetchThreadMessages,
   cancelAgentRun,
@@ -40,8 +41,10 @@ export {
   listShareComments,
   replyToShareComment,
   getUnreadCommentCount,
+  getUnreadCommentCountsByTrip,
   fetchPublicItinerary,
   postPublicComment,
+  listPublicComments,
 } from "./shares.js";
 
 // Admin

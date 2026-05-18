@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
+import ImagePreviewStrip from "../../chat/ImagePreviewStrip";
 
 const composerSurfaceClass =
   "composer-shell isolate flex w-full min-w-0 items-center gap-2.5 rounded-[18px] border border-border bg-[rgba(255,255,255,0.88)] px-3 py-2.5 shadow-[0_10px_24px_rgba(15,23,42,0.04)] transition-all duration-200 focus-within:border-secondary focus-within:shadow-[0_0_0_4px_rgba(215,122,97,0.12)] dark:bg-[rgba(26,29,33,0.88)]";
@@ -16,6 +17,10 @@ export default function ChatInput({
   agentError,
   onStop,
   containerClassName = "",
+  attachments = [],
+  onAddFiles,
+  onRemoveAttachment,
+  fileInputRef,
 }) {
   useEffect(() => {
     const textarea = textareaRef?.current;
@@ -26,19 +31,68 @@ export default function ChatInput({
     textarea.style.height = `${Math.max(nextHeight, 44)}px`;
   }, [composerInput, textareaRef]);
 
+  const handleDrop = useCallback((e) => {
+    e.preventDefault();
+    if (onAddFiles && e.dataTransfer?.files?.length) {
+      onAddFiles(e.dataTransfer.files);
+    }
+  }, [onAddFiles]);
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+  }, []);
+
+  const handlePaste = useCallback((e) => {
+    if (!onAddFiles) return;
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const imageFiles = [];
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+    if (imageFiles.length > 0) {
+      onAddFiles(imageFiles);
+    }
+  }, [onAddFiles]);
+
+  const hasContent = composerInput.trim() || attachments.length > 0;
+
   return (
     <div className={`mt-auto pt-3 w-full ${containerClassName}`}>
+      {/* Image preview strip */}
+      {attachments.length > 0 && (
+        <div className="mb-1.5 px-1">
+          <ImagePreviewStrip attachments={attachments} onRemove={onRemoveAttachment} />
+        </div>
+      )}
       <form
         className={`${composerSurfaceClass} ${isSending ? "composer-shell--loading" : ""}`}
         onSubmit={submitComposer}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
       >
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          multiple
+          className="hidden"
+          onChange={(e) => onAddFiles?.(e.target.files)}
+        />
         <button
           type="button"
           className="composer-control relative z-[1] flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-md text-text-soft hover:text-text-primary hover:bg-border/10 transition-colors cursor-pointer"
-          aria-label="Attach file"
+          aria-label="Attach image"
+          onClick={() => fileInputRef?.current?.click()}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
           </svg>
         </button>
         <textarea
@@ -47,6 +101,7 @@ export default function ChatInput({
           value={composerInput}
           onChange={(e) => setComposerInput(e.target.value)}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           placeholder="Ask the agent to adjust the draft..."
           className={`${composerTextClass} max-h-[200px] min-h-[48px] relative z-[1] composer-control`}
         />
@@ -65,7 +120,7 @@ export default function ChatInput({
         ) : (
           <button
             type="submit"
-            disabled={isSending || !composerInput.trim()}
+            disabled={isSending || !hasContent}
             className="composer-control relative z-[1] flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-md bg-secondary text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity cursor-pointer"
             aria-label="Send message"
           >

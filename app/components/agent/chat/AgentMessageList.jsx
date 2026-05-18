@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 import MarkdownContent from './AgentMarkdown';
+import MessageImageGrid from '../../chat/MessageImageGrid';
 
 function humanize(name) {
   return String(name || '').replace(/[_.]+/g, ' ').replace(/\s+/g, ' ').trim();
@@ -109,7 +110,12 @@ export default function AgentMessageList({
                     </div>
                   </div>
                 ) : (
-                  <span className="whitespace-pre-wrap">{msg.content}</span>
+                  <div>
+                    <span className="whitespace-pre-wrap">{msg.content}</span>
+                    {msg.metadata?.imageUrls?.length > 0 && (
+                      <MessageImageGrid imageUrls={msg.metadata.imageUrls} />
+                    )}
+                  </div>
                 )}
               </div>
               <div className="flex justify-between items-center gap-3 opacity-70 text-[10px] uppercase tracking-[0.05em] font-bold">
