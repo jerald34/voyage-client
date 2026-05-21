@@ -6,7 +6,6 @@ import {
   Map,
   AdvancedMarker,
   Pin,
-  InfoWindow,
 } from "@vis.gl/react-google-maps";
 import { getReadablePlaceType } from "../../../lib/trip-dashboard/richItinerary.js";
 import Polyline from "./map/MapPolylineLayer.jsx";
@@ -556,36 +555,56 @@ export default function ItineraryLiveMap({
             </AdvancedMarker>
           )}
 
-          {/* Info Window */}
+          {/* Glassmorphism detail card — anchored above the selected pin */}
           {selectedPoint && (
-            <InfoWindow
+            <AdvancedMarker
               position={{ lat: selectedPoint.lat, lng: selectedPoint.lng }}
-              onCloseClick={() => setSelectedPoint(null)}
+              zIndex={600}
             >
-              <div style={{ padding: "4px", color: "#1e293b", minWidth: "170px" }}>
-                <strong style={{ fontSize: "14px", display: "block", marginBottom: "2px" }}>
-                  {selectedPoint.title || selectedPoint.name}
-                </strong>
-                {(selectedPoint.placeType || selectedPoint.rating) && (
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>
-                    {selectedPoint.rating ? `★ ${selectedPoint.rating}` : ""}
-                    {selectedPoint.rating && selectedPoint.placeType ? " · " : ""}
-                    {selectedPoint.placeType || ""}
+              <div style={{ marginBottom: "52px", width: "280px" }}>
+                <div className="relative grid gap-2 p-4 rounded-[20px] bg-white/[0.11] backdrop-blur-xl border border-white/[0.22] shadow-[0_8px_32px_rgba(0,0,0,0.32)]">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setSelectedPoint(null); }}
+                    aria-label="Close"
+                    className={`absolute top-3 right-3 w-7 h-7 rounded-full bg-white/10 border-0 text-[18px] leading-none cursor-pointer hover:bg-white/20 transition-all flex items-center justify-center ${isDark ? "text-white/70 hover:text-white" : "text-[#1e293b]/60 hover:text-[#1e293b]"}`}
+                  >×</button>
+
+                  <div className="pr-8">
+                    {selectedPoint.dayLabel ? (
+                      <span className={`text-[10px] font-extrabold tracking-[0.1em] uppercase block mb-0.5 ${isDark ? "text-white/45" : "text-[#1e293b]/50"}`}>
+                        {selectedPoint.dayLabel}
+                      </span>
+                    ) : null}
+                    <h4 className={`m-0 text-[15px] font-bold leading-snug ${isDark ? "text-white" : "text-[#1e293b]"}`}>
+                      {selectedPoint.title || selectedPoint.name}
+                    </h4>
                   </div>
-                )}
-                {selectedPoint.timeLabel ? (
-                  <div style={{ fontSize: "12px", color: "#ea7a5e", fontWeight: 600, marginBottom: "4px" }}>
-                    {selectedPoint.timeLabel}
-                  </div>
-                ) : null}
-                {(selectedPoint.description || selectedPoint.formattedAddress) && (
-                  <div style={{ fontSize: "12px", color: "#64748b", lineHeight: 1.4 }}>
-                    {selectedPoint.description || selectedPoint.formattedAddress}
-                  </div>
-                )}
+
+                  {(selectedPoint.rating || selectedPoint.placeType) && (
+                    <p className={`m-0 text-[12px] ${isDark ? "text-white/60" : "text-[#475569]"}`}>
+                      {selectedPoint.rating ? `★ ${selectedPoint.rating}` : ""}
+                      {selectedPoint.rating && selectedPoint.placeType ? " · " : ""}
+                      {selectedPoint.placeType || ""}
+                    </p>
+                  )}
+
+                  {selectedPoint.timeLabel && (
+                    <p className="m-0 text-[12px] font-bold text-[#ea7a5e]">
+                      {selectedPoint.timeLabel}
+                    </p>
+                  )}
+
+                  {(selectedPoint.formattedAddress || selectedPoint.description) && (
+                    <p className={`m-0 text-[12px] leading-[1.45] ${isDark ? "text-white/55" : "text-[#475569]"}`}>
+                      {selectedPoint.formattedAddress || selectedPoint.description}
+                    </p>
+                  )}
+                </div>
               </div>
-            </InfoWindow>
+            </AdvancedMarker>
           )}
+
         </Map>
       </APIProvider>
 
