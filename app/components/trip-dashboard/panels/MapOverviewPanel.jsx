@@ -199,18 +199,18 @@ export default function MapOverviewPanel({ tripBrief, mapHighlights }) {
   }, [hasApiKey, routePoints]);
 
   return (
-    <section className="sticky top-[110px] grid gap-5 p-5">
+    <section className="sticky top-[110px] grid gap-5 p-5 rounded-2xl bg-white/[0.07] backdrop-blur-xl border border-white/[0.14] shadow-[0_8px_32px_rgba(0,0,0,0.18)]">
       <div>
         <span className="inline-flex items-center gap-2.5 text-secondary text-xs font-extrabold tracking-[0.18em] uppercase">
           <span className="w-11 h-px bg-current opacity-55" />
           Route overview
         </span>
         <h2>Route overview</h2>
-        <p className="text-[1.08rem] text-text-muted mb-6">A fast visual pass across the neighborhoods shaping {destination}.</p>
+        <p className="text-[1.08rem] text-text-muted mb-2">A fast visual pass across the neighborhoods shaping {destination}.</p>
       </div>
 
       {hasApiKey && routePoints.length > 0 ? (
-        <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border border-border shadow-soft">
+        <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden border border-white/[0.18] shadow-[0_4px_24px_rgba(0,0,0,0.22)]">
           <div
             ref={mapNodeRef}
             className="absolute inset-0 w-full h-full"
@@ -218,23 +218,29 @@ export default function MapOverviewPanel({ tripBrief, mapHighlights }) {
           />
 
           {mapStatus === "loading" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface/[0.88] backdrop-blur-sm gap-3 z-[1]">
-              <strong className="text-text-primary text-sm font-bold">Loading map...</strong>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/[0.12] backdrop-blur-md gap-3 z-[1] border border-white/[0.18] rounded-xl">
+              <div className="flex flex-col items-center gap-2 bg-white/[0.15] backdrop-blur-lg px-5 py-4 rounded-2xl border border-white/[0.22] shadow-[0_4px_16px_rgba(0,0,0,0.15)]">
+                <strong className="text-text-primary text-sm font-bold">Loading map...</strong>
+              </div>
             </div>
           )}
 
           {mapStatus === "error" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface/[0.88] backdrop-blur-sm gap-3 z-[1] px-5 text-center">
-              <strong className="text-text-primary text-sm font-bold">Map unavailable</strong>
-              <span className="text-text-soft text-xs">{mapError || "Please verify your Google Maps API key restrictions."}</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/[0.12] backdrop-blur-md gap-3 z-[1] rounded-xl">
+              <div className="flex flex-col items-center gap-2 bg-white/[0.15] backdrop-blur-lg px-6 py-5 rounded-2xl border border-white/[0.22] shadow-[0_4px_16px_rgba(0,0,0,0.15)] text-center max-w-[80%]">
+                <strong className="text-text-primary text-sm font-bold">Map unavailable</strong>
+                <span className="text-text-soft text-xs">{mapError || "Please verify your Google Maps API key restrictions."}</span>
+              </div>
             </div>
           )}
         </div>
       ) : (
-        <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border border-border shadow-soft bg-background">
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-text-soft text-center px-5">
-            <span className="text-xs text-text-muted">Route coordinates pending</span>
-            <strong className="text-sm font-bold text-text-primary">Map preview appears after resolved locations are available.</strong>
+        <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden border border-white/[0.18] shadow-[0_4px_24px_rgba(0,0,0,0.14)] bg-white/[0.05] backdrop-blur-sm">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-text-soft text-center px-5">
+            <div className="flex flex-col items-center gap-2 bg-white/[0.10] backdrop-blur-lg px-6 py-5 rounded-2xl border border-white/[0.18] shadow-[0_4px_16px_rgba(0,0,0,0.10)]">
+              <span className="text-xs text-text-muted">Route coordinates pending</span>
+              <strong className="text-sm font-bold text-text-primary">Map preview appears after resolved locations are available.</strong>
+            </div>
           </div>
         </div>
       )}

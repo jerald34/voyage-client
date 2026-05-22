@@ -48,14 +48,15 @@ export default function AgencyTripAgentPage({ params }) {
     }
   }, [runStatus, assistantMessage]);
 
-  // If the itinerary updates, fetch the new state
+  // If the itinerary updates, fetch the new state (skip while streaming — SSE
+  // reducers handle live updates, so the REST fetch only fires on run.completed).
   useEffect(() => {
-    if (lastItineraryUpdate) {
-      fetchItineraryDraft(agencyId, lastItineraryUpdate)
-        .then(res => setItinerary(res.itinerary || res))
-        .catch(err => console.error('Failed to fetch itinerary:', err));
-    }
-  }, [lastItineraryUpdate, agencyId]);
+    if (!lastItineraryUpdate) return;
+    if (runStatus === 'running') return;
+    fetchItineraryDraft(agencyId, lastItineraryUpdate)
+      .then(res => setItinerary(res.itinerary || res))
+      .catch(err => console.error('Failed to fetch itinerary:', err));
+  }, [lastItineraryUpdate, agencyId, runStatus]);
 
   const handleSend = async (content, imageFiles = []) => {
     const hasImages = Array.isArray(imageFiles) && imageFiles.length > 0;
