@@ -219,12 +219,16 @@ export function useAgentRunStream(agencyId) {
       }
     });
 
-    // Server sends: { type: "itinerary.updated", payload: { itineraryId, ... } }
+    // Server sends: { type: "itinerary.updated", payload: { itineraryId, itinerary?, ... } }
     es.addEventListener('itinerary.updated', (e) => {
       if (!isCurrentStream()) return;
 
       const data = parseEventData(e);
-      setLastItineraryUpdate(data?.payload?.itineraryId || null);
+      const payload = data?.payload;
+      setLastItineraryUpdate(payload?.itineraryId || null);
+      if (payload?.itinerary) {
+        setStreamingItinerary(payload.itinerary);
+      }
     });
 
     // Server sends: { type: "itinerary.created", payload: { itineraryId, version, status, itinerary } }
