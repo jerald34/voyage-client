@@ -48,12 +48,13 @@ export default function AgencyAgentPage({ params }) {
   }, [runStatus, assistantMessage]);
 
   useEffect(() => {
-    if (lastItineraryUpdate) {
-      fetchItineraryDraft(agencyId, lastItineraryUpdate)
-        .then(res => setItinerary(res.itinerary || res))
-        .catch(err => console.error('Failed to fetch itinerary:', err));
-    }
-  }, [lastItineraryUpdate, agencyId]);
+    if (!lastItineraryUpdate) return;
+    // Skip redundant fetches while streaming — SSE reducers handle live updates.
+    if (runStatus === 'running') return;
+    fetchItineraryDraft(agencyId, lastItineraryUpdate)
+      .then(res => setItinerary(res.itinerary || res))
+      .catch(err => console.error('Failed to fetch itinerary:', err));
+  }, [lastItineraryUpdate, agencyId, runStatus]);
 
   const handleSend = async (content, imageFiles = []) => {
     const hasImages = Array.isArray(imageFiles) && imageFiles.length > 0;

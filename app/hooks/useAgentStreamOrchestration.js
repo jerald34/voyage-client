@@ -69,7 +69,10 @@ export function useAgentStreamOrchestration({
   }, [runStatus, completedMessageContent, assistantMessage, lastItineraryUpdate]);
 
   useEffect(() => {
-    if (!streamingItinerary || !runTargetRef.current) return;
+    // Only merge streaming itinerary while the run is active. After
+    // completion the REST fetch provides fully enriched data (photos,
+    // ratings) — re-merging the stale streaming state would overwrite it.
+    if (!streamingItinerary || !runTargetRef.current || runStatus !== "running") return;
     const targetKey = runTargetRef.current;
     const runTarget = parseRunTargetKey(targetKey);
     if (!runTarget) return;
@@ -92,10 +95,14 @@ export function useAgentStreamOrchestration({
     };
     if (runTarget.type === "draft") setDraftThreadStates(update);
     else setTripStates(update);
-  }, [streamingItinerary]);
+  }, [streamingItinerary, runStatus]);
 
   useEffect(() => {
     if (!agencyId || !lastItineraryUpdate || !runTargetRef.current) return;
+    // Skip redundant REST fetches while the agent is streaming — SSE reducers
+    // already apply live updates. The single fetch on run.completed still fires
+    // because runStatus changing triggers this effect.
+    if (runStatus === "running") return;
     itineraryFetchSequenceRef.current += 1;
     const requestSequence = itineraryFetchSequenceRef.current;
     const targetKey = runTargetRef.current;
@@ -136,7 +143,7 @@ export function useAgentStreamOrchestration({
     return () => {
       isCancelled = true;
     };
-  }, [agencyId, lastItineraryUpdate]);
+  }, [agencyId, lastItineraryUpdate, runStatus]);
 
   return { completedAssistantMessageRef };
 }
