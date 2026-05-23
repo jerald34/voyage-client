@@ -65,6 +65,28 @@ export default function ProcessBubble({
   const isLive = status === "live";
   const safeTimeline = Array.isArray(timeline) ? timeline : [];
 
+  // Coalesce consecutive identical tool calls into one row with a count.
+  // Continuation loops (e.g. add_itinerary_item once per stop) otherwise produce
+  // N identical rows; this collapses them into "Add Itinerary Item ×N".
+  // Thought entries are never coalesced.
+  const groupedTimeline = (() => {
+    const out = [];
+    for (const entry of safeTimeline) {
+      const last = out[out.length - 1];
+      if (
+        last &&
+        entry.kind === "tool" &&
+        last.kind === "tool" &&
+        last.name === entry.name
+      ) {
+        last.count = (last.count ?? 1) + 1;
+      } else {
+        out.push({ ...entry, count: 1 });
+      }
+    }
+    return out;
+  })();
+
   return (
     <section aria-label="Agent process">
       {/* ── Header button ─────────────────────────────────────────── */}
@@ -153,8 +175,8 @@ export default function ProcessBubble({
 
               {/* Timeline rows */}
               <AnimatePresence mode="popLayout">
-                {safeTimeline.map((entry, index) => {
-                  const prevKind = index > 0 ? safeTimeline[index - 1].kind : null;
+                {groupedTimeline.map((entry, index) => {
+                  const prevKind = index > 0 ? groupedTimeline[index - 1].kind : null;
                   const gap = rowGapClass(prevKind, entry.kind);
 
                   return (
@@ -171,7 +193,18 @@ export default function ProcessBubble({
                       {entry.kind === "tool" ? (
                         <div className="pb-tool flex items-center gap-1.5 h-6 pl-3.5 text-[12px] font-medium text-text-muted dark:text-text-muted">
                           <span className="text-secondary/70 select-none" aria-hidden="true">→</span>
-                          {humanizeToolName(entry.name)}
+                          <span>{humanizeToolName(entry.name)}</span>
+                          {entry.count > 1 && (
+                            <motion.span
+                              key={entry.count}
+                              initial={{ opacity: 0, scale: 0.85 }}
+                              animate={{ opacity: 1, scale: 1, transition: { duration: 0.18, ease: [0.16, 1, 0.3, 1] } }}
+                              className="ml-0.5 text-[10.5px] font-semibold text-secondary/80 tabular-nums select-none"
+                              aria-label={`${entry.count} times`}
+                            >
+                              ×{entry.count}
+                            </motion.span>
+                          )}
                         </div>
                       ) : (
                         <div className="pb-thought pl-3.5 text-[12.5px] font-normal leading-[1.55] text-text-soft dark:text-text-muted [&_p]:m-0 [&_p+p]:mt-1.5 [&_strong]:font-semibold [&_strong]:text-text-muted dark:[&_strong]:text-text-primary [&_em]:italic [&_ul]:my-1 [&_ul]:pl-4 [&_ol]:my-1 [&_ol]:pl-4 [&_li]:text-[12.5px] [&_li]:leading-[1.5] [&_h1]:text-[13.5px] [&_h2]:text-[13px] [&_h3]:text-[12.5px] [&_h4]:text-[12.5px] [&_h5]:text-[12.5px] [&_h6]:text-[12.5px] [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_h1]:mt-1.5 [&_h2]:mt-1.5 [&_h3]:mt-1 [&_h1]:text-text-muted [&_h2]:text-text-muted [&_h3]:text-text-muted dark:[&_h1]:text-text-primary dark:[&_h2]:text-text-primary dark:[&_h3]:text-text-primary [&_code]:text-[11.5px] [&_pre]:text-[11px] [&_pre]:my-1 [&_blockquote]:my-1 [&_blockquote]:py-1 [&_blockquote]:text-[12px]">

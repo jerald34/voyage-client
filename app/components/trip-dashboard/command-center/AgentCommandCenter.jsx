@@ -227,11 +227,26 @@ export default function AgentCommandCenter({
     imageAttachments.clear();
   }
 
+  // Mask gradient softens both edges of the scroll area so chat messages
+  // dissolve into the chrome instead of meeting the chat input with a hard line.
+  // Bottom fade is larger because that's where the floating input sits.
+  const scrollMaskStyle = hideChatInput
+    ? undefined
+    : {
+        WebkitMaskImage:
+          "linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 56px), transparent 100%)",
+        maskImage:
+          "linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 56px), transparent 100%)",
+      };
+
   return (
-    <div className={`${hideChatInput ? "" : "glass-panel backdrop-blur-[24px] shadow-strong"} p-4 flex flex-col min-h-0 h-full transition-all duration-500 ease-in-out`}>
+    <div className={`${hideChatInput ? "" : "glass-panel backdrop-blur-[24px] shadow-strong"} relative p-4 flex flex-col min-h-0 h-full transition-all duration-500 ease-in-out`}>
 
       {/* chat log */}
-      <div className={`flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-5 pr-2 ${hideChatInput ? "mb-0" : "mb-5"}`}>
+      <div
+        className={`flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-5 pr-2 ${hideChatInput ? "mb-0" : "pb-[120px]"}`}
+        style={scrollMaskStyle}
+      >
         {displayedMessages.length === 0 ? (
           <div className="grid gap-2.5 place-items-center min-h-[220px] text-center text-text-muted">
             <div className="w-12 h-12 rounded-[16px] bg-background flex items-center justify-center text-text-soft mb-2" aria-hidden="true">
@@ -288,7 +303,9 @@ export default function AgentCommandCenter({
       </div>
 
       {!hideChatInput && (
-        <ChatInput
+        <div className="absolute bottom-4 left-4 right-4 z-10 pointer-events-none">
+          <div className="pointer-events-auto">
+            <ChatInput
           textareaRef={textareaRef}
           composerInput={composerInput}
           setComposerInput={setComposerInput}
@@ -302,6 +319,8 @@ export default function AgentCommandCenter({
           onRemoveAttachment={imageAttachments.removeAttachment}
           fileInputRef={imageAttachments.fileInputRef}
         />
+          </div>
+        </div>
       )}
 
     </div>
