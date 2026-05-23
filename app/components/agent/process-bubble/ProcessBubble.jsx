@@ -113,26 +113,23 @@ export default function ProcessBubble({
           ].join(" ")}
         />
 
-        {/* Label with crossfade on change.
-         * While live, a shimmer wave travels across the text via background-clip:text
-         * to give a continuous "thinking" feel — the breathing dot says "live",
-         * the shimmer says "actively processing". */}
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.span
-            key={activeLabel}
-            aria-live="polite"
-            aria-atomic="true"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1, transition: { duration: 0.16 } }}
-            exit={{ opacity: 0, transition: { duration: 0.12 } }}
-            className={[
-              "flex-1 text-left text-[13px] font-medium leading-[1.4]",
-              isLive ? styles.labelShimmer : "text-text-soft",
-            ].join(" ")}
-          >
-            {activeLabel}
-          </motion.span>
-        </AnimatePresence>
+        {/* Label updates in place — the shimmer wave on .labelShimmer is the
+         * one and only ambient animation on this text. We deliberately do NOT
+         * wrap this in AnimatePresence: a label change (e.g. "List Agent Tasks"
+         * → "Add Agent Task") previously fired an exit fade-to-0 on the old
+         * text before fading the new one in, which read as a second
+         * "disappearing" animation layered on top of the shimmer. Plain text
+         * swap keeps the shimmer continuous and the label always visible. */}
+        <span
+          aria-live="polite"
+          aria-atomic="true"
+          className={[
+            "flex-1 text-left text-[13px] font-medium leading-[1.4]",
+            isLive ? styles.labelShimmer : "text-text-soft",
+          ].join(" ")}
+        >
+          {activeLabel}
+        </span>
 
         {/* Chevron */}
         <motion.svg
