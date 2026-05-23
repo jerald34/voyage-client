@@ -164,6 +164,8 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
     assistantMessage,
     completedMessageContent,
     completedMessageProcess,
+    tasks,
+    tasksTouchedThisRun,
     toolCalls,
     thoughtEntries,
     mapMarkers,
@@ -630,6 +632,8 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                     assistantMessage={isVisible ? assistantMessage : ""}
                     toolCalls={isVisible ? toolCalls : []}
                     thoughtEntries={isVisible ? thoughtEntries : []}
+                    tasks={isVisible ? tasks : []}
+                    tasksTouchedThisRun={isVisible ? tasksTouchedThisRun : new Set()}
                     streamingItinerary={isVisible ? streamingItinerary : null}
                     dispatchAgentMessage={(prompt, files) => dispatchMessage(prompt, startStream, files)}
                     composerInput={composerInput}
@@ -674,6 +678,8 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                     assistantMessage={isVisible ? assistantMessage : ""}
                     toolCalls={isVisible ? toolCalls : []}
                     thoughtEntries={isVisible ? thoughtEntries : []}
+                    tasks={isVisible ? tasks : []}
+                    tasksTouchedThisRun={isVisible ? tasksTouchedThisRun : new Set()}
                     streamingItinerary={isVisible ? streamingItinerary : null}
                     dispatchAgentMessage={(prompt, files) => dispatchMessage(prompt, startStream, files)}
                     composerInput={composerInput}

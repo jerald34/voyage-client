@@ -63,3 +63,33 @@ export function summarize(timeline, durationMs) {
   // Generic fallback for mixed or unknown tools
   return `Worked for ${durationStr}`;
 }
+
+/**
+ * Returns the active header label during a live streaming run.
+ *
+ * Priority:
+ *  1. Last RUNNING task label (task phases name the run)
+ *  2. Last tool label via toolToActiveLabel
+ *  3. "Thinking…" fallback
+ */
+export function activeLabelFor(timeline) {
+  const entries = Array.isArray(timeline) ? timeline : [];
+
+  // Last RUNNING task wins.
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const entry = entries[i];
+    if (entry.kind === "task" && entry.status === "RUNNING") {
+      return entry.label;
+    }
+  }
+
+  // Fall back to last tool.
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const entry = entries[i];
+    if (entry.kind === "tool") {
+      return toolToActiveLabel(entry.name);
+    }
+  }
+
+  return "Thinking…";
+}

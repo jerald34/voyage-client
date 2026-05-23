@@ -42,6 +42,8 @@ export function useAgentRunStream(agencyId) {
   const thoughtCounterRef = useRef(0);
   // Tracks tool count at the moment the current thought entry was started.
   const toolCountAtThoughtStartRef = useRef(0);
+  // Tracks which task ids have received task.updated events during this run.
+  const tasksTouchedThisRunRef = useRef(new Set());
 
   const startStream = (runId) => {
     if (eventSourceRef.current) {
@@ -70,6 +72,7 @@ export function useAgentRunStream(agencyId) {
     thoughtActiveRef.current = false;
     thoughtCounterRef.current = 0;
     toolCountAtThoughtStartRef.current = 0;
+    tasksTouchedThisRunRef.current = new Set();
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
     const url = `${API_URL}/agencies/${agencyId}/agent/runs/${runId}/stream`;
@@ -166,20 +169,22 @@ export function useAgentRunStream(agencyId) {
       }
     });
 
-    // Server sends: { type: "task.updated", payload: { label, status, sortOrder } }
+    // Server sends: { type: "task.updated", payload: { id, label, status, sortOrder } }
     es.addEventListener('task.updated', (e) => {
       if (!isCurrentStream()) return;
 
       const data = parseEventData(e);
       const task = data?.payload;
-      if (!task) return;
+      if (!task || !task.id) return;
+
+      tasksTouchedThisRunRef.current.add(task.id);
 
       setTasks(prev => {
-        const existingIndex = prev.findIndex(t => t.label === task.label);
-        if (existingIndex > -1) {
-          const newTasks = [...prev];
-          newTasks[existingIndex] = { ...newTasks[existingIndex], ...task };
-          return newTasks;
+        const idx = prev.findIndex(t => t.id === task.id);
+        if (idx > -1) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], ...task };
+          return next;
         }
         return [...prev, task];
       });
@@ -468,6 +473,7 @@ export function useAgentRunStream(agencyId) {
     lastCompletedItineraryTool,
     streamingItinerary,
     error,
+    tasksTouchedThisRun: tasksTouchedThisRunRef.current,
     startStream,
     stopStream,
   };

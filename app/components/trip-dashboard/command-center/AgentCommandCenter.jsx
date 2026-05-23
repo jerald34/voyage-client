@@ -4,7 +4,7 @@ import ChatMessage from "./ChatMessage.jsx";
 import ChatInput from "./ChatInput.jsx";
 import RichItineraryMessage from "./RichItineraryMessage.jsx";
 import useImageAttachments from "../../../hooks/useImageAttachments.js";
-import { toolToActiveLabel, summarize } from "../../agent/process-bubble/processBubbleLabels.js";
+import { toolToActiveLabel, summarize, activeLabelFor } from "../../agent/process-bubble/processBubbleLabels.js";
 
 function getInitials(name) {
   const parts = String(name ?? "")
@@ -30,6 +30,8 @@ export default function AgentCommandCenter({
   assistantMessage,
   toolCalls,
   thoughtEntries,
+  tasks = [],
+  tasksTouchedThisRun = new Set(),
   dispatchAgentMessage,
   composerInput,
   setComposerInput,
@@ -97,17 +99,30 @@ export default function AgentCommandCenter({
       }
     }
 
-    const lastTool = [...toolEntries].reverse().find(e => e.kind === "tool");
-    const lastThought = thoughts.length > 0 ? thoughts[thoughts.length - 1] : null;
-    // Determine active label: if the last timeline entry is a thought, show "Thinking…"
-    const lastEntry = timeline.length > 0 ? timeline[timeline.length - 1] : null;
-    const activeLabel = lastEntry?.kind === "thought"
-      ? "Thinking…"
-      : lastTool
-        ? toolToActiveLabel(lastTool.name)
-        : lastThought
-          ? "Thinking…"
-          : "Thinking…";
+    // Build task entries for tasks touched during this run and append to timeline.
+    // tasksTouchedThisRunRef is a ref (not state), but this memo re-runs whenever
+    // `tasks` state changes — which fires on every task.updated SSE event — so
+    // the filtered list stays current without explicit ref subscription.
+    const touchedTasks = Array.isArray(tasks)
+      ? tasks.filter(t => tasksTouchedThisRun.has(t.id))
+      : [];
+
+    const taskEntries = touchedTasks.map(t => ({
+      id: t.id,
+      kind: "task",
+      status: t.status,
+      label: t.label,
+      updatedAt: t.updatedAt ?? null,
+    }));
+
+    // Append task entries — they bookend the tool/thought flow chronologically.
+    // SSE arrival order is preserved by the array order of `tasks`.
+    for (const taskEntry of taskEntries) {
+      timeline.push(taskEntry);
+    }
+
+    const activeLabel = activeLabelFor(timeline);
+
     return {
       status: "live",
       activeLabel,
@@ -117,7 +132,7 @@ export default function AgentCommandCenter({
       // Respect the user's explicit collapse — only honored via openStates entry.
       defaultOpen: openStates.get("streaming") ?? true,
     };
-  }, [isStreaming, toolCalls, thoughtEntries, openStates]);
+  }, [isStreaming, toolCalls, thoughtEntries, tasks, tasksTouchedThisRun, openStates]);
 
   const userName = user?.displayName || "You";
   const userInitials = getInitials(userName);
@@ -164,16 +179,20 @@ export default function AgentCommandCenter({
       const durationMs = streamStartTimeRef.current != null
         ? Date.now() - streamStartTimeRef.current
         : null;
+      const touchedTasks = Array.isArray(tasks)
+        ? tasks.filter(t => tasksTouchedThisRun.has(t.id))
+        : [];
       processSnapshotRef.current = {
         status: "done",
         activeLabel: summarize(timeline, durationMs ?? 0),
         timeline,
+        tasks: touchedTasks.map(t => ({ id: t.id, label: t.label, status: t.status })),
         durationMs,
         defaultOpen: false,
       };
       streamStartTimeRef.current = null;
     }
-  }, [isStreaming, processSnapshotRef]);
+  }, [isStreaming, processSnapshotRef, tasks, tasksTouchedThisRun]);
 
   // Scroll when messages arrive or text streams in
   useEffect(() => {

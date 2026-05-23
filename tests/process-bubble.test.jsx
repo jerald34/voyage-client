@@ -120,6 +120,19 @@ describe("ProcessBubble — ARIA attributes", () => {
   });
 });
 
+describe("ProcessBubble — task rows", () => {
+  it("two tasks with the same label are NOT coalesced", () => {
+    const timeline = [
+      { id: "t1", kind: "task", status: "COMPLETED", label: "Research" },
+      { id: "t2", kind: "task", status: "COMPLETED", label: "Research" },
+    ];
+    renderBubble({ status: "done", activeLabel: "Worked for 1.0s", timeline, defaultOpen: true });
+
+    const rows = document.querySelectorAll(".pb-task");
+    expect(rows.length).toBe(2);
+  });
+});
+
 describe("ProcessBubble — reduced-motion", () => {
   beforeEach(() => {
     // Override matchMedia to report reduced-motion preference

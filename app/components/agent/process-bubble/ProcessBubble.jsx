@@ -19,7 +19,9 @@ function rowGapClass(prevKind, currentKind) {
   if (!prevKind) return "";
   if (prevKind === "tool" && currentKind === "tool") return "mt-1.5";
   if (prevKind === "thought" && currentKind === "thought") return "mt-2";
-  // tool ↔ thought or thought ↔ tool
+  if (prevKind === "task" && currentKind === "task") return "mt-2";
+  // task ↔ tool, task ↔ thought, or thought ↔ tool
+  if (prevKind === "task" || currentKind === "task") return "mt-2.5";
   return "mt-2.5";
 }
 
@@ -69,6 +71,9 @@ export default function ProcessBubble({
   // Continuation loops (e.g. add_itinerary_item once per stop) otherwise produce
   // N identical rows; this collapses them into "Add Itinerary Item ×N".
   // Thought entries are never coalesced.
+  // IMPORTANT: Task entries are also never coalesced — the condition only fires
+  // for tool ↔ tool same-name pairs. Tasks are id-keyed and must each render as
+  // their own row so AnimatePresence can track status transitions independently.
   const groupedTimeline = (() => {
     const out = [];
     for (const entry of safeTimeline) {
@@ -108,7 +113,10 @@ export default function ProcessBubble({
           ].join(" ")}
         />
 
-        {/* Label with crossfade on change */}
+        {/* Label with crossfade on change.
+         * While live, a shimmer wave travels across the text via background-clip:text
+         * to give a continuous "thinking" feel — the breathing dot says "live",
+         * the shimmer says "actively processing". */}
         <AnimatePresence mode="wait" initial={false}>
           <motion.span
             key={activeLabel}
@@ -119,7 +127,7 @@ export default function ProcessBubble({
             exit={{ opacity: 0, transition: { duration: 0.12 } }}
             className={[
               "flex-1 text-left text-[13px] font-medium leading-[1.4]",
-              isLive ? "text-text-muted" : "text-text-soft",
+              isLive ? styles.labelShimmer : "text-text-soft",
             ].join(" ")}
           >
             {activeLabel}
@@ -206,7 +214,31 @@ export default function ProcessBubble({
                             </motion.span>
                           )}
                         </div>
-                      ) : (
+                      ) : entry.kind === "task" ? (() => {
+                        const isRunning = entry.status === "RUNNING";
+                        const isCompleted = entry.status === "COMPLETED";
+                        const isFailed = entry.status === "FAILED";
+
+                        const dotClass = isRunning
+                          ? `bg-secondary ${styles.dotBreathing}`
+                          : isCompleted
+                            ? "bg-secondary"
+                            : isFailed
+                              ? "bg-rose-600/70"
+                              : "border border-text-soft bg-transparent"; // PENDING
+
+                        const labelClass = isCompleted ? "line-through opacity-60" : "";
+
+                        return (
+                          <div className="pb-task flex items-center gap-1.5 h-6 pl-3.5 text-[12px] font-medium text-text-muted dark:text-text-muted">
+                            <span
+                              aria-hidden="true"
+                              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotClass}`}
+                            />
+                            <span className={labelClass}>{entry.label}</span>
+                          </div>
+                        );
+                      })() : (
                         <div className="pb-thought pl-3.5 text-[12.5px] font-normal leading-[1.55] text-text-soft dark:text-text-muted [&_p]:m-0 [&_p+p]:mt-1.5 [&_strong]:font-semibold [&_strong]:text-text-muted dark:[&_strong]:text-text-primary [&_em]:italic [&_ul]:my-1 [&_ul]:pl-4 [&_ol]:my-1 [&_ol]:pl-4 [&_li]:text-[12.5px] [&_li]:leading-[1.5] [&_h1]:text-[13.5px] [&_h2]:text-[13px] [&_h3]:text-[12.5px] [&_h4]:text-[12.5px] [&_h5]:text-[12.5px] [&_h6]:text-[12.5px] [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_h1]:mt-1.5 [&_h2]:mt-1.5 [&_h3]:mt-1 [&_h1]:text-text-muted [&_h2]:text-text-muted [&_h3]:text-text-muted dark:[&_h1]:text-text-primary dark:[&_h2]:text-text-primary dark:[&_h3]:text-text-primary [&_code]:text-[11.5px] [&_pre]:text-[11px] [&_pre]:my-1 [&_blockquote]:my-1 [&_blockquote]:py-1 [&_blockquote]:text-[12px]">
                           <MarkdownContent content={entry.text} />
                         </div>
