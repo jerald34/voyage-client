@@ -48,6 +48,7 @@ function normalizeMessagesArray(rawMessages, itineraryId = null) {
         content: message.content,
         ...(message.itineraryId ? { itineraryId: message.itineraryId } : {}),
         ...(message.metadata?.itineraryId ? { metadata: { itineraryId: message.metadata.itineraryId } } : {}),
+        ...(message.metadata?.process ? { process: message.metadata.process } : {}),
       }))
     : [];
 

@@ -5,6 +5,7 @@ import RichItineraryMessage from "./RichItineraryMessage.jsx";
 import useMobileViewport from "../mobile/useMobileViewport.js";
 import CompactPlaceCard from "../mobile/CompactPlaceCard.jsx";
 import MessageImageGrid from "../../chat/MessageImageGrid";
+import ProcessBubble from "../../agent/process-bubble/ProcessBubble.jsx";
 
 function PlaceLinkedText({ children, placeEntities, selectedPlaceId, onPlaceSelect }) {
   if (typeof children !== "string" && typeof children !== "number") {
@@ -114,10 +115,11 @@ export default function ChatMessage({
   selectedPlaceId = "",
   onPlaceSelect,
   onEdit,
+  process = null,
+  onProcessToggle,
 }) {
   const shouldRenderRichItinerary = !isUser && renderAsItinerary && itinerary;
   const isMobile = useMobileViewport();
-  const isStreamingMessage = Boolean(message?.isStreaming || message?.id === "streaming");
 
   return (
     <div className={`group flex gap-3 max-w-full ${isUser ? "flex-row-reverse" : "flex-row"}`}>
@@ -162,6 +164,24 @@ export default function ChatMessage({
               : "bg-[rgba(255,255,255,0.05)] backdrop-blur-md text-text-primary border border-border/10 rounded-bl-[4px]"
           }`}
         >
+          {!isUser && process != null && (
+            <ProcessBubble
+              status={process.status}
+              activeLabel={process.activeLabel}
+              timeline={process.timeline}
+              durationMs={process.durationMs}
+              defaultOpen={process.defaultOpen ?? false}
+              onToggle={onProcessToggle}
+              msgId={message.id}
+            />
+          )}
+          {!isUser && process != null && typeof message.content === "string" && message.content.trim().length > 0 && (
+            <hr
+              className="my-2.5 border-0 border-t"
+              style={{ borderColor: "rgb(var(--color-border-rgb) / 0.12)" }}
+              aria-hidden="true"
+            />
+          )}
           {isUser ? (
             <div>
               <p className="m-0 font-medium">{message.content}</p>
@@ -222,12 +242,6 @@ export default function ChatMessage({
               onPlaceSelect={onPlaceSelect}
               showPlaceCards={false}
             />
-          )}
-          {!isUser && isStreamingMessage && (
-            <div className="mt-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.08em] font-bold text-secondary/80">
-              <span className="w-1.5 h-1.5 rounded-full bg-current motion-safe:animate-pulse" aria-hidden="true" />
-              <span>Live</span>
-            </div>
           )}
         </div>
       </div>

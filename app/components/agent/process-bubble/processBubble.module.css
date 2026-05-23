@@ -1,0 +1,43 @@
+/* CSS Module for ProcessBubble component.
+ * See: https://nextjs.org/docs/app/building-your-application/styling/css-modules
+ * First CSS Module in this project — Next.js supports these natively with no config change.
+ */
+
+/* ── 1. Breathing dot (live state only) ─────────────────────────── */
+@keyframes pb-breathe {
+  0%, 100% { opacity: 0.55; }
+  50%       { opacity: 1.0; }
+}
+
+.dotBreathing {
+  animation: pb-breathe 2400ms cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ── 2. Label crossfade (activeLabel change) ─────────────────────── */
+@keyframes pb-label-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes pb-label-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.labelOut {
+  animation: pb-label-out 120ms ease-out forwards;
+}
+
+.labelIn {
+  animation: pb-label-in 160ms ease-out 40ms forwards;
+}
+
+/* ── Reduced-motion overrides ────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .dotBreathing,
+  .labelOut,
+  .labelIn {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}

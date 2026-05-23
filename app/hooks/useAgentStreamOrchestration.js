@@ -26,12 +26,17 @@ export function useAgentStreamOrchestration({
   agencyId,
   runStatus,
   completedMessageContent,
+  completedMessageProcess,
   assistantMessage,
   lastItineraryUpdate,
   streamingItinerary,
   runTargetRef,
   setTripStates,
   setDraftThreadStates,
+  // Optional ref written by AgentCommandCenter with the committed process
+  // snapshot — attached to the message object so chat history can render it.
+  // Used as fallback when the server-computed snapshot is unavailable.
+  processSnapshotRef = null,
 }) {
   const completedAssistantMessageRef = useRef(null);
   const itineraryFetchSequenceRef = useRef(0);
@@ -55,18 +60,22 @@ export function useAgentStreamOrchestration({
       if (current.messages.some(m => m.role === "assistant" && m.content.trim() === finalContent)) return prev;
       completedAssistantMessageRef.current = { targetKey, content: finalContent };
       const itineraryId = lastItineraryUpdate ? String(lastItineraryUpdate) : "";
+      // Prefer the server-computed process snapshot (authoritative, persisted),
+      // fall back to the client-computed one from AgentCommandCenter.
+      const processSnapshot = completedMessageProcess ?? processSnapshotRef?.current ?? null;
       const message = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
         content: finalContent,
         ...(itineraryId ? { itineraryId } : {}),
+        ...(processSnapshot ? { process: processSnapshot } : {}),
       };
       return { ...prev, [runTarget.id]: { ...current, loaded: true, messages: [...current.messages, message] } };
     };
 
     if (runTarget.type === "draft") setDraftThreadStates(update);
     else setTripStates(update);
-  }, [runStatus, completedMessageContent, assistantMessage, lastItineraryUpdate]);
+  }, [runStatus, completedMessageContent, completedMessageProcess, assistantMessage, lastItineraryUpdate]);
 
   useEffect(() => {
     // Only merge streaming itinerary while the run is active. After

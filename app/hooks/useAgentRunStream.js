@@ -20,6 +20,7 @@ export function useAgentRunStream(agencyId) {
   const [assistantMessage, setAssistantMessage] = useState('');
   const [tasks, setTasks] = useState([]);
   const [toolCalls, setToolCalls] = useState([]);
+  const [thoughtEntries, setThoughtEntries] = useState([]);
   const [sources, setSources] = useState([]);
   const [mapMarkers, setMapMarkers] = useState([]);
   const [routeEstimates, setRouteEstimates] = useState([]);
@@ -27,6 +28,7 @@ export function useAgentRunStream(agencyId) {
   const [lastItineraryUpdate, setLastItineraryUpdate] = useState(null);
   const [lastCompletedItineraryTool, setLastCompletedItineraryTool] = useState(null);
   const [completedMessageContent, setCompletedMessageContent] = useState(null);
+  const [completedMessageProcess, setCompletedMessageProcess] = useState(null);
   // streamingItinerary is the in-flight cached itinerary patched by granular events.
   const [streamingItinerary, setStreamingItinerary] = useState(null);
   const [error, setError] = useState(null);
@@ -34,6 +36,12 @@ export function useAgentRunStream(agencyId) {
   const eventSourceRef = useRef(null);
   const streamInstanceRef = useRef(0);
   const currentRunIdRef = useRef(null);
+  // Tracks whether a thought entry has been started since the last tool boundary.
+  const thoughtActiveRef = useRef(false);
+  // Counter for generating unique thought entry ids.
+  const thoughtCounterRef = useRef(0);
+  // Tracks tool count at the moment the current thought entry was started.
+  const toolCountAtThoughtStartRef = useRef(0);
 
   const startStream = (runId) => {
     if (eventSourceRef.current) {
@@ -48,6 +56,7 @@ export function useAgentRunStream(agencyId) {
     setAssistantMessage('');
     setTasks([]);
     setToolCalls([]);
+    setThoughtEntries([]);
     setSources([]);
     setMapMarkers([]);
     setRouteEstimates([]);
@@ -55,8 +64,12 @@ export function useAgentRunStream(agencyId) {
     setLastItineraryUpdate(null);
     setLastCompletedItineraryTool(null);
     setCompletedMessageContent(null);
+    setCompletedMessageProcess(null);
     setStreamingItinerary(null);
     setError(null);
+    thoughtActiveRef.current = false;
+    thoughtCounterRef.current = 0;
+    toolCountAtThoughtStartRef.current = 0;
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
     const url = `${API_URL}/agencies/${agencyId}/agent/runs/${runId}/stream`;
@@ -99,7 +112,44 @@ export function useAgentRunStream(agencyId) {
       setAssistantMessage(prev => prev + String(delta));
     });
 
-    // Server sends: { type: "message.completed", payload: { messageId, content } }
+    // Server sends: { type: "thought.delta", payload: { delta: "..." } }
+    es.addEventListener('thought.delta', (e) => {
+      if (!isCurrentStream()) return;
+
+      const data = parseEventData(e);
+      if (!data) return;
+
+      const delta = data.payload?.delta;
+      if (delta == null) return;
+
+      setToolCalls(prev => {
+        const toolCount = prev.length;
+        if (!thoughtActiveRef.current) {
+          // Start a new thought entry
+          thoughtActiveRef.current = true;
+          thoughtCounterRef.current += 1;
+          toolCountAtThoughtStartRef.current = toolCount;
+          const id = `thought-${Date.now()}-${thoughtCounterRef.current}`;
+          setThoughtEntries(prevEntries => [
+            ...prevEntries,
+            { id, text: String(delta), precedingToolCount: toolCount }
+          ]);
+        } else {
+          // Append to the last thought entry
+          setThoughtEntries(prevEntries => {
+            if (prevEntries.length === 0) return prevEntries;
+            const last = prevEntries[prevEntries.length - 1];
+            return [
+              ...prevEntries.slice(0, -1),
+              { ...last, text: last.text + String(delta) }
+            ];
+          });
+        }
+        return prev;
+      });
+    });
+
+    // Server sends: { type: "message.completed", payload: { messageId, content, process? } }
     es.addEventListener('message.completed', (e) => {
       if (!isCurrentStream()) return;
 
@@ -109,6 +159,10 @@ export function useAgentRunStream(agencyId) {
       if (typeof data.payload?.content === 'string') {
         setAssistantMessage(data.payload.content);
         setCompletedMessageContent(data.payload.content);
+      }
+      // Capture the server-computed process snapshot if present.
+      if (data.payload?.process != null) {
+        setCompletedMessageProcess(data.payload.process);
       }
     });
 
@@ -139,6 +193,9 @@ export function useAgentRunStream(agencyId) {
       const tool = data?.payload;
       if (!tool) return;
 
+      // Flush the current thought buffer — a tool boundary has been reached.
+      thoughtActiveRef.current = false;
+
       // Clear intermediate streaming content so it doesn't concatenate with
       // the post-tool synthesis output that will arrive later.
       setAssistantMessage('');
@@ -153,6 +210,9 @@ export function useAgentRunStream(agencyId) {
       const data = parseEventData(e);
       const tool = data?.payload;
       if (!tool) return;
+
+      // A completed tool is a boundary — subsequent thought.delta starts a new entry.
+      thoughtActiveRef.current = false;
 
       setToolCalls(prev => prev.map(t =>
         t.name === tool.name && t.status === 'Running'
@@ -176,6 +236,9 @@ export function useAgentRunStream(agencyId) {
       const data = parseEventData(e);
       const tool = data?.payload;
       if (!tool) return;
+
+      // A failed tool is also a boundary.
+      thoughtActiveRef.current = false;
 
       setToolCalls(prev => prev.map(t =>
         t.name === tool.name && t.status === 'Running'
@@ -393,8 +456,10 @@ export function useAgentRunStream(agencyId) {
     runStatus,
     assistantMessage,
     completedMessageContent,
+    completedMessageProcess,
     tasks,
     toolCalls,
+    thoughtEntries,
     sources,
     mapMarkers,
     routeEstimates,
