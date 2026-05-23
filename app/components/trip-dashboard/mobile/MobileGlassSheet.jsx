@@ -205,7 +205,8 @@ export default function MobileGlassSheet({
         willChange: isDragging ? "height" : "auto",
       }}
     >
-      {/* Drag handle */}
+      {/* Drag handle — sits inside the rounded top edge of the sheet so the
+       * card silhouette stays crisp; content dissolves inside via the body mask. */}
       <div className="relative flex-shrink-0 overflow-hidden rounded-t-[24px]">
         <div
           ref={dragHandleRef}
@@ -221,23 +222,38 @@ export default function MobileGlassSheet({
         </div>
       </div>
 
-      {/* Scrollable content */}
+      {/* Scrollable content — fills the sheet body. When a footer is present,
+       * we leave generous bottom padding so messages can scroll INTO and BEHIND
+       * the floating composer, then a tall fade mask softly dissolves content
+       * as it approaches the input. The result mirrors the desktop floating-
+       * input behavior so the perceived boundary is the same on both surfaces. */}
       <div className="relative flex-1 overflow-y-auto overflow-x-hidden min-h-0">
         <div
           className="relative z-0"
           style={{
-            WebkitMaskImage: "linear-gradient(to bottom, transparent 0px, black 34px, black 100%)",
-            maskImage: "linear-gradient(to bottom, transparent 0px, black 34px, black 100%)",
+            paddingBottom: footer ? "104px" : "0px",
+            WebkitMaskImage: footer
+              ? "linear-gradient(to bottom, transparent 0px, black 34px, black calc(100% - 88px), transparent calc(100% - 8px))"
+              : "linear-gradient(to bottom, transparent 0px, black 34px, black 100%)",
+            maskImage: footer
+              ? "linear-gradient(to bottom, transparent 0px, black 34px, black calc(100% - 88px), transparent calc(100% - 8px))"
+              : "linear-gradient(to bottom, transparent 0px, black 34px, black 100%)",
           }}
         >
           {typeof children === "function" ? children({ snap, snapTo }) : children}
         </div>
       </div>
 
-      {/* Sticky footer */}
+      {/* Floating footer — absolute-positioned so the chat input sits OVER the
+       * scrollable content, not below it. Messages dissolve under it via the
+       * body's bottom mask. pointer-events-none on the wrapper so empty space
+       * around the input doesn't block scroll/touch on the chat behind it; the
+       * inner div re-enables pointer events for the input itself. */}
       {footer && (
-        <div className="flex-shrink-0 border-t border-white/10">
-          {typeof footer === "function" ? footer({ snap, snapTo }) : footer}
+        <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
+          <div className="pointer-events-auto">
+            {typeof footer === "function" ? footer({ snap, snapTo }) : footer}
+          </div>
         </div>
       )}
     </div>

@@ -163,7 +163,11 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
     runStatus,
     assistantMessage,
     completedMessageContent,
+    completedMessageProcess,
+    tasks,
+    tasksTouchedThisRun,
     toolCalls,
+    thoughtEntries,
     mapMarkers,
     routeEstimates,
     activeToolLabel,
@@ -173,6 +177,10 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
     startStream,
     stopStream,
   } = useAgentRunStream(agencyId ?? "");
+
+  // Ref that AgentCommandCenter writes with the committed process snapshot.
+  // Passed to useAgentStreamOrchestration so it can attach it to the message.
+  const agentProcessSnapshotRef = useRef(null);
 
   // Load user
   useEffect(() => { setUser(userProp); }, [userProp]);
@@ -286,12 +294,14 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
     agencyId,
     runStatus,
     completedMessageContent,
+    completedMessageProcess,
     assistantMessage,
     lastItineraryUpdate,
     streamingItinerary,
     runTargetRef,
     setTripStates,
     setDraftThreadStates,
+    processSnapshotRef: agentProcessSnapshotRef,
   });
 
   // UI state derivation
@@ -621,7 +631,9 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                     isStreaming={isVisible ? isStreaming : false}
                     assistantMessage={isVisible ? assistantMessage : ""}
                     toolCalls={isVisible ? toolCalls : []}
-                    activeToolLabel={isVisible ? activeToolLabel : null}
+                    thoughtEntries={isVisible ? thoughtEntries : []}
+                    tasks={isVisible ? tasks : []}
+                    tasksTouchedThisRun={isVisible ? tasksTouchedThisRun : new Set()}
                     streamingItinerary={isVisible ? streamingItinerary : null}
                     dispatchAgentMessage={(prompt, files) => dispatchMessage(prompt, startStream, files)}
                     composerInput={composerInput}
@@ -634,6 +646,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                     selectedPlaceId={selectedPlaceId}
                     onPlaceSelect={setSelectedPlaceId}
                     onStop={isVisible ? stopStream : undefined}
+                    processSnapshotRef={agentProcessSnapshotRef}
                   />
                 </div>
               </div>
@@ -664,7 +677,9 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                     isStreaming={isVisible ? isStreaming : false}
                     assistantMessage={isVisible ? assistantMessage : ""}
                     toolCalls={isVisible ? toolCalls : []}
-                    activeToolLabel={isVisible ? activeToolLabel : null}
+                    thoughtEntries={isVisible ? thoughtEntries : []}
+                    tasks={isVisible ? tasks : []}
+                    tasksTouchedThisRun={isVisible ? tasksTouchedThisRun : new Set()}
                     streamingItinerary={isVisible ? streamingItinerary : null}
                     dispatchAgentMessage={(prompt, files) => dispatchMessage(prompt, startStream, files)}
                     composerInput={composerInput}
@@ -678,6 +693,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                     onPlaceSelect={setSelectedPlaceId}
                     onStop={isVisible ? stopStream : undefined}
                     hideChatInput
+                    processSnapshotRef={agentProcessSnapshotRef}
                   />
                 </MobileGlassSheet>
               )}
