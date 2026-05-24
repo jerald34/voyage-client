@@ -68,3 +68,6 @@ export {
   transferOwnership,
   deleteAgency,
 } from "./team.js";
+
+// Personal account (/me/*)
+export * from "./personal.js";

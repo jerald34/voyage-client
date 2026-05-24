@@ -13,6 +13,8 @@ import {
   fetchPendingCount,
   updateAgencySettings,
   updateCurrentUserProfile,
+  fetchPersonalItineraries,
+  fetchPersonalThreads,
 } from "../../lib/api/index.js";
 import {
   getAgencyPortfolioSummary,
@@ -73,6 +75,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   const { theme } = useTheme();
   const { logout } = useAuth();
   const [user, setUser] = useState(userProp || null);
+  const isPersonal = user?.accountType === "PERSONAL";
   const agencyId = user?.memberships?.[0]?.agencyId ?? null;
   const [fetchedTrips, setFetchedTrips] = useState(null);
   const agencyTrips = agencyTripsProp;
@@ -191,8 +194,64 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
     if (stored) { try { setUser(JSON.parse(stored)); } catch (e) { console.error(e); } }
   }, [user]);
 
-  // Load initial data
+  // Load initial data — agency path
   useEffect(() => { if (agencyId) loadInitialThreads(); }, [agencyId]);
+
+  // Load initial data — personal path
+  useEffect(() => {
+    if (!isPersonal) return;
+    let cancelled = false;
+
+    fetchPersonalItineraries()
+      .then((res) => {
+        if (cancelled) return;
+        const items = Array.isArray(res?.itineraries) ? res.itineraries : (Array.isArray(res) ? res : []);
+        setFetchedTrips(
+          items.map((it) => ({
+            id: it.id,
+            clientName: null,
+            destination: it.destinationSummary ?? it.title ?? null,
+            travelWindow: formatTripDates(it.startDate, it.endDate),
+            status: it.status?.toLowerCase() === "archived" ? "archived" : "active",
+            approvalStatus: mapTripStatus(it.status),
+            itineraryId: it.id,
+            itineraryVersion: it.version ?? null,
+          }))
+        );
+      })
+      .catch((err) => console.error("Failed to load personal itineraries:", err));
+
+    fetchPersonalThreads()
+      .then((res) => {
+        if (cancelled) return;
+        const threads = Array.isArray(res?.threads) ? res.threads : (Array.isArray(res) ? res : []);
+        if (threads.length === 0) return;
+
+        const nextDraftStates = {};
+        const nextDraftOrder = [];
+        for (const thread of threads) {
+          if (!thread?.id) continue;
+          nextDraftStates[thread.id] = {
+            threadId: thread.id,
+            title: String(thread.title ?? thread.name ?? "").trim(),
+            tripId: null,
+            messages: [],
+            itinerary: null,
+            loaded: false,
+          };
+          nextDraftOrder.push(thread.id);
+        }
+        setDraftThreadStates((prev) => ({ ...prev, ...nextDraftStates }));
+        setDraftThreadOrder((prev) => {
+          const existing = new Set(prev);
+          const toAdd = nextDraftOrder.filter((id) => !existing.has(id));
+          return toAdd.length > 0 ? [...toAdd, ...prev] : prev;
+        });
+      })
+      .catch((err) => console.error("Failed to load personal threads:", err));
+
+    return () => { cancelled = true; };
+  }, [isPersonal]);
 
   const {
     isFirstUseTutorialOpen,
