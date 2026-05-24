@@ -1,4 +1,4 @@
-// Two-step register wizard: account details then agency details.
+// Three-step register wizard: account details, account type picker, then agency details.
 "use client";
 
 import { useEffect, useState } from "react";
@@ -37,6 +37,7 @@ export default function RegisterWizard({
   setIsTransitioning,
   isAuthenticated,
   onOpenLegalDoc,
+  onComplete,
 }) {
   const auth = useAuth();
 
@@ -49,6 +50,9 @@ export default function RegisterWizard({
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [step1Errors, setStep1Errors] = useState({});
   const [serverStep1Errors, setServerStep1Errors] = useState({});
+
+  // Step "type" error
+  const [typeStepError, setTypeStepError] = useState(null);
 
   // Step 2 fields
   const [agencyName, setAgencyName] = useState("");
@@ -84,15 +88,38 @@ export default function RegisterWizard({
     return Object.keys(errors).length === 0;
   };
 
-  const handleStep1Next = (e) => {
+  const handleStep1Next = async (e) => {
     e.preventDefault();
-    if (validateStep1()) {
-      setIsTransitioning(true);
+    if (!validateStep1()) return;
+
+    setIsTransitioning(true);
+    const user = await auth.register({ email, password, displayName: fullName });
+    if (user) {
       setTimeout(() => {
-        setWizardStep(2);
+        setWizardStep("type");
         setIsTransitioning(false);
       }, 280);
+    } else {
+      setIsTransitioning(false);
     }
+  };
+
+  const handlePickPersonal = async () => {
+    setTypeStepError(null);
+    const user = await auth.setAccountType("PERSONAL");
+    if (user) {
+      onComplete?.();
+    } else if (auth.error) {
+      setTypeStepError(auth.error.message || "Something went wrong. Please try again.");
+    }
+  };
+
+  const handlePickAgency = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setWizardStep(2);
+      setIsTransitioning(false);
+    }, 280);
   };
 
   const handleStep2Submit = async (e) => {
@@ -129,24 +156,16 @@ export default function RegisterWizard({
       city: trimmedCity,
     };
 
-    if (isAuthenticated) {
-      // OAuth user — already registered, just create agency
-      await auth.createAgency(agencyData);
-    } else {
-      // Email user — register first, then create agency
-      const user = await auth.register({ email, password, displayName: fullName });
-      if (user) {
-        await auth.createAgency(agencyData);
-      }
-    }
+    // At this point the user is already registered (Step 1 called auth.register,
+    // or they are an OAuth user). Just create the agency.
+    await auth.createAgency(agencyData);
   };
 
   const handleStep2Back = () => {
-    if (isAuthenticated) return; // Can't go back if OAuth
     setIsTransitioning(true);
     auth.setError(null);
     setTimeout(() => {
-      setWizardStep(1);
+      setWizardStep("type");
       setIsTransitioning(false);
     }, 280);
   };
@@ -161,7 +180,7 @@ export default function RegisterWizard({
 
   return (
     <>
-      {/* ─── REGISTER STEP 1: Personal Account ─── */}
+      {/* ─── REGISTER STEP 1: Account Details ─── */}
       {wizardStep === 1 && (
         <>
           <div className="mb-7">
@@ -240,10 +259,60 @@ export default function RegisterWizard({
             </label>
             {termsError && <span className="text-[0.8rem] text-status-danger mt-0.5">{termsError}</span>}
 
-            <button type="submit" className="w-full mt-2 inline-flex items-center justify-center gap-3 min-h-[54px] px-7 py-4 border border-transparent rounded-pill text-base font-extrabold cursor-pointer bg-accent text-white shadow-[0_16px_32px_rgba(216,180,160,0.26)] hover:-translate-y-px hover:bg-[#dbbfae] transition-all">
-              Next: Agency Details
+            <button type="submit" disabled={auth.loading} className="w-full mt-2 inline-flex items-center justify-center gap-3 min-h-[54px] px-7 py-4 border border-transparent rounded-pill text-base font-extrabold cursor-pointer bg-accent text-white shadow-[0_16px_32px_rgba(216,180,160,0.26)] hover:-translate-y-px hover:bg-[#dbbfae] transition-all disabled:opacity-55 disabled:cursor-not-allowed disabled:transform-none">
+              {auth.loading ? "Creating your account…" : "Next: Choose account type"}
             </button>
           </form>
+        </>
+      )}
+
+      {/* ─── REGISTER STEP 1.5: Account Type Picker ─── */}
+      {wizardStep === "type" && (
+        <>
+          <div className="mb-7">
+            <h2 className="text-[clamp(1.6rem,2.4vw,2.2rem)] mb-2">How will you use Voyage?</h2>
+            <p className="text-[1.08rem] text-text-muted mb-0">Choose the option that fits you best.</p>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <button
+              type="button"
+              disabled={auth.loading}
+              onClick={handlePickPersonal}
+              className="w-full text-left p-6 rounded-2xl border border-border bg-surface hover:bg-surface-hover transition-all duration-200 disabled:opacity-55 disabled:cursor-not-allowed group"
+            >
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[1.08rem] font-extrabold text-text-primary group-hover:text-secondary transition-colors duration-200">
+                  Plan my own trips
+                </span>
+                <span className="text-[0.92rem] text-text-muted leading-relaxed">
+                  Use the full AI planning agent for your personal travel. Your itineraries stay private to you.
+                </span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              disabled={auth.loading}
+              onClick={handlePickAgency}
+              className="w-full text-left p-6 rounded-2xl border border-border bg-surface hover:bg-surface-hover transition-all duration-200 disabled:opacity-55 disabled:cursor-not-allowed group"
+            >
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[1.08rem] font-extrabold text-text-primary group-hover:text-secondary transition-colors duration-200">
+                  Set up an agency
+                </span>
+                <span className="text-[0.92rem] text-text-muted leading-relaxed">
+                  Create a shared workspace for your travel agency. Collaborate with your team on client trips.
+                </span>
+              </div>
+            </button>
+          </div>
+
+          {typeStepError && (
+            <div className="mt-4 p-3 rounded-sm bg-status-danger/[0.06] border border-status-danger/[0.18] text-status-danger text-[0.86rem] font-semibold leading-relaxed text-center" role="alert">
+              {typeStepError}
+            </div>
+          )}
         </>
       )}
 
@@ -376,7 +445,7 @@ export default function RegisterWizard({
             {!isAuthenticated && (
               <button type="button" className="inline-flex items-center justify-center gap-2 mt-1 bg-none border-none text-text-muted text-[0.88rem] font-bold cursor-pointer transition-colors hover:text-secondary" onClick={handleStep2Back}>
                 <ArrowLeftIcon width={16} height={16} />
-                Back to account details
+                Back to account type
               </button>
             )}
           </form>
