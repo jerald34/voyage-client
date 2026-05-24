@@ -97,6 +97,7 @@ export default function SettingsPage({
   onReplayTutorial,
 }) {
   const { theme, setTheme } = useTheme();
+  const isPersonal = user?.accountType === "PERSONAL";
 
   const [displayName, setDisplayName] = useState("");
   const [savedDisplayName, setSavedDisplayName] = useState("");
@@ -330,7 +331,7 @@ export default function SettingsPage({
           </form>
         </Panel>
 
-        <Panel
+        {!isPersonal && <Panel
           eyebrow="Workspace"
           title="Agency details"
           description="Manage the shared agency profile that powers the dashboard and itinerary flows."
@@ -380,7 +381,7 @@ export default function SettingsPage({
               </button>
             </div>
           </form>
-        </Panel>
+        </Panel>}
 
         <Panel
           eyebrow="Appearance"
@@ -485,7 +486,7 @@ export default function SettingsPage({
           </div>
         </Panel>
 
-        {membership?.role === "OWNER" && agency?.id ? (
+        {!isPersonal && membership?.role === "OWNER" && agency?.id ? (
           <DangerZoneCard
             agencyId={agency.id}
             agencyName={agency.name ?? savedAgencyName ?? ""}
