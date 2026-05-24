@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { fetchApi } from "../lib/api/index.js";
+import { fetchApi, setAccountType as setAccountTypeApi } from "../lib/api/index.js";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -79,12 +79,28 @@ export function useAuth() {
     window.location.href = `${API_URL}/auth/${provider}/start`;
   };
 
+  const setAccountType = async (accountType) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await setAccountTypeApi(accountType);
+      localStorage.setItem("voyage-user", JSON.stringify(data.user));
+      return data.user;
+    } catch (err) {
+      setError(err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     register,
     createAgency,
     login,
     logout,
     startOAuth,
+    setAccountType,
     error,
     setError,
     loading,
