@@ -58,3 +58,13 @@ export {
   adminSuspendAgency,
   adminUnsuspendAgency,
 } from "./admin.js";
+
+// Team & agency management
+export {
+  fetchTeam,
+  inviteMember,
+  changeMemberRole,
+  removeMember,
+  transferOwnership,
+  deleteAgency,
+} from "./team.js";
