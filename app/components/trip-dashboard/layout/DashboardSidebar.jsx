@@ -4,7 +4,7 @@ import { useTheme } from "../../theme/ThemeProvider";
 export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab, logout, user, pendingCount }) {
   const { theme, setTheme } = useTheme();
   const isDark = theme === "dark";
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "SUPER_ADMIN";
 
   const navItemBase = "flex flex-col items-center justify-center py-[18px] px-1 text-[rgba(219,234,236,0.65)] no-underline gap-2.5 text-center bg-transparent border-none cursor-pointer font-[inherit] transition-all duration-200 w-full hover:not-[.active]:text-white hover:not-[.active]:bg-white/5 max-[900px]:flex-row max-[900px]:justify-start max-[900px]:px-4 max-[900px]:py-3 max-[900px]:gap-4 max-[900px]:rounded-xl";
   const navItemActive = "text-white bg-white/10 border-l-[3px] border-secondary max-[900px]:border-l-0 max-[900px]:bg-secondary";

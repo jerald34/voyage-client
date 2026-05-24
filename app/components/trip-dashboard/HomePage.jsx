@@ -139,7 +139,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
 
   // Poll pending count for admin users
   useEffect(() => {
-    if (user?.role !== "ADMIN") return;
+    if (user?.role !== "SUPER_ADMIN") return;
     let cancelled = false;
     const load = () => {
       fetchPendingCount()
@@ -152,7 +152,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   }, [user?.role]);
 
   const refreshPendingCount = () => {
-    if (user?.role !== "ADMIN") return;
+    if (user?.role !== "SUPER_ADMIN") return;
     fetchPendingCount()
       .then((data) => setPendingCount(data.count || 0))
       .catch(() => {});
@@ -726,7 +726,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
               onUpdateAgency={handleAgencySettingsUpdate}
               onReplayTutorial={replayFirstUseTutorial}
             />
-          ) : activeTab === "admin" && user?.role === "ADMIN" ? (
+          ) : activeTab === "admin" && user?.role === "SUPER_ADMIN" ? (
             <AdminAgenciesPage onPendingCountChange={refreshPendingCount} />
           ) : null}
         </main>
