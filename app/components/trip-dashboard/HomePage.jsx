@@ -33,6 +33,7 @@ import ApproveItineraryModal from "./modals/ApproveItineraryModal.jsx";
 import DashboardHeader from "./layout/DashboardHeader.jsx";
 import DashboardSidebar from "./layout/DashboardSidebar.jsx";
 import AdminAgenciesPage from "../admin/AdminAgenciesPage.jsx";
+import TeamPage from "../team/TeamPage.jsx";
 import MobileGlassSheet from "./mobile/MobileGlassSheet.jsx";
 import useMobileViewport from "./mobile/useMobileViewport.js";
 import ChatInput from "./command-center/ChatInput.jsx";
@@ -716,6 +717,8 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                 }
               }}
             />
+          ) : activeTab === "team" && agencyId ? (
+            <TeamPage agencyId={agencyId} />
           ) : activeTab === "settings" ? (
             <SettingsPage
               user={user}

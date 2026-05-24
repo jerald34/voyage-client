@@ -1,11 +1,26 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import TransferOwnershipModal from "./TransferOwnershipModal";
 import DeleteAgencyModal from "./DeleteAgencyModal";
+import { fetchTeam } from "@/app/lib/api/index.js";
 
-export default function DangerZoneCard({ agencyId, agencyName, members }) {
+export default function DangerZoneCard({ agencyId, agencyName, members: membersProp }) {
   const [transferOpen, setTransferOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [fetchedMembers, setFetchedMembers] = useState(null);
+
+  // Lazily load members the first time the transfer modal opens — only needed for OWNER.
+  useEffect(() => {
+    if (!transferOpen) return;
+    if (membersProp || fetchedMembers || !agencyId) return;
+    let cancelled = false;
+    fetchTeam(agencyId)
+      .then((res) => { if (!cancelled) setFetchedMembers(res?.members || []); })
+      .catch(() => { if (!cancelled) setFetchedMembers([]); });
+    return () => { cancelled = true; };
+  }, [transferOpen, membersProp, fetchedMembers, agencyId]);
+
+  const members = membersProp || fetchedMembers || [];
 
   return (
     <div className="mt-12 rounded-lg border border-rose-400/20 bg-rose-500/[0.03] p-6">

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "../../theme/ThemeProvider";
 import { voyageTourHelpBullets, voyageTourSteps } from "../tutorial/tutorialContent.js";
+import DangerZoneCard from "../../settings/DangerZoneCard.jsx";
 
 function formatReadOnlyValue(value) {
   const text = String(value ?? "").trim();
@@ -483,6 +484,13 @@ export default function SettingsPage({
             </div>
           </div>
         </Panel>
+
+        {membership?.role === "OWNER" && agency?.id ? (
+          <DangerZoneCard
+            agencyId={agency.id}
+            agencyName={agency.name ?? savedAgencyName ?? ""}
+          />
+        ) : null}
       </div>
     </div>
   );
