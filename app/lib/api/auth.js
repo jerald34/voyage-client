@@ -9,3 +9,10 @@ export async function updateCurrentUserProfile(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export async function setAccountType(accountType) {
+  return fetchApi("/auth/me/account-type", {
+    method: "POST",
+    body: JSON.stringify({ accountType }),
+  });
+}

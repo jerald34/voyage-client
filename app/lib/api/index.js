@@ -9,7 +9,7 @@
 export { fetchApi, API_URL } from "./client.js";
 
 // Auth
-export { updateCurrentUserProfile } from "./auth.js";
+export { updateCurrentUserProfile, setAccountType } from "./auth.js";
 
 // Agency
 export {
