@@ -12,8 +12,8 @@ function sanitizePhone(value) {
 function getFieldClass() {
   return [
     "mt-2 w-full rounded-2xl border px-4 py-3 text-sm outline-none transition",
-    "bg-white/5 text-white placeholder:text-white/30",
-    "border-white/10 focus:border-white/20 focus:ring-1 focus:ring-white/10 focus:outline-none",
+    "bg-surface text-text-primary placeholder:text-text-soft",
+    "border-border/10 focus:border-secondary/50 focus:ring-1 focus:ring-secondary/10 focus:outline-none",
   ].join(" ");
 }
 
@@ -105,15 +105,15 @@ export default function AgencySettingsPage({ agencyId }) {
   return (
     <div className="mx-auto max-w-2xl px-6 py-8">
       <header className="mb-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">Workspace</p>
-        <h1 className="mt-1 text-2xl font-semibold text-white tracking-tight">Agency settings</h1>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">Workspace</p>
+        <h1 className="mt-1 text-2xl font-semibold text-text-primary tracking-tight">Agency settings</h1>
       </header>
 
-      <section className="rounded-[24px] border border-white/8 bg-white/[0.02] p-5">
+      <section className="rounded-[24px] border border-border/10 bg-surface p-5">
         <form className="grid gap-4" onSubmit={handleSubmit}>
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-white/50">Agency name</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-text-muted">Agency name</span>
               <input
                 className={getFieldClass()}
                 value={agencyName}
@@ -123,7 +123,7 @@ export default function AgencySettingsPage({ agencyId }) {
             </label>
 
             <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-white/50">Business phone</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-text-muted">Business phone</span>
               <input
                 className={getFieldClass()}
                 value={businessPhone}
@@ -134,7 +134,7 @@ export default function AgencySettingsPage({ agencyId }) {
             </label>
 
             <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-white/50">Business email</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-text-muted">Business email</span>
               <input
                 className={getFieldClass()}
                 type="email"
@@ -145,7 +145,7 @@ export default function AgencySettingsPage({ agencyId }) {
             </label>
 
             <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-white/50">City</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-text-muted">City</span>
               <input
                 className={getFieldClass()}
                 value={city}
@@ -155,7 +155,7 @@ export default function AgencySettingsPage({ agencyId }) {
             </label>
 
             <label className="block md:col-span-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-white/50">Country</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-text-muted">Country</span>
               <input
                 className={getFieldClass()}
                 value={country}
@@ -166,12 +166,12 @@ export default function AgencySettingsPage({ agencyId }) {
           </div>
 
           {formError && (
-            <p className="rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-300" role="alert">
+            <p className="rounded-lg bg-status-danger/10 px-3 py-2 text-sm text-status-danger" role="alert">
               {formError}
             </p>
           )}
           {saveSuccess && (
-            <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+            <p className="rounded-lg bg-status-success/10 px-3 py-2 text-sm text-status-success">
               Settings saved.
             </p>
           )}
@@ -180,7 +180,7 @@ export default function AgencySettingsPage({ agencyId }) {
             <button
               type="submit"
               disabled={saving || !hasChanges}
-              className="rounded-full bg-white/10 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? "Saving…" : "Save changes"}
             </button>

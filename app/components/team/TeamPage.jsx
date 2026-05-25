@@ -1,18 +1,24 @@
 "use client";
 import { useEffect, useState } from "react";
-import { fetchTeam } from "@/app/lib/api/index.js";
+import {
+  fetchTeam,
+  listAgencyInvitations,
+  revokeAgencyInvitation,
+} from "@/app/lib/api/index.js";
 import MemberRow from "./MemberRow";
 import InviteMemberModal from "./InviteMemberModal";
 import ChangeRoleModal from "./ChangeRoleModal";
 import RemoveMemberModal from "./RemoveMemberModal";
 
-export default function TeamPage({ agencyId }) {
+export default function TeamPage({ agencyId, showJoinedNotice = false }) {
   const [data, setData] = useState({ members: [], viewerRole: null });
+  const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [removing, setRemoving] = useState(null);
+  const [revokingId, setRevokingId] = useState(null);
 
   // One-time toast for STAFF redirected from Settings
   const [settingsDeniedNotice, setSettingsDeniedNotice] = useState(false);
@@ -34,10 +40,32 @@ export default function TeamPage({ agencyId }) {
     try {
       const result = await fetchTeam(agencyId);
       setData(result);
+      if (result.viewerRole === "OWNER" || result.viewerRole === "ADMIN") {
+        try {
+          const inv = await listAgencyInvitations(agencyId);
+          setInvitations(inv.invitations ?? []);
+        } catch (_) {
+          setInvitations([]);
+        }
+      } else {
+        setInvitations([]);
+      }
     } catch (err) {
       setError(err?.message || "Failed to load team.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleRevoke(invitationId) {
+    setRevokingId(invitationId);
+    try {
+      await revokeAgencyInvitation(agencyId, invitationId);
+      setInvitations((list) => list.filter((inv) => inv.id !== invitationId));
+    } catch (err) {
+      setError(err?.message || "Failed to revoke invitation.");
+    } finally {
+      setRevokingId(null);
     }
   }
 
@@ -50,18 +78,24 @@ export default function TeamPage({ agencyId }) {
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
+      {showJoinedNotice && (
+        <div role="status" className="mb-4 rounded-lg border border-status-success/25 bg-status-success/10 px-4 py-3 text-sm text-status-success">
+          You joined this agency. Your workspace access is ready.
+        </div>
+      )}
+
       {settingsDeniedNotice && (
-        <div className="mb-4 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
+        <div className="mb-4 rounded-lg border border-border bg-surface-elevated px-4 py-3 text-sm text-text-muted">
           Settings are managed by your owner and admins.
         </div>
       )}
 
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl text-white">Team</h1>
+        <h1 className="text-xl text-text-primary">Team</h1>
         {canInvite && (
           <button
             type="button"
-            className="rounded bg-white/10 px-3 py-1.5 text-sm text-white hover:bg-white/15"
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90 transition"
             onClick={() => setInviteOpen(true)}
           >
             Invite member
@@ -69,13 +103,13 @@ export default function TeamPage({ agencyId }) {
         )}
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-white/5 bg-white/[0.02]">
+      <div className="overflow-hidden rounded-lg border border-border bg-surface">
         {loading ? (
-          <div className="px-4 py-8 text-center text-white/55">Loading&hellip;</div>
+          <div className="px-4 py-8 text-center text-text-muted">Loading&hellip;</div>
         ) : error ? (
-          <div className="px-4 py-8 text-center text-rose-300/70 text-sm">{error}</div>
+          <div className="px-4 py-8 text-center text-status-danger text-sm">{error}</div>
         ) : data.members.length === 0 ? (
-          <div className="px-4 py-8 text-center text-white/40 text-sm">No members yet.</div>
+          <div className="px-4 py-8 text-center text-text-soft text-sm">No members yet.</div>
         ) : (
           data.members.map((m) => (
             <MemberRow
@@ -88,6 +122,37 @@ export default function TeamPage({ agencyId }) {
           ))
         )}
       </div>
+
+      {canInvite && invitations.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+            Pending invitations ({invitations.length})
+          </h2>
+          <div className="overflow-hidden rounded-lg border border-border bg-surface">
+            {invitations.map((inv) => (
+              <div
+                key={inv.id}
+                className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 last:border-b-0"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm text-text-primary">{inv.email}</p>
+                  <p className="text-xs text-text-soft">
+                    {inv.role} · expires {new Date(inv.expiresAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRevoke(inv.id)}
+                  disabled={revokingId === inv.id}
+                  className="shrink-0 rounded-md border border-status-danger/30 px-3 py-1.5 text-xs font-semibold text-status-danger hover:bg-status-danger/10 transition disabled:opacity-50"
+                >
+                  {revokingId === inv.id ? "Revoking…" : "Revoke"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {inviteOpen && (
         <InviteMemberModal

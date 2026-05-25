@@ -22,13 +22,13 @@ export default function RemoveMemberModal({ agencyId, member, onClose, onRemoved
 
   return (
     <Modal open onClose={onClose} title="Remove member" size="sm">
-      <p className="text-sm text-white/70">
-        Remove <span className="font-medium text-white">{member.user.displayName}</span>? They will
+      <p className="text-sm text-text-muted">
+        Remove <span className="font-medium text-text-primary">{member.user.displayName}</span>? They will
         lose access immediately.
       </p>
 
       {error && (
-        <p className="mt-3 rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-300" role="alert">
+        <p className="mt-3 rounded-lg bg-status-danger/10 px-3 py-2 text-sm text-status-danger" role="alert">
           {error}
         </p>
       )}
@@ -37,7 +37,7 @@ export default function RemoveMemberModal({ agencyId, member, onClose, onRemoved
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg border border-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/5"
+          className="rounded-lg border border-border px-4 py-2 text-sm text-text-muted hover:bg-surface-elevated"
           disabled={saving}
         >
           Cancel
@@ -46,7 +46,7 @@ export default function RemoveMemberModal({ agencyId, member, onClose, onRemoved
           type="button"
           onClick={handleRemove}
           disabled={saving}
-          className="rounded-lg border border-rose-400/30 px-4 py-2 text-sm text-rose-300 hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg border border-status-danger px-4 py-2 text-sm text-status-danger hover:bg-status-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? "Removing…" : "Remove"}
         </button>

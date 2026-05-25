@@ -9,7 +9,22 @@
 export { fetchApi, API_URL } from "./client.js";
 
 // Auth
-export { updateCurrentUserProfile, setAccountType } from "./auth.js";
+export {
+  updateCurrentUserProfile,
+  setAccountType,
+  requestEmailVerification,
+  confirmEmailVerification,
+  requestPasswordReset,
+  confirmPasswordReset,
+} from "./auth.js";
+
+// Invitations
+export {
+  lookupInvitation,
+  acceptInvitation,
+  listAgencyInvitations,
+  revokeAgencyInvitation,
+} from "./invitations.js";
 
 // Agency
 export {

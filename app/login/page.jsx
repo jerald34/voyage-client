@@ -25,6 +25,12 @@ function AuthShell() {
   useEffect(() => {
     setMounted(true);
 
+    // Honor ?mode=register (used by accept-invite redirect for new accounts)
+    if (searchParams.get("mode") === "register") {
+      setMode("register");
+      setWizardStep(1);
+    }
+
     // Handle OAuth return — user is already authenticated, go to step 2
     const stepParam = searchParams.get("step");
     if (stepParam === "agency") {

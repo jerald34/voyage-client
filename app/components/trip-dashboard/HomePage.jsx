@@ -71,7 +71,15 @@ export function getAgencyMapFallbackFromUser(user) {
   };
 }
 
-export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp = [], onContinue, onOpenTrip, onNewItinerary }) {
+export default function HomePage({
+  user: userProp,
+  agencyTrips: agencyTripsProp = [],
+  onContinue,
+  onOpenTrip,
+  onNewItinerary,
+  initialTab = "command-center",
+  showJoinedNotice = false,
+}) {
   const { theme } = useTheme();
   const { logout } = useAuth();
   const [user, setUser] = useState(userProp || null);
@@ -125,7 +133,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   const [isApprovingDraft, setIsApprovingDraft] = useState(false);
   const [approvalError, setApprovalError] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("command-center");
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [selectedPlaceId, setSelectedPlaceId] = useState("");
   const [isClientMenuOpen, setIsClientMenuOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
@@ -777,7 +785,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
               }}
             />
           ) : activeTab === "team" && agencyId ? (
-            <TeamPage agencyId={agencyId} />
+            <TeamPage agencyId={agencyId} showJoinedNotice={showJoinedNotice} />
           ) : activeTab === "settings" ? (
             <SettingsPage
               user={user}

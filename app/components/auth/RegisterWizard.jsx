@@ -2,7 +2,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "../../hooks/useAuth";
+import { requestEmailVerification } from "../../lib/api/index.js";
 import {
   agencyLocationOptions,
   agencyCountryOptions,
@@ -40,16 +42,21 @@ export default function RegisterWizard({
   onComplete,
 }) {
   const auth = useAuth();
+  const searchParams = useSearchParams();
+  const invitedEmail = searchParams.get("email") ?? "";
+  const inviteToken = searchParams.get("invite") ?? "";
+  const emailLocked = Boolean(invitedEmail);
 
   // Step 1 fields
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(invitedEmail);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [step1Errors, setStep1Errors] = useState({});
   const [serverStep1Errors, setServerStep1Errors] = useState({});
+  const [verifyState, setVerifyState] = useState({ pendingEmail: "", resendStatus: null });
 
   // Step "type" error
   const [typeStepError, setTypeStepError] = useState(null);
@@ -93,15 +100,23 @@ export default function RegisterWizard({
     if (!validateStep1()) return;
 
     setIsTransitioning(true);
-    const user = await auth.register({ email, password, displayName: fullName });
-    if (user) {
+    const result = await auth.register({ email, password, displayName: fullName });
+    if (result?.user) {
+      setVerifyState({ pendingEmail: result.user.email, resendStatus: null });
       setTimeout(() => {
-        setWizardStep("type");
+        setWizardStep("verify");
         setIsTransitioning(false);
       }, 280);
     } else {
       setIsTransitioning(false);
     }
+  };
+
+  const handleResendVerification = async () => {
+    if (!verifyState.pendingEmail) return;
+    setVerifyState((s) => ({ ...s, resendStatus: "sending" }));
+    const ok = await auth.resendVerificationEmail(verifyState.pendingEmail);
+    setVerifyState((s) => ({ ...s, resendStatus: ok ? "sent" : "error" }));
   };
 
   const handlePickPersonal = async () => {
@@ -208,11 +223,25 @@ export default function RegisterWizard({
 
             <FormField
               id="auth-email"
-              label="Email address"
+              label={emailLocked ? "Email address (from your invitation)" : "Email address"}
               icon={<MailIcon width={18} height={18} />}
               error={emailError}
             >
-              <input id="auth-email" type="email" placeholder="voyager@example.com" value={email} onChange={(e) => { setEmail(sanitizeEmailInput(e.target.value)); setStep1Errors({}); setServerStep1Errors({}); }} autoComplete="email" className={`!pl-[46px] pr-[18px] py-[15px] ${authFieldSurfaceClass} ${authFieldBaseClass}`} />
+              <input
+                id="auth-email"
+                type="email"
+                placeholder="voyager@example.com"
+                value={email}
+                readOnly={emailLocked}
+                onChange={(e) => {
+                  if (emailLocked) return;
+                  setEmail(sanitizeEmailInput(e.target.value));
+                  setStep1Errors({});
+                  setServerStep1Errors({});
+                }}
+                autoComplete="email"
+                className={`!pl-[46px] pr-[18px] py-[15px] ${authFieldSurfaceClass} ${authFieldBaseClass} ${emailLocked ? "cursor-not-allowed opacity-80" : ""}`}
+              />
             </FormField>
 
             <FormField
@@ -263,6 +292,60 @@ export default function RegisterWizard({
               {auth.loading ? "Creating your account…" : "Next: Choose account type"}
             </button>
           </form>
+        </>
+      )}
+
+      {/* ─── REGISTER STEP 1.2: Verify your email ─── */}
+      {wizardStep === "verify" && (
+        <>
+          <div className="mb-7">
+            <span className="inline-flex items-center justify-center w-12 h-12 mb-4 rounded-full bg-[rgba(32,178,170,0.12)] border border-[rgba(32,178,170,0.28)]">
+              <MailIcon width={22} height={22} />
+            </span>
+            <h2 className="text-[clamp(1.6rem,2.4vw,2.2rem)] mb-2">Check your inbox</h2>
+            <p className="text-[1.08rem] text-text-muted mb-0">
+              We sent a confirmation link to <strong className="text-text-primary">{verifyState.pendingEmail}</strong>. Open it to finish setting up your Voyage account.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-white/65 dark:bg-surface-elevated/70 p-5 mb-5">
+            <p className="text-[0.92rem] text-text-muted leading-6 mb-3">
+              Once you verify your email, sign in to continue setting up your account.
+            </p>
+            <ul className="text-[0.88rem] text-text-soft leading-7 list-disc pl-5">
+              <li>Link expires in 24 hours.</li>
+              <li>Check your spam folder if you don&apos;t see it.</li>
+              {inviteToken && (
+                <li>Your agency invitation will apply automatically after sign-in.</li>
+              )}
+            </ul>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleResendVerification}
+            disabled={verifyState.resendStatus === "sending"}
+            className="w-full inline-flex items-center justify-center gap-2 min-h-[48px] px-6 py-3 rounded-pill border border-border bg-surface hover:bg-surface-hover transition font-bold text-secondary disabled:opacity-55"
+          >
+            {verifyState.resendStatus === "sending"
+              ? "Sending…"
+              : verifyState.resendStatus === "sent"
+              ? "Sent — check your inbox"
+              : "Resend verification email"}
+          </button>
+
+          {verifyState.resendStatus === "error" && auth.error && (
+            <p className="mt-3 p-3 rounded-sm bg-status-danger/[0.06] border border-status-danger/[0.18] text-status-danger text-[0.86rem] font-semibold text-center" role="alert">
+              {auth.error.message}
+            </p>
+          )}
+
+          <p className="text-center mt-6 text-text-muted text-[0.92rem]">
+            Already verified?{" "}
+            <a href="/login?verified=1" className="text-secondary font-extrabold no-underline hover:underline">
+              Sign in
+            </a>
+          </p>
         </>
       )}
 

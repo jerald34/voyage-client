@@ -8,6 +8,7 @@ export default function InviteMemberModal({ agencyId, onClose, onInvited }) {
   const [role, setRole] = useState("STAFF");
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [sentTo, setSentTo] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,6 +20,7 @@ export default function InviteMemberModal({ agencyId, onClose, onInvited }) {
     setSaving(true);
     try {
       await inviteMember(agencyId, { email: email.trim(), role });
+      setSentTo(email.trim());
       await onInvited?.();
     } catch (err) {
       setError(err?.message || "Failed to invite member.");
@@ -27,32 +29,54 @@ export default function InviteMemberModal({ agencyId, onClose, onInvited }) {
     }
   };
 
+  if (sentTo) {
+    return (
+      <Modal open onClose={onClose} title="Invitation sent" size="sm">
+        <p className="text-sm text-text-primary leading-6">
+          We sent an invitation email to <strong>{sentTo}</strong>. They&apos;ll join the agency once they accept the link.
+        </p>
+        <footer className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90 transition"
+          >
+            Done
+          </button>
+        </footer>
+      </Modal>
+    );
+  }
+
   return (
     <Modal open onClose={onClose} title="Invite member" size="sm">
+      <p className="mb-3 text-xs text-text-muted leading-5">
+        We&apos;ll email a Voyage invitation. They join once they accept the link.
+      </p>
       <form className="grid gap-4" onSubmit={handleSubmit}>
         <label className="grid gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-white/55">Email</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">Email</span>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="colleague@example.com"
             required
-            className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-white/20 focus:outline-none"
+            className="rounded-lg border border-border bg-surface-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-soft focus:border-secondary focus:outline-none"
           />
         </label>
 
         <fieldset className="grid gap-2">
-          <legend className="text-xs font-semibold uppercase tracking-wide text-white/55">Role</legend>
+          <legend className="text-xs font-semibold uppercase tracking-wide text-text-muted">Role</legend>
           {["ADMIN", "STAFF"].map((r) => (
-            <label key={r} className="flex cursor-pointer items-center gap-2 text-sm text-white/80">
+            <label key={r} className="flex cursor-pointer items-center gap-2 text-sm text-text-primary">
               <input
                 type="radio"
                 name="invite-role"
                 value={r}
                 checked={role === r}
                 onChange={() => setRole(r)}
-                className="accent-white/80"
+                className="accent-secondary"
               />
               {r}
             </label>
@@ -60,7 +84,7 @@ export default function InviteMemberModal({ agencyId, onClose, onInvited }) {
         </fieldset>
 
         {error && (
-          <p className="rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-300" role="alert">
+          <p className="rounded-lg bg-status-danger/10 px-3 py-2 text-sm text-status-danger" role="alert">
             {error}
           </p>
         )}
@@ -70,7 +94,7 @@ export default function InviteMemberModal({ agencyId, onClose, onInvited }) {
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg border border-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/5"
+          className="rounded-lg border border-border px-4 py-2 text-sm text-text-muted hover:bg-surface-elevated"
           disabled={saving}
         >
           Cancel
@@ -79,9 +103,9 @@ export default function InviteMemberModal({ agencyId, onClose, onInvited }) {
           type="button"
           onClick={handleSubmit}
           disabled={saving || !email.trim()}
-          className="rounded-lg bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90 transition disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {saving ? "Inviting…" : "Invite"}
+          {saving ? "Sending invite…" : "Send invitation"}
         </button>
       </footer>
     </Modal>

@@ -26,16 +26,16 @@ export default function ChangeRoleModal({ agencyId, member, onClose, onSaved }) 
     <Modal open onClose={onClose} title={`Change role — ${member.user.displayName}`} size="sm">
       <form className="grid gap-4" onSubmit={handleSubmit}>
         <fieldset className="grid gap-2">
-          <legend className="text-xs font-semibold uppercase tracking-wide text-white/55">New role</legend>
+          <legend className="text-xs font-semibold uppercase tracking-wide text-text-muted">New role</legend>
           {["ADMIN", "STAFF"].map((r) => (
-            <label key={r} className="flex cursor-pointer items-center gap-2 text-sm text-white/80">
+            <label key={r} className="flex cursor-pointer items-center gap-2 text-sm text-text-primary">
               <input
                 type="radio"
                 name="change-role"
                 value={r}
                 checked={role === r}
                 onChange={() => setRole(r)}
-                className="accent-white/80"
+                className="accent-secondary"
               />
               {r}
             </label>
@@ -43,7 +43,7 @@ export default function ChangeRoleModal({ agencyId, member, onClose, onSaved }) 
         </fieldset>
 
         {error && (
-          <p className="rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-300" role="alert">
+          <p className="rounded-lg bg-status-danger/10 px-3 py-2 text-sm text-status-danger" role="alert">
             {error}
           </p>
         )}
@@ -53,7 +53,7 @@ export default function ChangeRoleModal({ agencyId, member, onClose, onSaved }) 
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg border border-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/5"
+          className="rounded-lg border border-border px-4 py-2 text-sm text-text-muted hover:bg-surface-elevated"
           disabled={saving}
         >
           Cancel
@@ -62,7 +62,7 @@ export default function ChangeRoleModal({ agencyId, member, onClose, onSaved }) 
           type="button"
           onClick={handleSubmit}
           disabled={saving}
-          className="rounded-lg bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90 transition disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save"}
         </button>

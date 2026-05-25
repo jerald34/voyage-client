@@ -55,7 +55,7 @@ export default function TripDetailPage({ params }) {
   // Loading state
   return (
     <div className="mx-auto mt-24 max-w-md px-6 text-center">
-      <p className="text-sm text-white/40">Loading&hellip;</p>
+      <p className="text-sm text-text-muted">Loading&hellip;</p>
     </div>
   );
 }

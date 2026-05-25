@@ -21,6 +21,8 @@ function HomePageInner() {
   const searchParams = useSearchParams();
   const { logout } = useAuth();
   const authenticatedParam = searchParams.get("authenticated");
+  const requestedDashboardTab = searchParams.get("tab") === "team" ? "team" : "command-center";
+  const showJoinedNotice = requestedDashboardTab === "team" && searchParams.get("invited") === "1";
   const [shouldBypassLanding, setShouldBypassLanding] = useState(false);
   const [user, setUser] = useState(null);
   const [agencyStatus, setAgencyStatus] = useState(null); // null | { status, name, rejectionReason, suspensionReason }
@@ -130,6 +132,8 @@ function HomePageInner() {
       <HomePage
         user={user}
         agencyTrips={[]}
+        initialTab={requestedDashboardTab}
+        showJoinedNotice={showJoinedNotice}
         onContinue={() => setActiveScreen("agent-kickoff")}
         onOpenTrip={() => {
           setActiveWorkspaceTab("trip");

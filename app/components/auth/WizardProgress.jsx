@@ -1,10 +1,10 @@
 // Step counter for the register wizard.
-// currentStep: 1 | "type" | 2
+// currentStep: 1 | "verify" | "type" | 2
 export default function WizardProgress({ currentStep, step }) {
   // Support legacy `step` prop for backward compat while callers migrate
   const active = currentStep ?? step;
 
-  const accountActive = active === 1 || active === "type" || active === 2;
+  const accountActive = active === 1 || active === "verify" || active === "type" || active === 2;
   const typeActive = active === "type" || active === 2;
   const agencyActive = active === 2;
 

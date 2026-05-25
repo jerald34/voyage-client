@@ -5,8 +5,8 @@ export default function RolePill({ role }) {
       className={
         "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider " +
         (isOwner
-          ? "border border-white/30 text-white/85"
-          : "text-white/55")
+          ? "border border-border text-text-primary"
+          : "text-text-muted")
       }
     >
       {role}

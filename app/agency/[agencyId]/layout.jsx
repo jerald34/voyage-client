@@ -17,13 +17,13 @@ export default function AgencyLayout({ children, params }) {
   ];
 
   return (
-    <div className="flex h-full flex-col">
-      <nav className="flex gap-1 border-b border-white/8 px-6 py-3 text-sm" aria-label="Agency navigation">
+    <div className="flex min-h-screen flex-col bg-background text-text-primary">
+      <nav className="flex gap-1 border-b border-border/10 bg-background/80 px-6 py-3 text-sm backdrop-blur-md" aria-label="Agency navigation">
         {tabs.map((t) => (
           <Link
             key={t.href}
             href={t.href}
-            className="rounded px-3 py-1.5 text-white/65 transition-colors hover:bg-white/5 hover:text-white"
+            className="rounded px-3 py-1.5 text-text-muted transition-colors hover:bg-surface-elevated hover:text-text-primary"
           >
             {t.label}
           </Link>

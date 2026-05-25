@@ -7,6 +7,8 @@ import Page from "../app/page.jsx";
 const mockState = {
   routerPush: vi.fn(),
   searchParamsAuthenticated: null,
+  searchParamsTab: null,
+  searchParamsInvited: null,
   setActiveScreen: vi.fn(),
   setActiveWorkspaceTab: vi.fn(),
   setDays: vi.fn(),
@@ -15,6 +17,7 @@ const mockState = {
   setAgentMessages: vi.fn(),
   prototypeState: null,
   workspaceProps: null,
+  homePageProps: null,
 };
 
 vi.mock("next/navigation", () => ({
@@ -22,7 +25,12 @@ vi.mock("next/navigation", () => ({
     push: mockState.routerPush,
   }),
   useSearchParams: () => ({
-    get: (key) => (key === "authenticated" ? mockState.searchParamsAuthenticated : null),
+    get: (key) => {
+      if (key === "authenticated") return mockState.searchParamsAuthenticated;
+      if (key === "tab") return mockState.searchParamsTab;
+      if (key === "invited") return mockState.searchParamsInvited;
+      return null;
+    },
   }),
 }));
 
@@ -35,7 +43,10 @@ vi.mock("../app/components/landing/LandingPage.jsx", () => ({
 }));
 
 vi.mock("../app/components/trip-dashboard/HomePage.jsx", () => ({
-  default: () => <div data-testid="home-page">Home page</div>,
+  default: (props) => {
+    mockState.homePageProps = props;
+    return <div data-testid="home-page">Home page</div>;
+  },
 }));
 
 vi.mock("../app/components/agent/AgentKickoffScreen.jsx", () => ({
@@ -99,8 +110,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
   mockState.searchParamsAuthenticated = null;
+  mockState.searchParamsTab = null;
+  mockState.searchParamsInvited = null;
   mockState.prototypeState = null;
   mockState.workspaceProps = null;
+  mockState.homePageProps = null;
 });
 
 describe("page handoff guards", () => {
@@ -162,5 +176,32 @@ describe("page handoff guards", () => {
 
     expect(() => mockState.workspaceProps.onTabChange("map")).not.toThrow();
     expect(mockState.setSelectedPlaceId).toHaveBeenCalledWith(null);
+  });
+
+  it("hands accepted agency invites into the dashboard Team tab with its confirmation notice", () => {
+    mockState.prototypeState = {
+      activeScreen: "trip-brief",
+      setActiveScreen: mockState.setActiveScreen,
+      activeWorkspaceTab: "overview",
+      setActiveWorkspaceTab: mockState.setActiveWorkspaceTab,
+      tripBrief: testTripBrief,
+      days: testDays,
+      setDays: mockState.setDays,
+      selectedDayId: "day-1",
+      setSelectedDayId: mockState.setSelectedDayId,
+      selectedPlaceId: null,
+      setSelectedPlaceId: mockState.setSelectedPlaceId,
+      agentMessages: [],
+      setAgentMessages: mockState.setAgentMessages,
+    };
+    mockState.searchParamsTab = "team";
+    mockState.searchParamsInvited = "1";
+
+    render(<Page />);
+
+    expect(mockState.homePageProps).toMatchObject({
+      initialTab: "team",
+      showJoinedNotice: true,
+    });
   });
 });
