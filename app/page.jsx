@@ -57,9 +57,24 @@ function HomePageInner() {
         localStorage.setItem("voyage-user", JSON.stringify(data.user));
         setUser(data.user);
 
+        const accountType = data.user?.accountType;
+
+        // PENDING — user hasn't chosen account type yet (e.g. OAuth user, or
+        // closed the tab mid-signup). Send them back to the type picker.
+        if (accountType === "PENDING") {
+          router.push("/login");
+          return;
+        }
+
+        // PERSONAL — no agency expected. Stay on the personal dashboard.
+        if (accountType === "PERSONAL") {
+          setShouldBypassLanding(true);
+          return;
+        }
+
         const hasMembership = Array.isArray(data.user?.memberships) && data.user.memberships.length > 0;
         if (!hasMembership) {
-          // No agency — redirect to registration wizard step 2
+          // Agency user without a membership — finish the agency wizard.
           router.push("/login?step=agency");
           return;
         }
