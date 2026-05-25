@@ -4,8 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import AcceptInvitePage from "../app/accept-invite/page.jsx";
 import AgencyLayout from "../app/agency/[agencyId]/layout.jsx";
+import AgencyAgentPage from "../app/agency/[agencyId]/agent/page.jsx";
 import TripListPage from "../app/agency/[agencyId]/trip/page.jsx";
 import TripDetailPage from "../app/agency/[agencyId]/trip/[tripId]/page.jsx";
+import AgencyTripAgentPage from "../app/agency/[agencyId]/trip/[tripId]/agent/page.jsx";
 import TeamRoutePage from "../app/agency/[agencyId]/team/page.jsx";
 import TripNotInListEmptyState from "../app/components/agency-status/TripNotInListEmptyState.jsx";
 import AgencySettingsPage from "../app/components/settings/AgencySettingsPage.jsx";
@@ -16,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   role: "STAFF",
   routerPush: vi.fn(),
   routerReplace: vi.fn(),
+  redirect: vi.fn(),
   lookupInvitation: vi.fn(async () => ({
     invitation: {
       email: "joiner@example.com",
@@ -35,6 +38,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next/navigation", () => ({
+  redirect: (...args) => mocks.redirect(...args),
   useRouter: () => ({
     push: mocks.routerPush,
     replace: mocks.routerReplace,
@@ -75,6 +79,7 @@ describe("accepted invite agency landing", () => {
     mocks.role = "STAFF";
     mocks.routerPush.mockClear();
     mocks.routerReplace.mockClear();
+    mocks.redirect.mockClear();
     mocks.lookupInvitation.mockClear();
     mocks.acceptInvitation.mockClear();
     mocks.fetchTeam.mockClear();
@@ -95,6 +100,7 @@ describe("accepted invite agency landing", () => {
 
     expect(navigation.className).toContain("border-border");
     expect(tripsLink.className).toContain("text-text-muted");
+    expect(screen.queryByRole("link", { name: "Agent" })).not.toBeInTheDocument();
     expect(tripsHeading.className).toContain("text-text-primary");
     expect(emptyState.className).toContain("text-text-muted");
   });
@@ -116,6 +122,30 @@ describe("accepted invite agency landing", () => {
 
     await waitFor(() => {
       expect(mocks.routerPush).toHaveBeenCalledWith("/?authenticated=1&tab=team&invited=1");
+    });
+  });
+
+  it("redirects legacy agency Agent URLs into the current dashboard", () => {
+    render(<AgencyAgentPage params={Promise.resolve({ agencyId: "agency-1" })} />);
+
+    expect(mocks.redirect).toHaveBeenCalledWith("/?authenticated=1");
+  });
+
+  it("redirects legacy trip Agent URLs into the current dashboard", () => {
+    render(<AgencyTripAgentPage params={Promise.resolve({ agencyId: "agency-1", tripId: "trip-1" })} />);
+
+    expect(mocks.redirect).toHaveBeenCalledWith("/?authenticated=1");
+  });
+
+  it("routes assigned trip details into the current dashboard instead of the legacy Agent URL", async () => {
+    mocks.fetchApi.mockResolvedValueOnce({ trip: { id: "trip-1" } });
+
+    await renderAsyncRoute(
+      <TripDetailPage params={Promise.resolve({ agencyId: "agency-1", tripId: "trip-1" })} />,
+    );
+
+    await waitFor(() => {
+      expect(mocks.routerReplace).toHaveBeenCalledWith("/?authenticated=1");
     });
   });
 

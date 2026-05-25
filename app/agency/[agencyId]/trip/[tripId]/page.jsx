@@ -7,18 +7,17 @@ import TripNotInListEmptyState from "@/app/components/agency-status/TripNotInLis
 export default function TripDetailPage({ params }) {
   const { agencyId, tripId } = use(params);
   const router = useRouter();
-  const [state, setState] = useState("loading"); // "loading" | "not-found" | "redirect"
+  const [state, setState] = useState("loading");
 
-  // Derive owner info from the localStorage user object
   const { ownerName, ownerEmail } = useMemo(() => {
     if (typeof window === "undefined") return {};
     try {
       const raw = localStorage.getItem("voyage-user");
       const user = raw ? JSON.parse(raw) : null;
       if (!Array.isArray(user?.memberships)) return {};
-      const m = user.memberships.find((m) => m.agencyId === agencyId);
-      const members = m?.agency?.memberships ?? [];
-      const owner = members.find((mem) => mem.role === "OWNER");
+      const membership = user.memberships.find((entry) => entry.agencyId === agencyId);
+      const members = membership?.agency?.memberships ?? [];
+      const owner = members.find((member) => member.role === "OWNER");
       return {
         ownerName: owner?.user?.displayName ?? null,
         ownerEmail: owner?.user?.email ?? null,
@@ -32,27 +31,25 @@ export default function TripDetailPage({ params }) {
     let cancelled = false;
     fetchApi(`/agencies/${agencyId}/itineraries/trips/${tripId}`)
       .then(() => {
-        if (cancelled) return;
-        // Trip found — redirect to the agent sub-route
-        router.replace(`/agency/${agencyId}/trip/${tripId}/agent`);
+        if (!cancelled) router.replace("/?authenticated=1");
       })
       .catch((err) => {
         if (cancelled) return;
         if (err?.status === 404 || err?.code === "TRIP_NOT_FOUND") {
           setState("not-found");
-        } else {
-          // For other errors, still try the agent route
-          router.replace(`/agency/${agencyId}/trip/${tripId}/agent`);
+          return;
         }
+        router.replace("/?authenticated=1");
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [agencyId, tripId, router]);
 
   if (state === "not-found") {
     return <TripNotInListEmptyState ownerName={ownerName} ownerEmail={ownerEmail} />;
   }
 
-  // Loading state
   return (
     <div className="mx-auto mt-24 max-w-md px-6 text-center">
       <p className="text-sm text-text-muted">Loading&hellip;</p>

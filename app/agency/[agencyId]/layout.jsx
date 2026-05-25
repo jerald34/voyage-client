@@ -9,7 +9,6 @@ export default function AgencyLayout({ children, params }) {
 
   const tabs = [
     { href: `/agency/${agencyId}/trip`, label: role === "STAFF" ? "My Trips" : "Trips" },
-    { href: `/agency/${agencyId}/agent`, label: "Agent" },
     { href: `/agency/${agencyId}/team`, label: "Team" },
     ...(role === "OWNER" || role === "ADMIN"
       ? [{ href: `/agency/${agencyId}/settings`, label: "Settings" }]
