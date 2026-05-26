@@ -9,7 +9,22 @@
 export { fetchApi, API_URL } from "./client.js";
 
 // Auth
-export { updateCurrentUserProfile } from "./auth.js";
+export {
+  updateCurrentUserProfile,
+  setAccountType,
+  requestEmailVerification,
+  confirmEmailVerification,
+  requestPasswordReset,
+  confirmPasswordReset,
+} from "./auth.js";
+
+// Invitations
+export {
+  lookupInvitation,
+  acceptInvitation,
+  listAgencyInvitations,
+  revokeAgencyInvitation,
+} from "./invitations.js";
 
 // Agency
 export {
@@ -58,3 +73,16 @@ export {
   adminSuspendAgency,
   adminUnsuspendAgency,
 } from "./admin.js";
+
+// Team & agency management
+export {
+  fetchTeam,
+  inviteMember,
+  changeMemberRole,
+  removeMember,
+  transferOwnership,
+  deleteAgency,
+} from "./team.js";
+
+// Personal account (/me/*)
+export * from "./personal.js";

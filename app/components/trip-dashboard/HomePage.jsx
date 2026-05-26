@@ -13,6 +13,8 @@ import {
   fetchPendingCount,
   updateAgencySettings,
   updateCurrentUserProfile,
+  fetchPersonalItineraries,
+  fetchPersonalThreads,
 } from "../../lib/api/index.js";
 import {
   getAgencyPortfolioSummary,
@@ -33,6 +35,7 @@ import ApproveItineraryModal from "./modals/ApproveItineraryModal.jsx";
 import DashboardHeader from "./layout/DashboardHeader.jsx";
 import DashboardSidebar from "./layout/DashboardSidebar.jsx";
 import AdminAgenciesPage from "../admin/AdminAgenciesPage.jsx";
+import TeamPage from "../team/TeamPage.jsx";
 import MobileGlassSheet from "./mobile/MobileGlassSheet.jsx";
 import useMobileViewport from "./mobile/useMobileViewport.js";
 import ChatInput from "./command-center/ChatInput.jsx";
@@ -68,10 +71,19 @@ export function getAgencyMapFallbackFromUser(user) {
   };
 }
 
-export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp = [], onContinue, onOpenTrip, onNewItinerary }) {
+export default function HomePage({
+  user: userProp,
+  agencyTrips: agencyTripsProp = [],
+  onContinue,
+  onOpenTrip,
+  onNewItinerary,
+  initialTab = "command-center",
+  showJoinedNotice = false,
+}) {
   const { theme } = useTheme();
   const { logout } = useAuth();
   const [user, setUser] = useState(userProp || null);
+  const isPersonal = user?.accountType === "PERSONAL";
   const agencyId = user?.memberships?.[0]?.agencyId ?? null;
   const [fetchedTrips, setFetchedTrips] = useState(null);
   const agencyTrips = agencyTripsProp;
@@ -121,7 +133,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   const [isApprovingDraft, setIsApprovingDraft] = useState(false);
   const [approvalError, setApprovalError] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("command-center");
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [selectedPlaceId, setSelectedPlaceId] = useState("");
   const [isClientMenuOpen, setIsClientMenuOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
@@ -139,7 +151,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
 
   // Poll pending count for admin users
   useEffect(() => {
-    if (user?.role !== "ADMIN") return;
+    if (user?.role !== "SUPER_ADMIN") return;
     let cancelled = false;
     const load = () => {
       fetchPendingCount()
@@ -152,7 +164,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
   }, [user?.role]);
 
   const refreshPendingCount = () => {
-    if (user?.role !== "ADMIN") return;
+    if (user?.role !== "SUPER_ADMIN") return;
     fetchPendingCount()
       .then((data) => setPendingCount(data.count || 0))
       .catch(() => {});
@@ -190,8 +202,64 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
     if (stored) { try { setUser(JSON.parse(stored)); } catch (e) { console.error(e); } }
   }, [user]);
 
-  // Load initial data
+  // Load initial data — agency path
   useEffect(() => { if (agencyId) loadInitialThreads(); }, [agencyId]);
+
+  // Load initial data — personal path
+  useEffect(() => {
+    if (!isPersonal) return;
+    let cancelled = false;
+
+    fetchPersonalItineraries()
+      .then((res) => {
+        if (cancelled) return;
+        const items = Array.isArray(res?.itineraries) ? res.itineraries : (Array.isArray(res) ? res : []);
+        setFetchedTrips(
+          items.map((it) => ({
+            id: it.id,
+            clientName: null,
+            destination: it.destinationSummary ?? it.title ?? null,
+            travelWindow: formatTripDates(it.startDate, it.endDate),
+            status: it.status?.toLowerCase() === "archived" ? "archived" : "active",
+            approvalStatus: mapTripStatus(it.status),
+            itineraryId: it.id,
+            itineraryVersion: it.version ?? null,
+          }))
+        );
+      })
+      .catch((err) => console.error("Failed to load personal itineraries:", err));
+
+    fetchPersonalThreads()
+      .then((res) => {
+        if (cancelled) return;
+        const threads = Array.isArray(res?.threads) ? res.threads : (Array.isArray(res) ? res : []);
+        if (threads.length === 0) return;
+
+        const nextDraftStates = {};
+        const nextDraftOrder = [];
+        for (const thread of threads) {
+          if (!thread?.id) continue;
+          nextDraftStates[thread.id] = {
+            threadId: thread.id,
+            title: String(thread.title ?? thread.name ?? "").trim(),
+            tripId: null,
+            messages: [],
+            itinerary: null,
+            loaded: false,
+          };
+          nextDraftOrder.push(thread.id);
+        }
+        setDraftThreadStates((prev) => ({ ...prev, ...nextDraftStates }));
+        setDraftThreadOrder((prev) => {
+          const existing = new Set(prev);
+          const toAdd = nextDraftOrder.filter((id) => !existing.has(id));
+          return toAdd.length > 0 ? [...toAdd, ...prev] : prev;
+        });
+      })
+      .catch((err) => console.error("Failed to load personal threads:", err));
+
+    return () => { cancelled = true; };
+  }, [isPersonal]);
 
   const {
     isFirstUseTutorialOpen,
@@ -716,6 +784,8 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
                 }
               }}
             />
+          ) : activeTab === "team" && agencyId ? (
+            <TeamPage agencyId={agencyId} showJoinedNotice={showJoinedNotice} />
           ) : activeTab === "settings" ? (
             <SettingsPage
               user={user}
@@ -726,7 +796,7 @@ export default function HomePage({ user: userProp, agencyTrips: agencyTripsProp 
               onUpdateAgency={handleAgencySettingsUpdate}
               onReplayTutorial={replayFirstUseTutorial}
             />
-          ) : activeTab === "admin" && user?.role === "ADMIN" ? (
+          ) : activeTab === "admin" && user?.role === "SUPER_ADMIN" ? (
             <AdminAgenciesPage onPendingCountChange={refreshPendingCount} />
           ) : null}
         </main>

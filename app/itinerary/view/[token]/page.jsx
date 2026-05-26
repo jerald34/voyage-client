@@ -578,13 +578,48 @@ export default function PublicItineraryPage() {
   }
 
   /* ── success ── */
-  const { trip, itinerary } = data;
+  const { trip, itinerary, brand } = data;
+
+  /* ── brand node for header ── */
+  let brandNode;
+  if (!brand || brand.type === "agency") {
+    // Agency (or legacy response without brand): show agency name + logo if present,
+    // otherwise fall back to the "Voyage" wordmark.
+    if (brand?.name || brand?.logoUrl) {
+      brandNode = (
+        <div className="flex items-center gap-2">
+          {brand.logoUrl && (
+            <img
+              src={brand.logoUrl}
+              alt={brand.name || "Agency logo"}
+              className="h-7 w-auto object-contain flex-shrink-0"
+            />
+          )}
+          {brand.name && (
+            <span className="font-serif text-[20px] tracking-[0.02em] max-sm:text-[18px]">{brand.name}</span>
+          )}
+        </div>
+      );
+    } else {
+      brandNode = <span className="font-serif text-[20px] tracking-[0.02em] max-sm:text-[18px]">Voyage</span>;
+    }
+  } else if (brand.type === "personal") {
+    brandNode = (
+      <div className="flex flex-col leading-tight">
+        <span className="text-[10px] font-medium uppercase tracking-[0.1em] opacity-60 max-sm:text-[9px]">Shared by</span>
+        <span className="text-[16px] font-semibold tracking-[0.01em] max-sm:text-[14px]">{brand.displayName || "Traveler"}</span>
+      </div>
+    );
+  } else {
+    // Unknown brand type — safe fallback
+    brandNode = <span className="font-serif text-[20px] tracking-[0.02em] max-sm:text-[18px]">Voyage</span>;
+  }
 
   return (
     <div className="flex flex-col h-dvh bg-background text-text-primary overflow-hidden">
       {/* ── top branding bar ── */}
       <header className="flex items-center justify-between px-6 py-3 bg-sidebar text-white flex-shrink-0 z-20 max-sm:px-4 max-sm:py-[10px]">
-        <span className="font-serif text-[20px] tracking-[0.02em] max-sm:text-[18px]">Voyage</span>
+        {brandNode}
         <span className="text-[12px] font-semibold uppercase tracking-[0.08em] opacity-70 max-sm:text-[10px]">Shared Itinerary</span>
         <ThemeToggle />
       </header>

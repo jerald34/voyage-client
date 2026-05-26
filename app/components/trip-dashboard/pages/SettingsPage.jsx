@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "../../theme/ThemeProvider";
 import { voyageTourHelpBullets, voyageTourSteps } from "../tutorial/tutorialContent.js";
+import DangerZoneCard from "../../settings/DangerZoneCard.jsx";
 
 function formatReadOnlyValue(value) {
   const text = String(value ?? "").trim();
@@ -96,6 +97,7 @@ export default function SettingsPage({
   onReplayTutorial,
 }) {
   const { theme, setTheme } = useTheme();
+  const isPersonal = user?.accountType === "PERSONAL";
 
   const [displayName, setDisplayName] = useState("");
   const [savedDisplayName, setSavedDisplayName] = useState("");
@@ -329,7 +331,7 @@ export default function SettingsPage({
           </form>
         </Panel>
 
-        <Panel
+        {!isPersonal && <Panel
           eyebrow="Workspace"
           title="Agency details"
           description="Manage the shared agency profile that powers the dashboard and itinerary flows."
@@ -379,7 +381,7 @@ export default function SettingsPage({
               </button>
             </div>
           </form>
-        </Panel>
+        </Panel>}
 
         <Panel
           eyebrow="Appearance"
@@ -483,6 +485,13 @@ export default function SettingsPage({
             </div>
           </div>
         </Panel>
+
+        {!isPersonal && membership?.role === "OWNER" && agency?.id ? (
+          <DangerZoneCard
+            agencyId={agency.id}
+            agencyName={agency.name ?? savedAgencyName ?? ""}
+          />
+        ) : null}
       </div>
     </div>
   );

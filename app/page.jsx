@@ -21,6 +21,8 @@ function HomePageInner() {
   const searchParams = useSearchParams();
   const { logout } = useAuth();
   const authenticatedParam = searchParams.get("authenticated");
+  const requestedDashboardTab = searchParams.get("tab") === "team" ? "team" : "command-center";
+  const showJoinedNotice = requestedDashboardTab === "team" && searchParams.get("invited") === "1";
   const [shouldBypassLanding, setShouldBypassLanding] = useState(false);
   const [user, setUser] = useState(null);
   const [agencyStatus, setAgencyStatus] = useState(null); // null | { status, name, rejectionReason, suspensionReason }
@@ -57,9 +59,24 @@ function HomePageInner() {
         localStorage.setItem("voyage-user", JSON.stringify(data.user));
         setUser(data.user);
 
+        const accountType = data.user?.accountType;
+
+        // PENDING — user hasn't chosen account type yet (e.g. OAuth user, or
+        // closed the tab mid-signup). Send them back to the type picker.
+        if (accountType === "PENDING") {
+          router.push("/login");
+          return;
+        }
+
+        // PERSONAL — no agency expected. Stay on the personal dashboard.
+        if (accountType === "PERSONAL") {
+          setShouldBypassLanding(true);
+          return;
+        }
+
         const hasMembership = Array.isArray(data.user?.memberships) && data.user.memberships.length > 0;
         if (!hasMembership) {
-          // No agency — redirect to registration wizard step 2
+          // Agency user without a membership — finish the agency wizard.
           router.push("/login?step=agency");
           return;
         }
@@ -115,6 +132,8 @@ function HomePageInner() {
       <HomePage
         user={user}
         agencyTrips={[]}
+        initialTab={requestedDashboardTab}
+        showJoinedNotice={showJoinedNotice}
         onContinue={() => setActiveScreen("agent-kickoff")}
         onOpenTrip={() => {
           setActiveWorkspaceTab("trip");
