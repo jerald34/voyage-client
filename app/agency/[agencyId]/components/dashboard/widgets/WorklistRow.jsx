@@ -76,7 +76,7 @@ export default function WorklistRow({
         type: "button",
         onClick: onRowClick,
         className:
-          "min-w-0 flex-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 rounded-2xl",
+          "min-w-0 flex-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 rounded-md",
       }
     : {
         className: "min-w-0 flex-1",
@@ -124,7 +124,7 @@ export default function WorklistRow({
           type="button"
           onClick={handleActionClick}
           disabled={actionDisabled || actionPending}
-          className="min-h-[44px] min-w-[44px] rounded-2xl px-4 text-[13px] font-medium text-secondary transition-colors hover:bg-secondary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-[44px] min-w-[44px] rounded-md px-4 text-[13px] font-bold text-secondary transition-colors hover:bg-secondary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           style={{ transitionDuration: "120ms", transitionTimingFunction: "var(--ease-out)" }}
         >
           {actionPending ? "…" : actionLabel}

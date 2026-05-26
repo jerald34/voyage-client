@@ -65,7 +65,7 @@ const STATUS_COLOR = {
 function StatusChip({ status }) {
   return (
     <span
-      className="inline-block rounded-pill px-3 py-1 text-xs font-semibold"
+      className="inline-flex items-center rounded-lg px-3 py-1 text-xs font-extrabold uppercase tracking-[0.04em]"
       style={{
         backgroundColor: STATUS_BG[status] ?? "rgb(var(--color-border-rgb) / 0.08)",
         color: STATUS_COLOR[status] ?? "rgb(var(--color-text-soft-rgb))",
@@ -114,13 +114,13 @@ function StaleBanner({ onRefresh }) {
   return (
     <div
       role="status"
-      className="dashboard-card flex items-center justify-between bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700 text-amber-900 dark:text-amber-100 px-4 py-3 text-[13px]"
+      className="inline-flex items-center gap-3 rounded-lg bg-secondary/10 border border-secondary/30 px-4 py-2 text-sm font-bold text-secondary"
     >
       <span>Data may be outdated.</span>
       <button
         type="button"
         onClick={onRefresh}
-        className="ml-4 rounded-pill bg-secondary text-white px-3 py-1 text-xs font-semibold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+        className="ml-1 rounded-pill bg-secondary text-white px-3 py-1 text-xs font-bold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
       >
         Refresh
       </button>
@@ -139,7 +139,7 @@ function SecondaryCard({ trip, onClick }) {
       style={{ transitionDuration: "120ms", transitionTimingFunction: "var(--ease-out)" }}
     >
       <div className="flex items-start justify-between gap-2 min-w-0">
-        <span className="truncate text-[14px] font-semibold text-text-primary leading-snug">
+        <span className="truncate text-[14px] font-extrabold text-text-primary leading-snug">
           {trip.tripTitle}
         </span>
         <StatusChip status={trip.status} />
@@ -163,7 +163,7 @@ function PipelineCounter({ label, value, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-[14px] tabular-nums text-text-muted hover:bg-surface-elevated hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+      className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[14px] font-extrabold tabular-nums text-text-muted hover:bg-surface-elevated hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
       style={{ transitionDuration: "120ms", transitionTimingFunction: "var(--ease-out)" }}
     >
       <span className="font-semibold text-text-primary tabular-nums">{value ?? 0}</span>
@@ -180,8 +180,8 @@ function PipelineStrip({ pipeline, agencyId }) {
   }
 
   return (
-    <div className="space-y-1">
-      <p className="dashboard-eyebrow px-1">Pipeline</p>
+    <div className="space-y-2">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20 text-secondary text-[0.7rem] font-extrabold uppercase tracking-[0.05em]">PIPELINE</span>
     <div
       role="group"
       aria-label="Pipeline counters"
@@ -230,11 +230,11 @@ function StartingSoonCard({ trip, agencyId }) {
     <button
       type="button"
       onClick={() => router.push(`/agency/${agencyId}/trip/${trip.tripId}/agent`)}
-      className="snap-start min-w-[240px] dashboard-card p-5 text-left flex flex-col gap-2 hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+      className="snap-start min-w-[240px] dashboard-card p-5 text-left flex flex-col gap-2 rounded-md hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
       style={{ transitionDuration: "120ms", transitionTimingFunction: "var(--ease-out)" }}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="text-[14px] font-semibold text-text-primary leading-snug line-clamp-2">
+        <span className="text-[14px] font-extrabold text-text-primary leading-snug line-clamp-2">
           {trip.tripTitle}
         </span>
         <span className="shrink-0 rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-[color:var(--success)] tabular-nums whitespace-nowrap">
@@ -256,7 +256,9 @@ function StartingSoonScroller({ trips, agencyId }) {
 
   return (
     <section aria-label="Starting soon">
-      <p className="dashboard-eyebrow mb-3">Starting soon</p>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20 text-secondary text-[0.7rem] font-extrabold uppercase tracking-[0.05em]">STARTING SOON</span>
+      </div>
       <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1">
         {trips.map((trip) => (
           <StartingSoonCard key={trip.tripId} trip={trip} agencyId={agencyId} />
@@ -322,8 +324,8 @@ function WorklistSection({ worklist, agencyId }) {
 
   return (
     <section aria-label="Clients waiting on you" className="dashboard-card p-6">
-      <p className="dashboard-eyebrow mb-1">Worklist</p>
-      <h2 className="mb-4 text-lg font-semibold text-text-primary">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20 text-secondary text-[0.7rem] font-extrabold uppercase tracking-[0.05em] mb-2">WORKLIST</span>
+      <h2 className="mt-2 mb-4 text-lg font-extrabold text-text-primary">
         Clients waiting on you
       </h2>
       <div
@@ -371,7 +373,7 @@ export default function StaffMyWork({ agencyId, initialData = null }) {
       {/* ── Header ── */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-semibold">My work</h1>
+          <h1 className="text-2xl font-extrabold text-text-primary">My work</h1>
           <p className="mt-1 text-sm text-text-muted">Pick up where you left off.</p>
         </div>
         <div className="flex items-center gap-3">
@@ -383,7 +385,7 @@ export default function StaffMyWork({ agencyId, initialData = null }) {
           <button
             type="button"
             onClick={() => router.push(`/agency/${agencyId}/trip/new`)}
-            className="h-11 rounded-2xl bg-secondary px-5 text-sm font-medium text-white shadow-soft hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+            className="h-11 rounded-lg bg-secondary px-5 text-sm font-bold text-white shadow-soft hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
           >
             New trip
           </button>

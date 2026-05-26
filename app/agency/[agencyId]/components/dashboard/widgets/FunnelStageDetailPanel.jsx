@@ -131,9 +131,10 @@ export default function FunnelStageDetailPanel({ stage, agencyId, onClose }) {
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <header className="flex items-center justify-between border-b border-border/10 px-6 py-4">
           <div className="flex flex-col gap-0.5">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20 text-secondary text-[0.7rem] font-extrabold uppercase tracking-[0.05em] mb-1">FUNNEL STAGE</span>
             <h2
               id={headingId}
-              className="text-base font-semibold text-text-primary"
+              className="text-base font-extrabold text-text-primary"
             >
               {label}
             </h2>
@@ -152,7 +153,7 @@ export default function FunnelStageDetailPanel({ stage, agencyId, onClose }) {
             type="button"
             aria-label="Close"
             onClick={onClose}
-            className="flex h-[44px] w-[44px] items-center justify-center rounded-2xl text-text-muted transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-border/20 bg-surface-elevated text-text-muted transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
             style={{ transitionTimingFunction: "var(--ease-out)", transitionDuration: "160ms" }}
           >
             {/* ✕ icon — inline SVG to avoid a package dep */}

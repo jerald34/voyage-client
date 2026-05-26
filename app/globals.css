@@ -139,14 +139,17 @@
 }
 
 @utility dashboard-card {
-  background: rgb(var(--color-surface-rgb) / 0.95);
-  border: 1px solid rgb(var(--color-border-rgb) / 0.18);
-  border-radius: 24px;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05);
 }
 .dark .dashboard-card {
-  border-color: rgb(var(--color-border-rgb) / 0.40);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.35);
 }
 @utility dashboard-eyebrow {
   font-size: 11px;

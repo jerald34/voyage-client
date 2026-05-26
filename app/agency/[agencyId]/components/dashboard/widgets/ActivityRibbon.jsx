@@ -47,8 +47,8 @@ export default function ActivityRibbon({ events = [] }) {
 
   return (
     <section className="dashboard-card p-6">
-      <p className="dashboard-eyebrow mb-1">Activity</p>
-      <h2 className="text-lg font-semibold text-text-primary mb-4">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20 text-secondary text-[0.7rem] font-extrabold uppercase tracking-[0.05em] mb-2">ACTIVITY</span>
+      <h2 className="mt-2 text-lg font-extrabold text-text-primary mb-4">
         Recent team activity
       </h2>
 

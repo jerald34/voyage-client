@@ -36,8 +36,8 @@ export default function RatingsPanel({ reviews = [], onToggleTestimonial }) {
 
   return (
     <section className="dashboard-card p-6">
-      <p className="dashboard-eyebrow mb-1">Reviews</p>
-      <h2 className="text-lg font-semibold text-text-primary mb-4">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20 text-secondary text-[0.7rem] font-extrabold uppercase tracking-[0.05em] mb-2">REVIEWS</span>
+      <h2 className="mt-2 text-lg font-extrabold text-text-primary mb-4">
         Recent traveler reviews
       </h2>
 
@@ -73,7 +73,7 @@ export default function RatingsPanel({ reviews = [], onToggleTestimonial }) {
                 <button
                   type="button"
                   onClick={() => onToggleTestimonial(review.id)}
-                  className="text-xs text-secondary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 rounded-2xl px-1"
+                  className="text-xs font-bold text-secondary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 rounded-md px-1"
                 >
                   Mark as testimonial
                 </button>

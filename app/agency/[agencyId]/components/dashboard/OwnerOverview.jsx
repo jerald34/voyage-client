@@ -59,17 +59,17 @@ function DashboardSkeleton() {
     >
       {/* Header skeleton */}
       <div className="flex items-center justify-between">
-        <div className="h-7 w-32 rounded-2xl bg-surface-elevated" />
+        <div className="h-7 w-32 rounded-lg bg-surface-elevated" />
         <div className="flex gap-3">
-          <div className="h-9 w-24 rounded-2xl bg-surface-elevated" />
-          <div className="h-9 w-32 rounded-2xl bg-surface-elevated" />
+          <div className="h-9 w-24 rounded-lg bg-surface-elevated" />
+          <div className="h-9 w-32 rounded-lg bg-surface-elevated" />
         </div>
       </div>
       {/* Worklist skeleton */}
       <div className="dashboard-card p-6 space-y-3">
-        <div className="h-4 w-48 rounded-2xl bg-surface-elevated" />
+        <div className="h-4 w-48 rounded-lg bg-surface-elevated" />
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-10 w-full rounded-2xl bg-surface-elevated" />
+          <div key={i} className="h-10 w-full rounded-lg bg-surface-elevated" />
         ))}
       </div>
       {/* KPI strip skeleton */}
@@ -150,13 +150,13 @@ export default function OwnerOverview({ agencyId, initialData = null }) {
       {isStale && (
         <div
           role="alert"
-          className="dashboard-card mb-6 flex items-center justify-between bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700 text-amber-900 dark:text-amber-100 p-4"
+          className="inline-flex items-center gap-3 mb-6 rounded-lg bg-secondary/10 border border-secondary/30 px-4 py-2 text-sm font-bold text-secondary"
         >
-          <span className="text-sm">We couldn&rsquo;t refresh — last loaded a few minutes ago.</span>
+          <span>We couldn&rsquo;t refresh — last loaded a few minutes ago.</span>
           <button
             type="button"
             onClick={refetch}
-            className="ml-4 rounded-pill bg-secondary text-white px-3 py-1 text-xs font-semibold hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+            className="rounded-pill bg-secondary text-white px-3 py-1 text-xs font-bold hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
           >
             Retry
           </button>
@@ -168,8 +168,9 @@ export default function OwnerOverview({ agencyId, initialData = null }) {
       {/* ------------------------------------------------------------------ */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold">Overview</h1>
-          <p className="mt-1 text-sm text-text-muted">Where conversion is leaking and what to do next.</p>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20 text-secondary text-[0.7rem] font-extrabold uppercase tracking-[0.05em] mb-2">OVERVIEW · 30d</span>
+          <h1 className="text-2xl font-extrabold text-text-primary">Where conversion is leaking</h1>
+          <p className="mt-1 text-sm text-text-muted">Track KPIs, funnel health and what to action next.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -182,7 +183,7 @@ export default function OwnerOverview({ agencyId, initialData = null }) {
           <button
             type="button"
             onClick={() => router.push(`/agency/${agencyId}/trip/new`)}
-            className="inline-flex h-11 items-center gap-1.5 rounded-2xl bg-secondary px-5 text-sm font-medium text-white shadow-soft transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+            className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-secondary px-5 text-sm font-bold text-white shadow-soft transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
           >
             New trip
           </button>
@@ -190,7 +191,7 @@ export default function OwnerOverview({ agencyId, initialData = null }) {
           <button
             type="button"
             onClick={() => router.push(`/agency/${agencyId}/team`)}
-            className="inline-flex h-11 items-center gap-1.5 rounded-2xl border border-border bg-surface px-5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+            className="inline-flex h-11 items-center gap-1.5 rounded-lg border border-secondary/30 bg-secondary/10 px-5 text-sm font-bold text-secondary transition-colors hover:bg-secondary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
           >
             Invite teammate
           </button>
@@ -211,8 +212,8 @@ export default function OwnerOverview({ agencyId, initialData = null }) {
             aria-label="Needs your eyes today"
             className="dashboard-card p-6"
           >
-            <p className="dashboard-eyebrow mb-1">Worklist</p>
-            <h2 className="mb-4 text-lg font-semibold text-text-primary">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20 text-secondary text-[0.7rem] font-extrabold uppercase tracking-[0.05em] mb-2">WORKLIST</span>
+            <h2 className="mt-2 mb-4 text-lg font-extrabold text-text-primary">
               Needs your eyes today
             </h2>
 
@@ -226,7 +227,7 @@ export default function OwnerOverview({ agencyId, initialData = null }) {
 
                   return (
                     <div key={group.key}>
-                      <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wide text-text-muted">
+                      <p className="mb-1 px-3 text-[0.7rem] font-extrabold uppercase tracking-[0.05em] text-text-soft">
                         {group.heading} ({items.length})
                       </p>
                       {items.map((item, idx) => (

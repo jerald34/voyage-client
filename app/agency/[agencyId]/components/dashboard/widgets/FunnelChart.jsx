@@ -32,8 +32,8 @@ export default function FunnelChart({ stages = [], agencyId }) {
         aria-label={summary}
         className="dashboard-card p-6"
       >
-        <p className="dashboard-eyebrow mb-1">Conversion funnel</p>
-        <h2 className="text-lg font-semibold text-text-primary">How trips are converting</h2>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20 text-secondary text-[0.7rem] font-extrabold uppercase tracking-[0.05em]">FUNNEL</span>
+        <h2 className="mt-2 text-lg font-extrabold text-text-primary">Conversion funnel</h2>
         <p className="mt-1 text-xs text-text-muted">{summary}</p>
         <ol className="mt-4 space-y-3">
           {stages.map((stage, i) => {
@@ -51,7 +51,7 @@ export default function FunnelChart({ stages = [], agencyId }) {
                   type="button"
                   onClick={() => setActiveStage(stage)}
                   aria-label={`${STAGE_LABELS[stage.key]}: ${stage.count}. Open trip list.`}
-                  className="group relative flex items-center gap-3 rounded-2xl border border-border/10 px-3 py-2 text-left transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                  className="group relative flex items-center gap-3 rounded-md border border-border/10 px-3 py-2 text-left transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
                   style={{ transitionTimingFunction: "var(--ease-out)", transitionDuration: "160ms" }}
                 >
                   <div
@@ -60,8 +60,8 @@ export default function FunnelChart({ stages = [], agencyId }) {
                     aria-hidden="true"
                   />
                   <div className="relative z-10 flex flex-1 items-center justify-between">
-                    <span className="text-sm font-medium text-text-primary">{STAGE_LABELS[stage.key]}</span>
-                    <span className="tabular-nums text-sm font-semibold text-text-primary">{stage.count}</span>
+                    <span className="text-sm font-bold text-text-primary">{STAGE_LABELS[stage.key]}</span>
+                    <span className="tabular-nums text-sm font-bold text-text-primary">{stage.count}</span>
                   </div>
                 </button>
               </li>

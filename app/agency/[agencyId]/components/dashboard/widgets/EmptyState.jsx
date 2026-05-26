@@ -51,7 +51,7 @@ export default function EmptyState({ variant, onAction }) {
 
   return (
     <div className="flex flex-col items-center justify-center px-6 py-8 text-center sm:py-12">
-      <h3 className="text-sm font-semibold text-text-primary mb-2">
+      <h3 className="text-sm font-extrabold text-text-primary mb-2">
         {content.heading}
       </h3>
       {content.body && (
@@ -63,7 +63,7 @@ export default function EmptyState({ variant, onAction }) {
         <button
           type="button"
           onClick={onAction}
-          className="mt-2 px-4 py-2 rounded-2xl bg-secondary text-white text-sm font-medium hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+          className="mt-2 h-11 px-5 rounded-lg bg-secondary text-white text-sm font-bold shadow-soft hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
         >
           {content.cta}
         </button>

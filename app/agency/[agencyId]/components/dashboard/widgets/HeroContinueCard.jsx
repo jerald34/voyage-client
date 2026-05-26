@@ -44,12 +44,17 @@ function StatusChip({ status }) {
   const color = toneColorMap[tone];
   const bgColor = bgColorMap[tone];
 
+  const borderColor = toneColorMap[tone]
+    ? `color-mix(in srgb, ${toneColorMap[tone]} 20%, transparent)`
+    : 'rgb(var(--color-border-rgb) / 0.2)';
+
   return (
     <span
-      className="inline-block rounded-pill px-3 py-1 text-xs font-semibold"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.7rem] font-extrabold uppercase tracking-[0.05em]"
       style={{
         backgroundColor: bgColor,
         color: color,
+        border: `1px solid ${borderColor}`,
       }}
     >
       {label}
@@ -69,7 +74,7 @@ export default function HeroContinueCard({ trip, onContinue }) {
         <div className="mb-3">
           <StatusChip status={trip.statusChip} />
         </div>
-        <h2 className="text-lg font-semibold text-text-primary mb-1 line-clamp-2">
+        <h2 className="text-lg font-extrabold text-text-primary mb-1 line-clamp-2">
           {trip.tripTitle}
         </h2>
         <p className="text-sm text-text-muted">
@@ -88,7 +93,7 @@ export default function HeroContinueCard({ trip, onContinue }) {
       <button
         type="button"
         onClick={() => onContinue(trip.tripId)}
-        className="w-full h-12 rounded-2xl bg-secondary text-white font-medium text-sm shadow-soft hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+        className="w-full h-11 rounded-lg bg-secondary text-white font-bold text-sm shadow-soft hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
       >
         Continue
       </button>

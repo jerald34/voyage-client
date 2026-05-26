@@ -43,7 +43,7 @@ export default function PeriodSwitcher({ value, onChange, disabled = false }) {
       role="radiogroup"
       aria-label="Time period"
       aria-disabled={disabled}
-      className="inline-flex items-center gap-0 rounded-pill bg-surface-elevated p-1"
+      className="inline-flex items-center gap-0 rounded-pill bg-surface-elevated p-1 border border-border/20"
     >
       {OPTIONS.map((option, i) => {
         const isActive = option === value;
@@ -63,7 +63,7 @@ export default function PeriodSwitcher({ value, onChange, disabled = false }) {
             className={[
               // Effective hit area ≥44pt via py padding on a 32px content height.
               "relative flex h-8 min-w-[44px] items-center justify-center rounded-md px-3 py-[10px]",
-              "text-xs font-medium tabular-nums transition-all",
+              "text-xs font-extrabold tabular-nums transition-all",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-1",
               isActive
                 ? "bg-secondary text-white shadow-soft"

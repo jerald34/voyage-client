@@ -45,7 +45,7 @@ export default function KpiTile({
       style={{ transitionTimingFunction: "var(--ease-out)", transitionDuration: "160ms" }}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="dashboard-eyebrow">{label}</span>
+        <span className="dashboard-eyebrow font-extrabold">{label}</span>
       </div>
       <div className="flex items-end justify-between gap-2">
         <div className="flex items-baseline gap-1">
@@ -55,7 +55,7 @@ export default function KpiTile({
         <Sparkline values={sparkline} />
       </div>
       <div className="flex items-center justify-between text-xs">
-        <span className={`flex items-center gap-1 tabular-nums ${deltaColor}`}>
+        <span className={`flex items-center gap-1 tabular-nums font-bold ${deltaColor}`}>
           <span aria-hidden="true">{deltaIcon}</span>
           {deltaText}
         </span>
