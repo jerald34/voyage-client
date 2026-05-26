@@ -18,6 +18,12 @@ export default function AgencyLayout({ children, params }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-text-primary">
+      <a
+        href="#agency-main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-[color:var(--accent)] focus:px-4 focus:py-2 focus:text-white"
+      >
+        Skip to main content
+      </a>
       <nav className="flex gap-1 border-b border-border/10 bg-background/80 px-6 py-3 text-sm backdrop-blur-md" aria-label="Agency navigation">
         {tabs.map((t) => (
           <Link
@@ -29,7 +35,7 @@ export default function AgencyLayout({ children, params }) {
           </Link>
         ))}
       </nav>
-      <div className="flex-1 min-h-0">{children}</div>
+      <main id="agency-main-content" className="flex-1 min-h-0">{children}</main>
     </div>
   );
 }
