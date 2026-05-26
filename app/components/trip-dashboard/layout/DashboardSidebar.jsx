@@ -1,9 +1,7 @@
 import React from "react";
-import { useRouter } from "next/navigation";
 import { useTheme } from "../../theme/ThemeProvider";
 
 export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab, logout, user, pendingCount, agencyId }) {
-  const router = useRouter();
   const { theme, setTheme } = useTheme();
   const isDark = theme === "dark";
   const isAdmin = user?.role === "SUPER_ADMIN";
@@ -33,12 +31,9 @@ export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, acti
             <button
               type="button"
               data-tour-target="dashboard-overview"
-              className={navItemBase}
-              aria-label="Open the agency dashboard"
-              onClick={() => {
-                setIsSidebarOpen(false);
-                router.push(`/agency/${agencyId}`);
-              }}
+              className={`${navItemBase} ${activeTab === "dashboard" ? navItemActive : ""}`}
+              aria-current={activeTab === "dashboard" ? "page" : undefined}
+              onClick={() => setActiveTab("dashboard")}
             >
               <span className="inline-flex items-center justify-center relative" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

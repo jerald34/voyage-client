@@ -27,6 +27,8 @@ import { getSavedItineraryTrips } from "../../lib/trip-dashboard/savedItinerarie
 
 import dynamic from "next/dynamic";
 import AgentCommandCenter from "./command-center/AgentCommandCenter.jsx";
+import OwnerOverview from "../../agency/[agencyId]/components/dashboard/OwnerOverview.jsx";
+import StaffMyWork from "../../agency/[agencyId]/components/dashboard/StaffMyWork.jsx";
 import ItineraryDraftPanel from "./itinerary/ItineraryDraftPanel.jsx";
 const ItineraryLiveMap = dynamic(() => import("./itinerary/ItineraryLiveMap.jsx"), { ssr: false });
 import ClientItineraryPage from "./pages/ClientItineraryPage.jsx";
@@ -767,6 +769,12 @@ export default function HomePage({
                 </MobileGlassSheet>
               )}
             </section>
+          ) : activeTab === "dashboard" && agencyId ? (
+            activeMembership?.role === "STAFF" ? (
+              <StaffMyWork agencyId={agencyId} initialData={null} />
+            ) : (
+              <OwnerOverview agencyId={agencyId} initialData={null} />
+            )
           ) : activeTab === "itineraries" ? (
             <ClientItineraryPage
               agencyTrips={tripsForCip}
