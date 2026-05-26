@@ -59,17 +59,17 @@ function DashboardSkeleton() {
     >
       {/* Header skeleton */}
       <div className="flex items-center justify-between">
-        <div className="h-7 w-32 rounded-lg bg-surface-elevated" />
+        <div className="h-7 w-32 rounded-2xl bg-surface-elevated" />
         <div className="flex gap-3">
-          <div className="h-9 w-24 rounded-lg bg-surface-elevated" />
-          <div className="h-9 w-32 rounded-lg bg-surface-elevated" />
+          <div className="h-9 w-24 rounded-2xl bg-surface-elevated" />
+          <div className="h-9 w-32 rounded-2xl bg-surface-elevated" />
         </div>
       </div>
       {/* Worklist skeleton */}
-      <div className="rounded-xl border border-border/10 bg-surface p-6 space-y-3">
-        <div className="h-4 w-48 rounded bg-surface-elevated" />
+      <div className="dashboard-card p-6 space-y-3">
+        <div className="h-4 w-48 rounded-2xl bg-surface-elevated" />
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-10 w-full rounded-lg bg-surface-elevated" />
+          <div key={i} className="h-10 w-full rounded-2xl bg-surface-elevated" />
         ))}
       </div>
       {/* KPI strip skeleton */}
@@ -77,16 +77,16 @@ function DashboardSkeleton() {
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="h-[120px] rounded-xl border border-border/10 bg-surface"
+            className="h-[120px] dashboard-card"
           />
         ))}
       </div>
       {/* Funnel skeleton */}
-      <div className="h-48 rounded-xl border border-border/10 bg-surface" />
+      <div className="h-48 dashboard-card" />
       {/* Tail skeleton */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div className="h-48 rounded-xl border border-border/10 bg-surface" />
-        <div className="h-48 rounded-xl border border-border/10 bg-surface" />
+        <div className="h-48 dashboard-card" />
+        <div className="h-48 dashboard-card" />
       </div>
       <span className="sr-only">Loading dashboard…</span>
     </div>
@@ -145,18 +145,18 @@ export default function OwnerOverview({ agencyId, initialData = null }) {
   // Render
   // -------------------------------------------------------------------------
   return (
-    <div className="mx-auto max-w-[1280px] px-6 py-6 md:px-8">
+    <div className="mx-auto max-w-[1280px] px-6 py-8 md:px-8 lg:px-10">
       {/* Stale banner */}
       {isStale && (
         <div
           role="alert"
-          className="mb-4 flex items-center justify-between rounded-lg border border-[color:var(--warning)]/30 bg-[color:var(--warning)]/10 px-4 py-2 text-sm text-text-primary"
+          className="dashboard-card mb-6 flex items-center justify-between bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700 text-amber-900 dark:text-amber-100 p-4"
         >
-          <span>We couldn&rsquo;t refresh — last loaded a few minutes ago.</span>
+          <span className="text-sm">We couldn&rsquo;t refresh — last loaded a few minutes ago.</span>
           <button
             type="button"
             onClick={refetch}
-            className="ml-4 rounded-md px-3 py-1 text-xs font-medium text-[color:var(--accent)] hover:bg-[color:var(--accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
+            className="ml-4 rounded-pill bg-secondary text-white px-3 py-1 text-xs font-semibold hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
           >
             Retry
           </button>
@@ -167,9 +167,10 @@ export default function OwnerOverview({ agencyId, initialData = null }) {
       {/* Page header                                                         */}
       {/* ------------------------------------------------------------------ */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-[22px] font-semibold text-text-primary">
-          Overview
-        </h1>
+        <div>
+          <h1 className="text-3xl font-semibold">Overview</h1>
+          <p className="mt-1 text-sm text-text-muted">Where conversion is leaking and what to do next.</p>
+        </div>
 
         <div className="flex items-center gap-3">
           <PeriodSwitcher
@@ -181,7 +182,7 @@ export default function OwnerOverview({ agencyId, initialData = null }) {
           <button
             type="button"
             onClick={() => router.push(`/agency/${agencyId}/trip/new`)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[color:var(--accent)] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
+            className="inline-flex h-11 items-center gap-1.5 rounded-2xl bg-secondary px-5 text-sm font-medium text-white shadow-soft transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
           >
             New trip
           </button>
@@ -189,7 +190,7 @@ export default function OwnerOverview({ agencyId, initialData = null }) {
           <button
             type="button"
             onClick={() => router.push(`/agency/${agencyId}/team`)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border/30 bg-transparent px-4 text-sm font-medium text-text-primary transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
+            className="inline-flex h-11 items-center gap-1.5 rounded-2xl border border-border bg-surface px-5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
           >
             Invite teammate
           </button>
@@ -208,9 +209,10 @@ export default function OwnerOverview({ agencyId, initialData = null }) {
           {/* -------------------------------------------------------------- */}
           <section
             aria-label="Needs your eyes today"
-            className="rounded-xl border border-border/10 bg-surface p-6"
+            className="dashboard-card p-6"
           >
-            <h2 className="mb-4 text-base font-semibold text-text-primary">
+            <p className="dashboard-eyebrow mb-1">Worklist</p>
+            <h2 className="mb-4 text-lg font-semibold text-text-primary">
               Needs your eyes today
             </h2>
 
@@ -304,12 +306,8 @@ export default function OwnerOverview({ agencyId, initialData = null }) {
           {/* Tail: ratings + activity                                        */}
           {/* -------------------------------------------------------------- */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="rounded-xl border border-border/10 bg-surface p-6">
-              <RatingsPanel reviews={data.recentReviews ?? []} />
-            </div>
-            <div className="rounded-xl border border-border/10 bg-surface p-6">
-              <ActivityRibbon events={data.activityRibbon ?? []} />
-            </div>
+            <RatingsPanel reviews={data.recentReviews ?? []} />
+            <ActivityRibbon events={data.activityRibbon ?? []} />
           </div>
         </div>
       )}

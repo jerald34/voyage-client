@@ -49,26 +49,26 @@ const STATUS_LABELS = {
 };
 
 const STATUS_BG = {
-  DRAFT: "rgba(217,119,6,0.1)",
-  IN_REVIEW: "rgba(59,130,246,0.1)",
-  APPROVED_INTERNAL: "rgba(22,163,74,0.1)",
-  ARCHIVED: "rgba(113,113,122,0.1)",
+  DRAFT: "color-mix(in srgb, var(--warning) 12%, transparent)",
+  IN_REVIEW: "color-mix(in srgb, var(--accent) 12%, transparent)",
+  APPROVED_INTERNAL: "color-mix(in srgb, var(--success) 12%, transparent)",
+  ARCHIVED: "rgb(var(--color-border-rgb) / 0.08)",
 };
 
 const STATUS_COLOR = {
   DRAFT: "var(--warning)",
   IN_REVIEW: "var(--accent)",
   APPROVED_INTERNAL: "var(--success)",
-  ARCHIVED: "var(--text-muted)",
+  ARCHIVED: "rgb(var(--color-text-soft-rgb))",
 };
 
 function StatusChip({ status }) {
   return (
     <span
-      className="inline-block px-2 py-0.5 rounded text-xs font-medium"
+      className="inline-block rounded-pill px-3 py-1 text-xs font-semibold"
       style={{
-        backgroundColor: STATUS_BG[status] ?? "rgba(113,113,122,0.1)",
-        color: STATUS_COLOR[status] ?? "var(--text-muted)",
+        backgroundColor: STATUS_BG[status] ?? "rgb(var(--color-border-rgb) / 0.08)",
+        color: STATUS_COLOR[status] ?? "rgb(var(--color-text-soft-rgb))",
       }}
     >
       {STATUS_LABELS[status] ?? status}
@@ -114,13 +114,13 @@ function StaleBanner({ onRefresh }) {
   return (
     <div
       role="status"
-      className="flex items-center justify-between rounded-lg border border-warning/30 bg-warning/5 px-4 py-2 text-[13px] text-text-muted"
+      className="dashboard-card flex items-center justify-between bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700 text-amber-900 dark:text-amber-100 px-4 py-3 text-[13px]"
     >
       <span>Data may be outdated.</span>
       <button
         type="button"
         onClick={onRefresh}
-        className="ml-4 font-medium text-[color:var(--accent)] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+        className="ml-4 rounded-pill bg-secondary text-white px-3 py-1 text-xs font-semibold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
       >
         Refresh
       </button>
@@ -135,7 +135,7 @@ function SecondaryCard({ trip, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="h-24 w-full rounded-xl border border-border/10 bg-surface p-4 text-left flex flex-col justify-between hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+      className="h-24 w-full dashboard-card p-4 text-left flex flex-col justify-between hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
       style={{ transitionDuration: "120ms", transitionTimingFunction: "var(--ease-out)" }}
     >
       <div className="flex items-start justify-between gap-2 min-w-0">
@@ -163,7 +163,7 @@ function PipelineCounter({ label, value, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[14px] tabular-nums text-text-muted hover:bg-surface-elevated hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+      className="flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-[14px] tabular-nums text-text-muted hover:bg-surface-elevated hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
       style={{ transitionDuration: "120ms", transitionTimingFunction: "var(--ease-out)" }}
     >
       <span className="font-semibold text-text-primary tabular-nums">{value ?? 0}</span>
@@ -180,10 +180,12 @@ function PipelineStrip({ pipeline, agencyId }) {
   }
 
   return (
+    <div className="space-y-1">
+      <p className="dashboard-eyebrow px-1">Pipeline</p>
     <div
       role="group"
       aria-label="Pipeline counters"
-      className="flex flex-wrap items-center gap-x-1 gap-y-1 rounded-xl border border-border/10 bg-surface px-4 py-2"
+      className="flex flex-wrap items-center gap-x-1 gap-y-1 dashboard-card px-6 py-4"
     >
       <PipelineCounter
         label="Drafts"
@@ -209,6 +211,7 @@ function PipelineStrip({ pipeline, agencyId }) {
         onClick={() => goToList("ACTIVE")}
       />
     </div>
+    </div>
   );
 }
 
@@ -227,7 +230,7 @@ function StartingSoonCard({ trip, agencyId }) {
     <button
       type="button"
       onClick={() => router.push(`/agency/${agencyId}/trip/${trip.tripId}/agent`)}
-      className="snap-start min-w-[220px] rounded-xl border border-border/10 bg-surface p-4 text-left flex flex-col gap-2 hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+      className="snap-start min-w-[240px] dashboard-card p-5 text-left flex flex-col gap-2 hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
       style={{ transitionDuration: "120ms", transitionTimingFunction: "var(--ease-out)" }}
     >
       <div className="flex items-start justify-between gap-2">
@@ -253,9 +256,7 @@ function StartingSoonScroller({ trips, agencyId }) {
 
   return (
     <section aria-label="Starting soon">
-      <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-text-muted">
-        Starting soon
-      </h2>
+      <p className="dashboard-eyebrow mb-3">Starting soon</p>
       <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1">
         {trips.map((trip) => (
           <StartingSoonCard key={trip.tripId} trip={trip} agencyId={agencyId} />
@@ -320,13 +321,14 @@ function WorklistSection({ worklist, agencyId }) {
   });
 
   return (
-    <section aria-label="Clients waiting on you">
-      <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-text-muted">
+    <section aria-label="Clients waiting on you" className="dashboard-card p-6">
+      <p className="dashboard-eyebrow mb-1">Worklist</p>
+      <h2 className="mb-4 text-lg font-semibold text-text-primary">
         Clients waiting on you
       </h2>
       <div
         role="list"
-        className="rounded-xl border border-border/10 bg-surface divide-y divide-border/10 overflow-hidden"
+        className="divide-y divide-border/10 overflow-hidden"
       >
         {rows.length === 0 ? (
           <EmptyState variant="worklist" />
@@ -365,25 +367,27 @@ export default function StaffMyWork({ agencyId, initialData = null }) {
   const isLoading = !data && isFetching;
 
   return (
-    <div className="mx-auto max-w-[1280px] px-6 md:px-8 py-6 space-y-6">
+    <div className="mx-auto max-w-[1280px] px-6 md:px-8 lg:px-10 py-8 space-y-6">
       {/* ── Header ── */}
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-4">
-          <h1 className="text-[22px] font-semibold text-text-primary">My Work</h1>
+        <div>
+          <h1 className="text-3xl font-semibold">My work</h1>
+          <p className="mt-1 text-sm text-text-muted">Pick up where you left off.</p>
+        </div>
+        <div className="flex items-center gap-3">
           <PeriodSwitcher
             value={period}
             onChange={setPeriod}
             disabled={isFetching}
           />
+          <button
+            type="button"
+            onClick={() => router.push(`/agency/${agencyId}/trip/new`)}
+            className="h-11 rounded-2xl bg-secondary px-5 text-sm font-medium text-white shadow-soft hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+          >
+            New trip
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => router.push(`/agency/${agencyId}/trip/new`)}
-          className="h-9 rounded-lg bg-[color:var(--accent)] px-4 text-sm font-medium text-white hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-          style={{ "--tw-ring-color": "var(--accent)" }}
-        >
-          New trip
-        </button>
       </header>
 
       {/* ── Stale banner ── */}
@@ -393,13 +397,13 @@ export default function StaffMyWork({ agencyId, initialData = null }) {
       {error && !isStale && (
         <div
           role="alert"
-          className="rounded-lg border border-danger/30 bg-danger/5 px-4 py-2 text-[13px] text-text-muted"
+          className="dashboard-card px-4 py-3 text-[13px] text-text-muted border-danger/30 bg-danger/5"
         >
           Could not refresh data.{" "}
           <button
             type="button"
             onClick={refetch}
-            className="font-medium text-[color:var(--accent)] hover:underline"
+            className="font-medium text-secondary hover:underline"
           >
             Try again
           </button>

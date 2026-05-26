@@ -63,12 +63,13 @@
   --glass-blur: 18px;
   --glass-border: rgba(255, 255, 255, 0.30);
 
-  /* Agency Dashboard Color Tokens — Light Mode */
-  --surface: #FFFFFF;
-  --accent: #3B82F6;
-  --success: #16A34A;
-  --warning: #D97706;
-  --danger: #DC2626;
+  /* Agency Dashboard tokens — aliased to system brand palette so the dashboard
+     reads as part of the same product. Don't introduce new flat hues here. */
+  --surface: rgb(var(--color-surface-rgb));
+  --accent: rgb(var(--color-secondary-rgb));           /* warm orange brand accent */
+  --success: var(--color-status-success);
+  --warning: var(--color-status-warning);
+  --danger: var(--color-status-danger);
   --rating-star: #EAB308;
 
   /* Easing Tokens (theme-invariant) */
@@ -116,12 +117,13 @@
   --glass-blur: 24px;
   --glass-border: rgba(255, 255, 255, 0.05);
 
-  /* Agency Dashboard Color Tokens — Dark Mode */
-  --surface: #141416;
-  --accent: #60A5FA;
-  --success: #22C55E;
-  --warning: #F59E0B;
-  --danger: #EF4444;
+  /* Agency Dashboard tokens — aliased to system brand palette so the dashboard
+     reads as part of the same product. Don't introduce new flat hues here. */
+  --surface: rgb(var(--color-surface-rgb));
+  --accent: rgb(var(--color-secondary-rgb));           /* warm orange brand accent */
+  --success: var(--color-status-success);
+  --warning: var(--color-status-warning);
+  --danger: var(--color-status-danger);
   --rating-star: #FACC15;
 }
 
@@ -136,6 +138,23 @@
   box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05);
 }
 
+@utility dashboard-card {
+  background: rgb(var(--color-surface-rgb) / 0.95);
+  border: 1px solid rgb(var(--color-border-rgb) / 0.18);
+  border-radius: 24px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+.dark .dashboard-card {
+  border-color: rgb(var(--color-border-rgb) / 0.40);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+@utility dashboard-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgb(var(--color-text-soft-rgb));
+}
 
 @utility bg-primary-navy {
   background-color: #1A1D1F;

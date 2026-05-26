@@ -26,19 +26,19 @@ function StatusChip({ status }) {
   const tone = STATUS_TONES[status] || 'muted';
   const label = STATUS_LABELS[status] || status;
 
-  // CSS color mappings for each tone
+  // CSS color mappings for each tone — use system tokens so colors track theme
   const toneColorMap = {
     warning: 'var(--warning)',
     accent: 'var(--accent)',
     success: 'var(--success)',
-    muted: 'var(--text-muted)',
+    muted: 'rgb(var(--color-text-soft-rgb))',
   };
 
   const bgColorMap = {
-    warning: 'rgba(217, 119, 6, 0.1)',    // --warning with 10% opacity
-    accent: 'rgba(59, 130, 246, 0.1)',    // --accent with 10% opacity
-    success: 'rgba(22, 163, 74, 0.1)',    // --success with 10% opacity
-    muted: 'rgba(113, 113, 122, 0.1)',    // --text-muted with 10% opacity
+    warning: 'color-mix(in srgb, var(--warning) 12%, transparent)',
+    accent:  'color-mix(in srgb, var(--accent) 12%, transparent)',
+    success: 'color-mix(in srgb, var(--success) 12%, transparent)',
+    muted:   'rgb(var(--color-border-rgb) / 0.08)',
   };
 
   const color = toneColorMap[tone];
@@ -46,7 +46,7 @@ function StatusChip({ status }) {
 
   return (
     <span
-      className="inline-block px-2 py-1 rounded text-xs font-medium"
+      className="inline-block rounded-pill px-3 py-1 text-xs font-semibold"
       style={{
         backgroundColor: bgColor,
         color: color,
@@ -63,7 +63,7 @@ export default function HeroContinueCard({ trip, onContinue }) {
   }
 
   return (
-    <div className="h-[200px] rounded-xl border border-border/10 bg-surface p-6 flex flex-col justify-between">
+    <div className="h-[200px] dashboard-card p-6 flex flex-col justify-between">
       {/* Top: status chip, title, client name */}
       <div>
         <div className="mb-3">
@@ -88,8 +88,7 @@ export default function HeroContinueCard({ trip, onContinue }) {
       <button
         type="button"
         onClick={() => onContinue(trip.tripId)}
-        className="w-full h-12 rounded-lg bg-[color:var(--accent)] text-white font-medium text-sm hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2"
-        style={{ '--tw-ring-color': 'var(--accent)' }}
+        className="w-full h-12 rounded-2xl bg-secondary text-white font-medium text-sm shadow-soft hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
       >
         Continue
       </button>

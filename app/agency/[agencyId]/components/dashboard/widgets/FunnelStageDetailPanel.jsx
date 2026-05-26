@@ -152,7 +152,7 @@ export default function FunnelStageDetailPanel({ stage, agencyId, onClose }) {
             type="button"
             aria-label="Close"
             onClick={onClose}
-            className="flex h-[44px] w-[44px] items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+            className="flex h-[44px] w-[44px] items-center justify-center rounded-2xl text-text-muted transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
             style={{ transitionTimingFunction: "var(--ease-out)", transitionDuration: "160ms" }}
           >
             {/* ✕ icon — inline SVG to avoid a package dep */}

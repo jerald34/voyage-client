@@ -63,8 +63,7 @@ export default function EmptyState({ variant, onAction }) {
         <button
           type="button"
           onClick={onAction}
-          className="mt-2 px-4 py-2 rounded-lg bg-[color:var(--accent)] text-white text-sm font-medium hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2"
-          style={{ '--tw-ring-color': 'var(--accent)' }}
+          className="mt-2 px-4 py-2 rounded-2xl bg-secondary text-white text-sm font-medium hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
         >
           {content.cta}
         </button>

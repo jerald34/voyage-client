@@ -46,9 +46,10 @@ export default function ActivityRibbon({ events = [] }) {
   const displayEvents = events.slice(0, 6);
 
   return (
-    <section>
-      <h2 className="text-base font-semibold text-text-primary mb-4">
-        Activity
+    <section className="dashboard-card p-6">
+      <p className="dashboard-eyebrow mb-1">Activity</p>
+      <h2 className="text-lg font-semibold text-text-primary mb-4">
+        Recent team activity
       </h2>
 
       {displayEvents.length === 0 ? (

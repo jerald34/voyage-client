@@ -41,11 +41,11 @@ export default function KpiTile({
       type="button"
       onClick={onClick}
       aria-label={a11yLabel}
-      className="group relative flex h-[120px] w-full flex-col justify-between rounded-xl border border-border/10 bg-surface p-4 text-left transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
+      className="group relative flex h-[120px] w-full flex-col justify-between dashboard-card p-4 text-left transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
       style={{ transitionTimingFunction: "var(--ease-out)", transitionDuration: "160ms" }}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-text-muted">{label}</span>
+        <span className="dashboard-eyebrow">{label}</span>
       </div>
       <div className="flex items-end justify-between gap-2">
         <div className="flex items-baseline gap-1">

@@ -30,9 +30,10 @@ export default function FunnelChart({ stages = [], agencyId }) {
     <>
       <section
         aria-label={summary}
-        className="rounded-xl border border-border/10 bg-surface p-6"
+        className="dashboard-card p-6"
       >
-        <h2 className="text-base font-semibold text-text-primary">Conversion funnel</h2>
+        <p className="dashboard-eyebrow mb-1">Conversion funnel</p>
+        <h2 className="text-lg font-semibold text-text-primary">How trips are converting</h2>
         <p className="mt-1 text-xs text-text-muted">{summary}</p>
         <ol className="mt-4 space-y-3">
           {stages.map((stage, i) => {
@@ -50,7 +51,7 @@ export default function FunnelChart({ stages = [], agencyId }) {
                   type="button"
                   onClick={() => setActiveStage(stage)}
                   aria-label={`${STAGE_LABELS[stage.key]}: ${stage.count}. Open trip list.`}
-                  className="group relative flex items-center gap-3 rounded-lg border border-border/10 px-3 py-2 text-left transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+                  className="group relative flex items-center gap-3 rounded-2xl border border-border/10 px-3 py-2 text-left transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
                   style={{ transitionTimingFunction: "var(--ease-out)", transitionDuration: "160ms" }}
                 >
                   <div
