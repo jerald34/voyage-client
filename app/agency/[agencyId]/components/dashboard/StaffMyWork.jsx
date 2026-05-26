@@ -1,10 +1,454 @@
 "use client";
 
-export default function StaffMyWork({ agencyId }) {
+/**
+ * StaffMyWork — Staff-side dashboard composition (§4, §6.6, §7.4)
+ *
+ * Sections:
+ *   1. Header — title + "New trip" quick action
+ *   2. Stale banner / loading skeleton
+ *   3. Hero — HeroContinueCard (§4.1)
+ *   4. Secondary-recent cards row (§4.1 overflow)
+ *   5. "Clients waiting on you" worklist (§4.2)
+ *   6. Pipeline strip — 4 counters (§4.3)
+ *   7. "Starting soon" horizontal scroller (§4.4)
+ *
+ * Layout: max-w-[1280px] centered, 8-col-like column grid (§6.6).
+ */
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import useDashboardPoll from "@/app/hooks/useDashboardPoll";
+import HeroContinueCard from "./widgets/HeroContinueCard";
+import WorklistRow from "./widgets/WorklistRow";
+import EmptyState from "./widgets/EmptyState";
+import PeriodSwitcher from "./widgets/PeriodSwitcher";
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Returns a short relative-time string, e.g. "2h ago", "3d ago".
+ * Falls back to the ISO string if parsing fails.
+ */
+function relativeTime(isoString) {
+  if (!isoString) return "";
+  const diff = Date.now() - new Date(isoString).getTime();
+  if (isNaN(diff)) return isoString;
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+const STATUS_LABELS = {
+  DRAFT: "Draft",
+  IN_REVIEW: "In review",
+  APPROVED_INTERNAL: "Approved",
+  ARCHIVED: "Archived",
+};
+
+const STATUS_BG = {
+  DRAFT: "rgba(217,119,6,0.1)",
+  IN_REVIEW: "rgba(59,130,246,0.1)",
+  APPROVED_INTERNAL: "rgba(22,163,74,0.1)",
+  ARCHIVED: "rgba(113,113,122,0.1)",
+};
+
+const STATUS_COLOR = {
+  DRAFT: "var(--warning)",
+  IN_REVIEW: "var(--accent)",
+  APPROVED_INTERNAL: "var(--success)",
+  ARCHIVED: "var(--text-muted)",
+};
+
+function StatusChip({ status }) {
   return (
-    <div className="px-6 py-8 md:px-8">
-      <h1 className="text-[22px] font-semibold text-text-primary">My Work</h1>
-      <p className="mt-2 text-sm text-text-muted">Staff dashboard — coming soon.</p>
+    <span
+      className="inline-block px-2 py-0.5 rounded text-xs font-medium"
+      style={{
+        backgroundColor: STATUS_BG[status] ?? "rgba(113,113,122,0.1)",
+        color: STATUS_COLOR[status] ?? "var(--text-muted)",
+      }}
+    >
+      {STATUS_LABELS[status] ?? status}
+    </span>
+  );
+}
+
+// ─── Loading skeleton ────────────────────────────────────────────────────────
+
+function Skeleton({ className }) {
+  return (
+    <div
+      className={`animate-pulse rounded-md bg-surface-elevated ${className}`}
+      aria-hidden="true"
+    />
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Loading dashboard">
+      {/* Hero skeleton */}
+      <Skeleton className="h-[200px] w-full" />
+      {/* Secondary cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="h-24" />
+        ))}
+      </div>
+      {/* Worklist */}
+      <Skeleton className="h-40 w-full" />
+      {/* Pipeline strip */}
+      <Skeleton className="h-10 w-full" />
+      {/* Starting soon */}
+      <Skeleton className="h-32 w-full" />
+    </div>
+  );
+}
+
+// ─── Stale banner ────────────────────────────────────────────────────────────
+
+function StaleBanner({ onRefresh }) {
+  return (
+    <div
+      role="status"
+      className="flex items-center justify-between rounded-lg border border-warning/30 bg-warning/5 px-4 py-2 text-[13px] text-text-muted"
+    >
+      <span>Data may be outdated.</span>
+      <button
+        type="button"
+        onClick={onRefresh}
+        className="ml-4 font-medium text-[color:var(--accent)] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+      >
+        Refresh
+      </button>
+    </div>
+  );
+}
+
+// ─── Secondary recent card ───────────────────────────────────────────────────
+
+function SecondaryCard({ trip, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="h-24 w-full rounded-xl border border-border/10 bg-surface p-4 text-left flex flex-col justify-between hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+      style={{ transitionDuration: "120ms", transitionTimingFunction: "var(--ease-out)" }}
+    >
+      <div className="flex items-start justify-between gap-2 min-w-0">
+        <span className="truncate text-[14px] font-semibold text-text-primary leading-snug">
+          {trip.tripTitle}
+        </span>
+        <StatusChip status={trip.status} />
+      </div>
+      <div className="flex items-end justify-between gap-2">
+        <span className="truncate text-[13px] text-text-muted">
+          {trip.clientName}
+        </span>
+        <span className="shrink-0 text-[12px] text-text-muted tabular-nums">
+          {relativeTime(trip.updatedAt)}
+        </span>
+      </div>
+    </button>
+  );
+}
+
+// ─── Pipeline strip ──────────────────────────────────────────────────────────
+
+function PipelineCounter({ label, value, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[14px] tabular-nums text-text-muted hover:bg-surface-elevated hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+      style={{ transitionDuration: "120ms", transitionTimingFunction: "var(--ease-out)" }}
+    >
+      <span className="font-semibold text-text-primary tabular-nums">{value ?? 0}</span>
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function PipelineStrip({ pipeline, agencyId }) {
+  const router = useRouter();
+
+  function goToList(status) {
+    router.push(`/agency/${agencyId}/trip?status=${status}`);
+  }
+
+  return (
+    <div
+      role="group"
+      aria-label="Pipeline counters"
+      className="flex flex-wrap items-center gap-x-1 gap-y-1 rounded-xl border border-border/10 bg-surface px-4 py-2"
+    >
+      <PipelineCounter
+        label="Drafts"
+        value={pipeline?.drafts}
+        onClick={() => goToList("DRAFT")}
+      />
+      <span aria-hidden className="text-[14px] text-text-muted select-none">·</span>
+      <PipelineCounter
+        label="In review"
+        value={pipeline?.inReview}
+        onClick={() => goToList("IN_REVIEW")}
+      />
+      <span aria-hidden className="text-[14px] text-text-muted select-none">·</span>
+      <PipelineCounter
+        label="Approved this month"
+        value={pipeline?.approvedThisMonth}
+        onClick={() => goToList("APPROVED_INTERNAL")}
+      />
+      <span aria-hidden className="text-[14px] text-text-muted select-none">·</span>
+      <PipelineCounter
+        label="Active now"
+        value={pipeline?.activeNow}
+        onClick={() => goToList("ACTIVE")}
+      />
+    </div>
+  );
+}
+
+// ─── Starting-soon scroller ──────────────────────────────────────────────────
+
+function StartingSoonCard({ trip, agencyId }) {
+  const router = useRouter();
+  const daysLabel =
+    trip.daysToStart === 0
+      ? "Today"
+      : trip.daysToStart === 1
+      ? "Tomorrow"
+      : `${trip.daysToStart}d`;
+
+  return (
+    <button
+      type="button"
+      onClick={() => router.push(`/agency/${agencyId}/trip/${trip.tripId}/agent`)}
+      className="snap-start min-w-[220px] rounded-xl border border-border/10 bg-surface p-4 text-left flex flex-col gap-2 hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+      style={{ transitionDuration: "120ms", transitionTimingFunction: "var(--ease-out)" }}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-[14px] font-semibold text-text-primary leading-snug line-clamp-2">
+          {trip.tripTitle}
+        </span>
+        <span className="shrink-0 rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-[color:var(--success)] tabular-nums whitespace-nowrap">
+          {daysLabel}
+        </span>
+      </div>
+      <span className="text-[13px] text-text-muted truncate">{trip.clientName}</span>
+      {trip.travelerCount != null && (
+        <span className="text-[12px] text-text-muted tabular-nums">
+          {trip.travelerCount} traveler{trip.travelerCount !== 1 ? "s" : ""}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function StartingSoonScroller({ trips, agencyId }) {
+  if (!trips?.length) return null;
+
+  return (
+    <section aria-label="Starting soon">
+      <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-text-muted">
+        Starting soon
+      </h2>
+      <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1">
+        {trips.map((trip) => (
+          <StartingSoonCard key={trip.tripId} trip={trip} agencyId={agencyId} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─── Worklist section ────────────────────────────────────────────────────────
+
+function WorklistSection({ worklist, agencyId }) {
+  const router = useRouter();
+  const rows = [];
+
+  (worklist?.unreadComments ?? []).forEach((item) => {
+    rows.push({
+      key: `comment-${item.tripId}`,
+      tone: "info",
+      title: item.tripTitle,
+      subtitle: item.clientName,
+      hint: item.hint,
+      actionLabel: "Reply",
+      onAction: () => router.push(`/agency/${agencyId}/trip/${item.tripId}/agent`),
+    });
+  });
+
+  (worklist?.myDraftsStuck ?? []).forEach((item) => {
+    rows.push({
+      key: `draft-${item.tripId}`,
+      tone: "warning",
+      title: item.tripTitle,
+      subtitle: item.clientName,
+      hint: item.hint,
+      actionLabel: "Resume",
+      onAction: () => router.push(`/agency/${agencyId}/trip/${item.tripId}/agent`),
+    });
+  });
+
+  (worklist?.mySharesExpiring ?? []).forEach((item) => {
+    rows.push({
+      key: `share-${item.tripId}`,
+      tone: "warning",
+      title: item.tripTitle,
+      subtitle: item.clientName,
+      hint: item.hint,
+      actionLabel: "Nudge",
+      onAction: () => router.push(`/agency/${agencyId}/trip/${item.tripId}/agent`),
+    });
+  });
+
+  (worklist?.startingSoon ?? []).forEach((item) => {
+    rows.push({
+      key: `soon-${item.tripId}`,
+      tone: "success",
+      title: item.tripTitle,
+      subtitle: item.clientName,
+      hint: item.hint,
+      actionLabel: "Open trip",
+      onAction: () => router.push(`/agency/${agencyId}/trip/${item.tripId}/agent`),
+    });
+  });
+
+  return (
+    <section aria-label="Clients waiting on you">
+      <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-text-muted">
+        Clients waiting on you
+      </h2>
+      <div
+        role="list"
+        className="rounded-xl border border-border/10 bg-surface divide-y divide-border/10 overflow-hidden"
+      >
+        {rows.length === 0 ? (
+          <EmptyState variant="worklist" />
+        ) : (
+          rows.map((row, i) => (
+            <div key={row.key} style={{ transitionDelay: `${i * 40}ms` }}>
+              <WorklistRow
+                tone={row.tone}
+                title={row.title}
+                subtitle={row.subtitle}
+                hint={row.hint}
+                actionLabel={row.actionLabel}
+                onAction={row.onAction}
+              />
+            </div>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ─── Main component ──────────────────────────────────────────────────────────
+
+export default function StaffMyWork({ agencyId, initialData = null }) {
+  const router = useRouter();
+  const [period, setPeriod] = useState("30d");
+
+  const { data, isStale, isFetching, error, refetch } = useDashboardPoll({
+    agencyId,
+    view: "staff",
+    period,
+    initialData,
+  });
+
+  const isLoading = !data && isFetching;
+
+  return (
+    <div className="mx-auto max-w-[1280px] px-6 md:px-8 py-6 space-y-6">
+      {/* ── Header ── */}
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-4">
+          <h1 className="text-[22px] font-semibold text-text-primary">My Work</h1>
+          <PeriodSwitcher
+            value={period}
+            onChange={setPeriod}
+            disabled={isFetching}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => router.push(`/agency/${agencyId}/trip/new`)}
+          className="h-9 rounded-lg bg-[color:var(--accent)] px-4 text-sm font-medium text-white hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          style={{ "--tw-ring-color": "var(--accent)" }}
+        >
+          New trip
+        </button>
+      </header>
+
+      {/* ── Stale banner ── */}
+      {isStale && <StaleBanner onRefresh={refetch} />}
+
+      {/* ── Error banner (non-blocking) ── */}
+      {error && !isStale && (
+        <div
+          role="alert"
+          className="rounded-lg border border-danger/30 bg-danger/5 px-4 py-2 text-[13px] text-text-muted"
+        >
+          Could not refresh data.{" "}
+          <button
+            type="button"
+            onClick={refetch}
+            className="font-medium text-[color:var(--accent)] hover:underline"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
+      {/* ── Loading skeleton (first load only) ── */}
+      {isLoading ? (
+        <DashboardSkeleton />
+      ) : (
+        <>
+          {/* ── 3. Hero ── */}
+          <HeroContinueCard
+            trip={data?.hero ?? null}
+            onContinue={(tripId) =>
+              router.push(`/agency/${agencyId}/trip/${tripId}/agent`)
+            }
+          />
+
+          {/* ── 4. Secondary recent cards ── */}
+          {data?.secondaryRecent?.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {data.secondaryRecent.slice(0, 3).map((trip) => (
+                <SecondaryCard
+                  key={trip.tripId}
+                  trip={trip}
+                  onClick={() =>
+                    router.push(`/agency/${agencyId}/trip/${trip.tripId}/agent`)
+                  }
+                />
+              ))}
+            </div>
+          )}
+
+          {/* ── 5. Worklist ── */}
+          <WorklistSection worklist={data?.worklist} agencyId={agencyId} />
+
+          {/* ── 6. Pipeline strip ── */}
+          {data?.pipeline && (
+            <PipelineStrip pipeline={data.pipeline} agencyId={agencyId} />
+          )}
+
+          {/* ── 7. Starting-soon scroller ── */}
+          <StartingSoonScroller
+            trips={data?.startingSoon}
+            agencyId={agencyId}
+          />
+        </>
+      )}
     </div>
   );
 }
