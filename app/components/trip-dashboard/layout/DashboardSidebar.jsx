@@ -1,7 +1,9 @@
 import React from "react";
+import { useRouter } from "next/navigation";
 import { useTheme } from "../../theme/ThemeProvider";
 
-export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab, logout, user, pendingCount }) {
+export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab, logout, user, pendingCount, agencyId }) {
+  const router = useRouter();
   const { theme, setTheme } = useTheme();
   const isDark = theme === "dark";
   const isAdmin = user?.role === "SUPER_ADMIN";
@@ -27,6 +29,29 @@ export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, acti
         aria-label="Dashboard navigation"
       >
         <nav className="flex flex-col py-[18px] flex-1 gap-2 max-[900px]:py-6 max-[900px]:px-6">
+          {hasAgencyMembership && !isPersonal && agencyId && (
+            <button
+              type="button"
+              data-tour-target="dashboard-overview"
+              className={navItemBase}
+              aria-label="Open the agency dashboard"
+              onClick={() => {
+                setIsSidebarOpen(false);
+                router.push(`/agency/${agencyId}`);
+              }}
+            >
+              <span className="inline-flex items-center justify-center relative" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="7" height="9" />
+                  <rect x="14" y="3" width="7" height="5" />
+                  <rect x="14" y="12" width="7" height="9" />
+                  <rect x="3" y="16" width="7" height="5" />
+                </svg>
+              </span>
+              <span className="text-[11px] font-semibold leading-tight max-[900px]:text-sm">Dashboard</span>
+            </button>
+          )}
+
           <button
             type="button"
             className={`${navItemBase} ${activeTab === "command-center" ? navItemActive : ""}`}

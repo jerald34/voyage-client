@@ -652,6 +652,7 @@ export default function HomePage({
           logout={logout}
           user={user}
           pendingCount={pendingCount}
+          agencyId={agencyId}
         />
 
         <main className="flex-1 overflow-y-auto p-2 flex flex-col gap-2 max-[900px]:p-0 max-[900px]:overflow-hidden">
