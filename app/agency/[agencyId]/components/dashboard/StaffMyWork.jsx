@@ -22,6 +22,8 @@ import HeroContinueCard from "./widgets/HeroContinueCard";
 import WorklistRow from "./widgets/WorklistRow";
 import EmptyState from "./widgets/EmptyState";
 import PeriodSwitcher from "./widgets/PeriodSwitcher";
+import TeamPage from "@/app/components/team/TeamPage";
+import TripSlideOver from "./TripSlideOver";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -172,10 +174,14 @@ function PipelineCounter({ label, value, onClick }) {
   );
 }
 
-function PipelineStrip({ pipeline, agencyId }) {
+function PipelineStrip({ pipeline, agencyId, onOpenItineraries }) {
   const router = useRouter();
 
   function goToList(status) {
+    if (onOpenItineraries) {
+      onOpenItineraries(status);
+      return;
+    }
     router.push(`/agency/${agencyId}/trip?status=${status}`);
   }
 
@@ -217,7 +223,7 @@ function PipelineStrip({ pipeline, agencyId }) {
 
 // ─── Starting-soon scroller ──────────────────────────────────────────────────
 
-function StartingSoonCard({ trip, agencyId }) {
+function StartingSoonCard({ trip, agencyId, onOpenTrip }) {
   const router = useRouter();
   const daysLabel =
     trip.daysToStart === 0
@@ -226,10 +232,18 @@ function StartingSoonCard({ trip, agencyId }) {
       ? "Tomorrow"
       : `${trip.daysToStart}d`;
 
+  function openThisTrip() {
+    if (onOpenTrip) {
+      onOpenTrip(trip.tripId);
+      return;
+    }
+    router.push(`/agency/${agencyId}/trip/${trip.tripId}/agent`);
+  }
+
   return (
     <button
       type="button"
-      onClick={() => router.push(`/agency/${agencyId}/trip/${trip.tripId}/agent`)}
+      onClick={openThisTrip}
       className="snap-start min-w-[240px] dashboard-card p-5 text-left flex flex-col gap-2 rounded-md hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
       style={{ transitionDuration: "120ms", transitionTimingFunction: "var(--ease-out)" }}
     >
@@ -251,7 +265,7 @@ function StartingSoonCard({ trip, agencyId }) {
   );
 }
 
-function StartingSoonScroller({ trips, agencyId }) {
+function StartingSoonScroller({ trips, agencyId, onOpenTrip }) {
   if (!trips?.length) return null;
 
   return (
@@ -261,7 +275,7 @@ function StartingSoonScroller({ trips, agencyId }) {
       </div>
       <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1">
         {trips.map((trip) => (
-          <StartingSoonCard key={trip.tripId} trip={trip} agencyId={agencyId} />
+          <StartingSoonCard key={trip.tripId} trip={trip} agencyId={agencyId} onOpenTrip={onOpenTrip} />
         ))}
       </div>
     </section>
@@ -270,8 +284,7 @@ function StartingSoonScroller({ trips, agencyId }) {
 
 // ─── Worklist section ────────────────────────────────────────────────────────
 
-function WorklistSection({ worklist, agencyId }) {
-  const router = useRouter();
+function WorklistSection({ worklist, agencyId, onOpenSlide, onOpenTrip }) {
   const rows = [];
 
   (worklist?.unreadComments ?? []).forEach((item) => {
@@ -282,7 +295,7 @@ function WorklistSection({ worklist, agencyId }) {
       subtitle: item.clientName,
       hint: item.hint,
       actionLabel: "Reply",
-      onAction: () => router.push(`/agency/${agencyId}/trip/${item.tripId}/agent`),
+      onAction: () => onOpenSlide(item.tripId, item.tripTitle, item.clientName),
     });
   });
 
@@ -294,7 +307,7 @@ function WorklistSection({ worklist, agencyId }) {
       subtitle: item.clientName,
       hint: item.hint,
       actionLabel: "Resume",
-      onAction: () => router.push(`/agency/${agencyId}/trip/${item.tripId}/agent`),
+      onAction: () => onOpenTrip(item.tripId),
     });
   });
 
@@ -306,7 +319,7 @@ function WorklistSection({ worklist, agencyId }) {
       subtitle: item.clientName,
       hint: item.hint,
       actionLabel: "Nudge",
-      onAction: () => router.push(`/agency/${agencyId}/trip/${item.tripId}/agent`),
+      onAction: () => onOpenTrip(item.tripId),
     });
   });
 
@@ -318,7 +331,7 @@ function WorklistSection({ worklist, agencyId }) {
       subtitle: item.clientName,
       hint: item.hint,
       actionLabel: "Open trip",
-      onAction: () => router.push(`/agency/${agencyId}/trip/${item.tripId}/agent`),
+      onAction: () => onOpenTrip(item.tripId),
     });
   });
 
@@ -355,7 +368,13 @@ function WorklistSection({ worklist, agencyId }) {
 
 // ─── Main component ──────────────────────────────────────────────────────────
 
-export default function StaffMyWork({ agencyId, initialData = null }) {
+export default function StaffMyWork({
+  agencyId,
+  initialData = null,
+  onOpenTrip,
+  onNewTrip,
+  onOpenItineraries,
+}) {
   const router = useRouter();
   const [period, setPeriod] = useState("30d");
 
@@ -367,6 +386,29 @@ export default function StaffMyWork({ agencyId, initialData = null }) {
   });
 
   const isLoading = !data && isFetching;
+
+  // ── Slide-over state ──
+  const [slideTrip, setSlideTrip] = useState(null); // { tripId, tripTitle, subtitle }
+
+  const openTripSlide = (tripId, tripTitle, subtitle) => {
+    setSlideTrip({ tripId, tripTitle: tripTitle ?? "Trip", subtitle: subtitle ?? null });
+  };
+
+  const openTrip = (tripId) => {
+    if (onOpenTrip) {
+      onOpenTrip(tripId);
+      return;
+    }
+    router.push(`/agency/${agencyId}/trip/${tripId}/agent`);
+  };
+
+  const newTrip = () => {
+    if (onNewTrip) {
+      onNewTrip();
+      return;
+    }
+    router.push(`/agency/${agencyId}/trip/new`);
+  };
 
   return (
     <div className="mx-auto max-w-[1280px] px-6 md:px-8 lg:px-10 py-8 space-y-6">
@@ -384,7 +426,7 @@ export default function StaffMyWork({ agencyId, initialData = null }) {
           />
           <button
             type="button"
-            onClick={() => router.push(`/agency/${agencyId}/trip/new`)}
+            onClick={newTrip}
             className="h-11 rounded-lg bg-secondary px-5 text-sm font-bold text-white shadow-soft hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
           >
             New trip
@@ -420,9 +462,7 @@ export default function StaffMyWork({ agencyId, initialData = null }) {
           {/* ── 3. Hero ── */}
           <HeroContinueCard
             trip={data?.hero ?? null}
-            onContinue={(tripId) =>
-              router.push(`/agency/${agencyId}/trip/${tripId}/agent`)
-            }
+            onContinue={(tripId) => openTrip(tripId)}
           />
 
           {/* ── 4. Secondary recent cards ── */}
@@ -432,29 +472,60 @@ export default function StaffMyWork({ agencyId, initialData = null }) {
                 <SecondaryCard
                   key={trip.tripId}
                   trip={trip}
-                  onClick={() =>
-                    router.push(`/agency/${agencyId}/trip/${trip.tripId}/agent`)
-                  }
+                  onClick={() => openTrip(trip.tripId)}
                 />
               ))}
             </div>
           )}
 
           {/* ── 5. Worklist ── */}
-          <WorklistSection worklist={data?.worklist} agencyId={agencyId} />
+          <WorklistSection
+            worklist={data?.worklist}
+            agencyId={agencyId}
+            onOpenSlide={openTripSlide}
+            onOpenTrip={openTrip}
+          />
 
           {/* ── 6. Pipeline strip ── */}
           {data?.pipeline && (
-            <PipelineStrip pipeline={data.pipeline} agencyId={agencyId} />
+            <PipelineStrip
+              pipeline={data.pipeline}
+              agencyId={agencyId}
+              onOpenItineraries={onOpenItineraries}
+            />
           )}
 
           {/* ── 7. Starting-soon scroller ── */}
           <StartingSoonScroller
             trips={data?.startingSoon}
             agencyId={agencyId}
+            onOpenTrip={openTrip}
           />
+
+          {/* ── 8. Team section — combined into Dashboard ── */}
+          <section aria-label="Team" className="dashboard-card p-6">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20 text-secondary text-[0.7rem] font-extrabold uppercase tracking-[0.05em] mb-2">TEAM</span>
+            <h2 className="mt-2 mb-4 text-lg font-extrabold text-text-primary">
+              Your team
+            </h2>
+            <TeamPage agencyId={agencyId} />
+          </section>
         </>
       )}
+
+      {/* ── Trip slide-over panel ── */}
+      <TripSlideOver
+        isOpen={!!slideTrip}
+        onClose={() => setSlideTrip(null)}
+        agencyId={agencyId}
+        tripId={slideTrip?.tripId}
+        tripTitle={slideTrip?.tripTitle}
+        subtitle={slideTrip?.subtitle}
+        onOpenFull={(tripId) => {
+          setSlideTrip(null);
+          openTrip(tripId);
+        }}
+      />
     </div>
   );
 }

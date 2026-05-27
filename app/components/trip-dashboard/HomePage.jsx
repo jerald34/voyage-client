@@ -37,7 +37,6 @@ import ApproveItineraryModal from "./modals/ApproveItineraryModal.jsx";
 import DashboardHeader from "./layout/DashboardHeader.jsx";
 import DashboardSidebar from "./layout/DashboardSidebar.jsx";
 import AdminAgenciesPage from "../admin/AdminAgenciesPage.jsx";
-import TeamPage from "../team/TeamPage.jsx";
 import MobileGlassSheet from "./mobile/MobileGlassSheet.jsx";
 import useMobileViewport from "./mobile/useMobileViewport.js";
 import ChatInput from "./command-center/ChatInput.jsx";
@@ -128,6 +127,11 @@ export default function HomePage({
     createPlanningContext,
     createRunTargetKey,
   } = useTripPlanning(agencyId);
+
+  // Guard ref: when a dashboard action explicitly sets activeContext (e.g.
+  // Resume / Open trip), the context-management effect must NOT clear it
+  // before ensureTripThreadState has a chance to hydrate tripStates.
+  const explicitContextRef = useRef(false);
 
   const [composerInput, setComposerInput] = useState("");
   const [deletingThreadId, setDeletingThreadId] = useState(null);
@@ -334,8 +338,14 @@ export default function HomePage({
     );
   }, [bootstrapTrips]);
 
-  // Context management
+  // Context management — skip cleanup when a dashboard action explicitly set
+  // the context (explicitContextRef). This prevents the effect from clearing
+  // activeContext before ensureTripThreadState can hydrate tripStates.
   useEffect(() => {
+    if (explicitContextRef.current) {
+      explicitContextRef.current = false;
+      return;
+    }
     const hasPropTrips = Array.isArray(agencyTrips) && agencyTrips.length > 0;
     const hasThreadTrips = Object.keys(tripStates).length > 0;
     if (!hasPropTrips && !hasThreadTrips) {
@@ -771,9 +781,28 @@ export default function HomePage({
             </section>
           ) : activeTab === "dashboard" && agencyId ? (
             activeMembership?.role === "STAFF" ? (
-              <StaffMyWork agencyId={agencyId} initialData={null} />
+              <StaffMyWork
+                agencyId={agencyId}
+                initialData={null}
+                onOpenTrip={(tripId) => {
+                  explicitContextRef.current = true;
+                  setActiveTab("command-center");
+                  setActiveContext(createPlanningContext("trip", tripId));
+                }}
+                onNewTrip={handleNewItinerary}
+                onOpenItineraries={() => setActiveTab("itineraries")}
+              />
             ) : (
-              <OwnerOverview agencyId={agencyId} initialData={null} />
+              <OwnerOverview
+                agencyId={agencyId}
+                initialData={null}
+                onOpenTrip={(tripId) => {
+                  explicitContextRef.current = true;
+                  setActiveTab("command-center");
+                  setActiveContext(createPlanningContext("trip", tripId));
+                }}
+                onNewTrip={handleNewItinerary}
+              />
             )
           ) : activeTab === "itineraries" ? (
             <ClientItineraryPage
@@ -793,8 +822,6 @@ export default function HomePage({
                 }
               }}
             />
-          ) : activeTab === "team" && agencyId ? (
-            <TeamPage agencyId={agencyId} showJoinedNotice={showJoinedNotice} />
           ) : activeTab === "settings" ? (
             <SettingsPage
               user={user}

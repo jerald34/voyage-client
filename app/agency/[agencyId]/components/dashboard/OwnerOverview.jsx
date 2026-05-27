@@ -10,6 +10,8 @@ import RatingsPanel from "./widgets/RatingsPanel";
 import ActivityRibbon from "./widgets/ActivityRibbon";
 import EmptyState from "./widgets/EmptyState";
 import PeriodSwitcher from "./widgets/PeriodSwitcher";
+import TeamPage from "../../../../components/team/TeamPage";
+import TripSlideOver from "./TripSlideOver";
 
 // ---------------------------------------------------------------------------
 // Worklist group definitions (spec §3.1)
@@ -96,9 +98,12 @@ function DashboardSkeleton() {
 // ---------------------------------------------------------------------------
 // OwnerOverview
 // ---------------------------------------------------------------------------
-export default function OwnerOverview({ agencyId, initialData = null }) {
+export default function OwnerOverview({ agencyId, initialData = null, onOpenTrip, onNewTrip }) {
   const router = useRouter();
   const [period, setPeriod] = useState("30d");
+
+  // ── Slide-over state ──
+  const [slideTrip, setSlideTrip] = useState(null); // { tripId, tripTitle, subtitle }
 
   const { data, isStale, isFetching, refetch } = useDashboardPoll({
     agencyId,
@@ -108,10 +113,26 @@ export default function OwnerOverview({ agencyId, initialData = null }) {
   });
 
   // -------------------------------------------------------------------------
-  // Action stubs — Stage 5 will wire inline replies
+  // Action — opens slide-over panel instead of navigating away
   // -------------------------------------------------------------------------
-  function handleTripAction(tripId) {
+  function handleTripAction(tripId, tripTitle, subtitle) {
+    setSlideTrip({ tripId, tripTitle: tripTitle ?? "Trip", subtitle: subtitle ?? null });
+  }
+
+  function handleOpenInCommandCenter(tripId) {
+    if (onOpenTrip) {
+      onOpenTrip(tripId);
+      return;
+    }
     router.push(`/agency/${agencyId}/trip/${tripId}`);
+  }
+
+  function handleNewTrip() {
+    if (onNewTrip) {
+      onNewTrip();
+      return;
+    }
+    router.push(`/agency/${agencyId}/trip/new`);
   }
 
   // -------------------------------------------------------------------------
@@ -182,19 +203,12 @@ export default function OwnerOverview({ agencyId, initialData = null }) {
 
           <button
             type="button"
-            onClick={() => router.push(`/agency/${agencyId}/trip/new`)}
+            onClick={handleNewTrip}
             className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-secondary px-5 text-sm font-bold text-white shadow-soft transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
           >
             New trip
           </button>
 
-          <button
-            type="button"
-            onClick={() => router.push(`/agency/${agencyId}/team`)}
-            className="inline-flex h-11 items-center gap-1.5 rounded-lg border border-secondary/30 bg-secondary/10 px-5 text-sm font-bold text-secondary transition-colors hover:bg-secondary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
-          >
-            Invite teammate
-          </button>
         </div>
       </div>
 
@@ -238,8 +252,16 @@ export default function OwnerOverview({ agencyId, initialData = null }) {
                           subtitle={item.subtitle ?? item.clientName ?? null}
                           hint={item.hint ?? null}
                           actionLabel={group.actionLabel}
-                          onAction={() => handleTripAction(item.tripId)}
-                          onRowClick={() => handleTripAction(item.tripId)}
+                          onAction={() =>
+                            group.key === "unreadComments"
+                              ? handleTripAction(item.tripId, item.tripTitle, item.clientName)
+                              : handleOpenInCommandCenter(item.tripId)
+                          }
+                          onRowClick={() =>
+                            group.key === "unreadComments"
+                              ? handleTripAction(item.tripId, item.tripTitle, item.clientName)
+                              : handleOpenInCommandCenter(item.tripId)
+                          }
                           style={{ transitionDelay: `${idx * 40}ms` }}
                         />
                       ))}
@@ -310,8 +332,34 @@ export default function OwnerOverview({ agencyId, initialData = null }) {
             <RatingsPanel reviews={data.recentReviews ?? []} />
             <ActivityRibbon events={data.activityRibbon ?? []} />
           </div>
+
+          {/* -------------------------------------------------------------- */}
+          {/* Team section — combined into Dashboard                          */}
+          {/* -------------------------------------------------------------- */}
+          <section aria-label="Team" className="dashboard-card p-6">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20 text-secondary text-[0.7rem] font-extrabold uppercase tracking-[0.05em] mb-2">TEAM</span>
+            <h2 className="mt-2 mb-4 text-lg font-extrabold text-text-primary">
+              Your team
+            </h2>
+            <TeamPage agencyId={agencyId} />
+          </section>
         </div>
       )}
+
+      {/* ── Trip slide-over panel ── */}
+      <TripSlideOver
+        isOpen={!!slideTrip}
+        onClose={() => setSlideTrip(null)}
+        agencyId={agencyId}
+        tripId={slideTrip?.tripId}
+        tripTitle={slideTrip?.tripTitle}
+        subtitle={slideTrip?.subtitle}
+        onOpenFull={(tripId) => {
+          setSlideTrip(null);
+          if (onOpenTrip) onOpenTrip(tripId);
+          else router.push(`/agency/${agencyId}/trip/${tripId}`);
+        }}
+      />
     </div>
   );
 }
