@@ -5,6 +5,7 @@ import {
   fetchItineraryDraft,
   getUnreadCommentCount,
   getUnreadCommentCountsByTrip,
+  approveClientTrip,
 } from "../../../lib/api/index.js";
 import { getItineraryPlaceEntityId } from "../../../lib/trip-dashboard/placeEntities.js";
 import { getReadablePlaceType } from "../../../lib/trip-dashboard/richItinerary.js";
@@ -59,9 +60,11 @@ export default function ClientItineraryPage({
   onTourStateChange,
   tourMobilePaneOverride = null,
   onAddTripForClient,
+  onTripStatusChange,
 }) {
   const { theme } = useTheme();
   const [selectedClientId, setSelectedClientId] = useState(null);
+  const [approvingTripId, setApprovingTripId] = useState(null);
   const [selectedTripId, setSelectedTripId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [fullItinerary, setFullItinerary] = useState(null);
@@ -685,6 +688,34 @@ export default function ClientItineraryPage({
                       )}
                     </button>
                   ))}
+                </div>
+              )}
+
+              {/* Approve button — shown when selected trip is In review */}
+              {selectedTrip?.approvalStatus === "In review" && (
+                <div className="flex items-center gap-3 px-6 py-2 border-b border-border/10 flex-shrink-0">
+                  <span className="text-[0.75rem] font-bold text-text-soft uppercase tracking-wide">Status: In review</span>
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center rounded-pill bg-secondary text-white text-xs font-bold h-8 px-3 hover:-translate-y-px transition-transform disabled:opacity-50"
+                    disabled={approvingTripId === selectedTrip.id}
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      setApprovingTripId(selectedTrip.id);
+                      const previous = selectedTrip.approvalStatus;
+                      onTripStatusChange?.(selectedTrip.id, "Approved");
+                      try {
+                        await approveClientTrip(agencyId, selectedTrip.id);
+                      } catch (err) {
+                        onTripStatusChange?.(selectedTrip.id, previous);
+                        console.error(err);
+                      } finally {
+                        setApprovingTripId(null);
+                      }
+                    }}
+                  >
+                    {approvingTripId === selectedTrip.id ? "Approving..." : "Approve"}
+                  </button>
                 </div>
               )}
 

@@ -579,7 +579,10 @@ export default function PublicItineraryPage() {
   }
 
   /* ── success ── */
-  const { trip, itinerary, brand, share } = data;
+  const { trip: rawTrip, itinerary, brand, share } = data;
+  // Personal shares have no bound trip; fall back to an empty object so the
+  // template can dereference fields safely without `trip?.` everywhere.
+  const trip = rawTrip ?? {};
 
   /* ── brand node for header ── */
   let brandNode;

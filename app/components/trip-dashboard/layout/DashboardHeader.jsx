@@ -28,6 +28,7 @@ export default function DashboardHeader({
   onPlanningOptionDelete,
   deletingThreadId,
   onPlanningOptionChange,
+  onRenameThread,
   canApproveDraft,
   onApproveDraft
 }) {
@@ -95,6 +96,7 @@ export default function DashboardHeader({
                 onPlanningOptionDelete={onPlanningOptionDelete}
                 deletingThreadId={deletingThreadId}
                 onPlanningOptionChange={onPlanningOptionChange}
+                onRenameThread={onRenameThread}
               />
             </div>
             {canApproveDraft && (

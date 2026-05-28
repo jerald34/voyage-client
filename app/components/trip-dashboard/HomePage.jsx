@@ -6,7 +6,7 @@ import { useAgentStreamOrchestration } from "../../hooks/useAgentStreamOrchestra
 import { useTourFlow } from "../../hooks/useTourFlow.js";
 import { useTripPlanning } from "../../hooks/useTripPlanning.js";
 import {
-  approveAgentThreadItinerary,
+  saveAgentThreadItinerary,
   deleteAgentThread,
   deleteAgencyTrip,
   listAgencyTrips,
@@ -24,6 +24,7 @@ import {
 } from "../../lib/agency-dashboard/selectors.js";
 import { buildPlaceEntities, getItineraryPlaceEntityId } from "../../lib/trip-dashboard/placeEntities.js";
 import { getSavedItineraryTrips } from "../../lib/trip-dashboard/savedItineraries.js";
+import { buildPlanningOptions } from "../../lib/trip-dashboard/planningOptions.js";
 
 import dynamic from "next/dynamic";
 import AgentCommandCenter from "./command-center/AgentCommandCenter.jsx";
@@ -33,7 +34,7 @@ import ItineraryDraftPanel from "./itinerary/ItineraryDraftPanel.jsx";
 const ItineraryLiveMap = dynamic(() => import("./itinerary/ItineraryLiveMap.jsx"), { ssr: false });
 import ClientItineraryPage from "./pages/ClientItineraryPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
-import ApproveItineraryModal from "./modals/ApproveItineraryModal.jsx";
+import SaveItineraryModal from "./modals/SaveItineraryModal.jsx";
 import DashboardHeader from "./layout/DashboardHeader.jsx";
 import DashboardSidebar from "./layout/DashboardSidebar.jsx";
 import AdminAgenciesPage from "../admin/AdminAgenciesPage.jsx";
@@ -126,6 +127,7 @@ export default function HomePage({
     dispatchMessage,
     createPlanningContext,
     createRunTargetKey,
+    renameThread,
   } = useTripPlanning(agencyId);
 
   // Guard ref: when a dashboard action explicitly sets activeContext (e.g.
@@ -326,7 +328,7 @@ export default function HomePage({
         const firstItinerary = Array.isArray(t.itineraries) ? t.itineraries[0] : null;
         return {
           id: t.id,
-          clientName: t.clientName ?? t.title,
+          clientName: t.clientName ?? null,
           destination: t.destinationSummary ?? t.title,
           travelWindow: formatTripDates(t.startDate, t.endDate),
           status: t.status?.toLowerCase() === "archived" ? "archived" : "active",
@@ -389,48 +391,10 @@ export default function HomePage({
   const activeTrip = activeContext?.type === "trip" ? safeTrips.find(t => t?.id === activeContext.id) : null;
   const activeTripState = activeContext?.type === "draft" ? draftThreadStates[activeContext.id] : (activeContext?.type === "trip" && activeContext.id ? tripStates[activeContext.id] : null);
 
-  const planningOptions = useMemo(() => {
-    const drafts = draftThreadOrder.map((id, i) => {
-      const s = draftThreadStates[id];
-      if (!s) return null;
-      const label = s.title || `Draft itinerary ${draftThreadOrder.length - i}`;
-      return { type: "draft", id, clientName: label, label, destination: s.itinerary?.trip?.destination || "Planning draft", statusLabel: "Draft itinerary", threadId: id };
-    }).filter(Boolean);
-
-    const propTripIds = new Set(safeTrips.map(t => t.id));
-    const trips = safeTrips.map(t => ({
-      type: "trip", id: t.id, clientName: t.clientName, label: t.clientName, destination: t.destination, statusLabel: t.approvalStatus || t.status || "Client trip", tripId: t.id, threadId: tripStates[t.id]?.threadId ?? null, assignedOrganizer: t.assignedOrganizer
-    }));
-
-    const threadOnlyTrips = Object.entries(tripStates)
-      .filter(([tripId]) => !propTripIds.has(tripId))
-      .map(([tripId, state]) => {
-        const title = state.title || state.itinerary?.title || state.itinerary?.trip?.clientName || "Client trip";
-        const dest = state.itinerary?.trip?.destination || state.itinerary?.trip?.destinationSummary || "";
-        return { type: "trip", id: tripId, clientName: title, label: title, destination: dest, statusLabel: "Approved", tripId, threadId: state.threadId ?? null };
-      });
-
-    const options = [...drafts, ...trips, ...threadOnlyTrips];
-
-    // If we are currently creating a draft thread, and activeContext is set to that pending ID,
-    // add it to the options list so the switcher can identify it.
-    if (activeContext?.type === "draft" && String(activeContext.id).startsWith("pending-")) {
-      const isAlreadyInDrafts = drafts.some(d => d.id === activeContext.id);
-      if (!isAlreadyInDrafts) {
-        options.unshift({
-          type: "draft",
-          id: activeContext.id,
-          clientName: "New Itinerary...",
-          label: "New Itinerary...",
-          destination: "Planning",
-          statusLabel: "Creating...",
-          threadId: null
-        });
-      }
-    }
-
-    return options;
-  }, [draftThreadOrder, draftThreadStates, safeTrips, tripStates, activeContext]);
+  const planningOptions = useMemo(
+    () => buildPlanningOptions({ draftThreadOrder, draftThreadStates, safeTrips, tripStates, activeContext }),
+    [draftThreadOrder, draftThreadStates, safeTrips, tripStates, activeContext],
+  );
 
   const activeOption = useMemo(() => activeContext ? planningOptions.find(o => o.type === activeContext.type && o.id === activeContext.id) : planningOptions[0], [activeContext, planningOptions]);
 
@@ -552,7 +516,7 @@ export default function HomePage({
 
     setIsApprovingDraft(true); setApprovalError("");
     try {
-      const res = await approveAgentThreadItinerary(agencyId, threadId, { itineraryId, ...fields });
+      const res = await saveAgentThreadItinerary(agencyId, threadId, { itineraryId, ...fields });
       const approved = res?.thread || res?.trip || {};
       const tripId = approved.tripId || approved.id;
       const draftState = draftThreadStates[threadId] || {};
@@ -581,7 +545,7 @@ export default function HomePage({
               const firstItinerary = Array.isArray(t.itineraries) ? t.itineraries[0] : null;
               return {
                 id: t.id,
-                clientName: t.clientName ?? t.title,
+                clientName: t.clientName ?? null,
                 destination: t.destinationSummary ?? t.title,
                 travelWindow: formatTripDates(t.startDate, t.endDate),
                 status: t.status?.toLowerCase() === "archived" ? "archived" : "active",
@@ -609,7 +573,7 @@ export default function HomePage({
       />
 
       {isApprovalModalOpen && activeContext?.type === "draft" && (
-        <ApproveItineraryModal
+        <SaveItineraryModal
           itinerary={effectiveTripState?.itinerary ?? null}
           isSaving={isApprovingDraft}
           error={approvalError}
@@ -650,6 +614,7 @@ export default function HomePage({
           onPlanningOptionDelete={handleDeleteOption}
           deletingThreadId={deletingThreadId}
           onPlanningOptionChange={(ctx) => { setActiveContext(createPlanningContext(ctx?.type, ctx?.id)); setComposerInput(""); }}
+          onRenameThread={renameThread}
           canApproveDraft={activeContext?.type === "draft" && Boolean(activeTripState?.itinerary?.id)}
           onApproveDraft={() => { setApprovalError(""); setIsApprovalModalOpen(true); }}
         />
@@ -820,6 +785,11 @@ export default function HomePage({
                 if (tripStates[tripId]) {
                   setTripStates(prev => { const next = { ...prev }; delete next[tripId]; return next; });
                 }
+              }}
+              onTripStatusChange={(tripId, label) => {
+                setFetchedTrips((prev) => (prev || []).map((t) =>
+                  t.id === tripId ? { ...t, approvalStatus: label } : t
+                ));
               }}
             />
           ) : activeTab === "settings" ? (
