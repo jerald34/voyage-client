@@ -25,6 +25,7 @@ import { generateItineraryPdf, titleToFilename } from "../../../lib/pdfExport.js
 import MobileGlassSheet from "../mobile/MobileGlassSheet.jsx";
 import CompactPlaceCard from "../mobile/CompactPlaceCard.jsx";
 import useMobileViewport from "../mobile/useMobileViewport.js";
+import ReuseLauncher from "../../ratedHistory/entryPoints/ReuseLauncher.jsx";
 import CommentsPanel from "./CommentsPanel.jsx";
 import ClientList from "./ClientList.jsx";
 import ItineraryHeader from "./ItineraryHeader.jsx";
@@ -662,6 +663,21 @@ export default function ClientItineraryPage({
               onToggleComments={() => setShowCommentsPanel((v) => !v)}
               onShare={() => setShowShareDialog(true)}
               onDownloadPdf={handleDownloadPdf}
+              agencyId={agencyId}
+              currentTrip={
+                selectedTrip
+                  ? {
+                      tripId: selectedTrip.id,
+                      destinationSummary: selectedTrip.destination,
+                      startDate: selectedTrip.startDate || fullItinerary?.trip?.startDate,
+                    }
+                  : null
+              }
+              targetItineraryId={selectedItineraryId}
+              currentVersion={fullItinerary?.version ?? null}
+              onReuseInserted={(updatedItinerary) => {
+                setFullItinerary(updatedItinerary);
+              }}
             />
 
             <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
