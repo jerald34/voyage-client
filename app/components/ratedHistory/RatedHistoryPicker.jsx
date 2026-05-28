@@ -448,6 +448,24 @@ export default function RatedHistoryPicker({
           )}
         </div>
 
+        {/* ── Slash-mode confirm bar (Stage 6C) ──
+            When mode === "slash" AND a selection is present (item/day/segment
+            with ≥1 id), render a sticky bar above the standard footer giving
+            click-confirm access to insertion. The drag-first row UI in the
+            picker tree is unchanged; this bar is purely additive.
+        */}
+        {isSlash && hasSlashSelection(selection) && (
+          <SlashConfirmBar
+            selection={selection}
+            onConfirm={(comment) => {
+              if (typeof onConfirmInsertions === "function") {
+                onConfirmInsertions(selection, { comment });
+              }
+              onClose();
+            }}
+          />
+        )}
+
         {/* ── Footer ── */}
         <footer
           className="flex-shrink-0 px-6 py-3 border-t border-[rgba(var(--color-border-rgb),0.08)] flex items-center justify-between"
@@ -640,5 +658,91 @@ function DestinationChip({ value, onChange, onShowAll, chipBase }) {
     >
       + Add destination
     </button>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Stage 6C — Slash-mode selection helpers + confirm bar
+─────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * True when the selection has at least one targetable id for its kind.
+ */
+function hasSlashSelection(selection) {
+  if (!selection || !selection.kind) return false;
+  if (selection.kind === "item") {
+    return Array.isArray(selection.itemIds) && selection.itemIds.length > 0;
+  }
+  if (selection.kind === "day" || selection.kind === "segment") {
+    return Array.isArray(selection.dayIds) && selection.dayIds.length > 0;
+  }
+  return false;
+}
+
+function describeSelection(selection) {
+  if (!selection) return "";
+  if (selection.kind === "item") {
+    const n = selection.itemIds?.length ?? 0;
+    return `${n} item${n === 1 ? "" : "s"} selected`;
+  }
+  if (selection.kind === "day") {
+    const n = selection.dayIds?.length ?? 0;
+    return `${n} day${n === 1 ? "" : "s"} selected`;
+  }
+  if (selection.kind === "segment") {
+    const n = selection.dayIds?.length ?? 0;
+    return `${n}-day segment selected`;
+  }
+  return "Selection ready";
+}
+
+/**
+ * Sticky bar above the picker footer that turns the (drag-first) selection UI
+ * into a click-confirm flow for the slash-command entry point. Includes an
+ * optional "Add a note" input whose value is forwarded to onConfirm.
+ */
+function SlashConfirmBar({ selection, onConfirm }) {
+  const [comment, setComment] = useState("");
+
+  return (
+    <div
+      className="flex-shrink-0 px-6 py-3 border-t border-[rgba(var(--color-border-rgb),0.08)] flex flex-col gap-2"
+      style={{ background: "rgba(var(--color-secondary-rgb), 0.05)" }}
+      data-testid="slash-confirm-bar"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <span
+          className="text-[13px] font-medium"
+          style={{ color: "rgb(var(--color-text-rgb))" }}
+        >
+          {describeSelection(selection)}
+        </span>
+        <button
+          type="button"
+          onClick={() => onConfirm(comment)}
+          data-testid="slash-confirm-button"
+          className="text-[13px] h-8 px-4 rounded-full cursor-pointer border-none font-semibold"
+          style={{
+            background: "rgb(var(--color-secondary-rgb))",
+            color: "rgb(var(--color-on-secondary-rgb), 1)",
+          }}
+        >
+          Add to this trip
+        </button>
+      </div>
+      <input
+        type="text"
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Add a note (optional)"
+        aria-label="Add a note for this insertion"
+        className="text-[13px] h-8 px-3 rounded-full border outline-none w-full"
+        style={{
+          background: "rgb(var(--color-surface-rgb))",
+          borderColor: "rgba(var(--color-border-rgb), 0.18)",
+          color: "rgb(var(--color-text-rgb))",
+        }}
+      />
+    </div>
   );
 }
