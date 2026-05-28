@@ -245,6 +245,7 @@ export default function RatedTripList({
                 {itinerary ? (
                   <RatedTripExpanded
                     itinerary={itinerary}
+                    tripId={trip.tripId}
                     selection={selection}
                     onSelectionChange={onSelectionChange}
                   />
