@@ -118,12 +118,9 @@ function renderExpanded(props = {}) {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("RatedTripExpanded — day ordering", () => {
-  it("1. renders days in the order supplied by the itinerary prop (no client-side sort)", () => {
+  it("1. renders days sorted by dayNumber regardless of prop order", () => {
     // fixtureItinerary.days is [day3, day1, day2] — dayNumbers 3, 1, 2
-    // GAP: RatedTripExpanded does NOT sort days by dayNumber; it renders them
-    // in the order supplied by the parent (which should be pre-sorted by the
-    // server or hook). Spec §7.1 implies dayNumber order but the component
-    // delegates ordering responsibility to the caller. Document this here.
+    // RatedTripExpanded now defensive-sorts days by dayNumber before rendering.
     const { container } = renderExpanded();
 
     // Get all drag handles in DOM order; each carries the day number in its label
@@ -132,19 +129,18 @@ describe("RatedTripExpanded — day ordering", () => {
     expect(dayHandles.length).toBe(3);
     const labels = Array.from(dayHandles).map((h) => h.getAttribute("aria-label"));
 
-    // Rendered in the same order as fixtureItinerary.days: [day3, day1, day2]
-    // → dayNumbers 3, 1, 2 in DOM order (no sort)
+    // After sort, days must appear in dayNumber order: 1, 2, 3
     const num = (label) => parseInt(label.match(/Drag Day (\d+)/)?.[1] ?? "0");
-    expect(num(labels[0])).toBe(3); // day3 first (as supplied)
-    expect(num(labels[1])).toBe(1); // day1 second
-    expect(num(labels[2])).toBe(2); // day2 third
+    expect(num(labels[0])).toBe(1); // day1 first
+    expect(num(labels[1])).toBe(2); // day2 second
+    expect(num(labels[2])).toBe(3); // day3 third
   });
 });
 
 describe("RatedTripExpanded — empty items per day", () => {
-  it("2. day with empty items array renders 'Time pending' or no item rows", () => {
+  it("2. day with empty items array renders 'Exploration pending' placeholder", () => {
     // day2 has items: []
-    // RatedDayCard with no items should not crash and should render the day header.
+    // RatedDayCard with no items renders "Exploration pending" per spec §7.1.
     renderExpanded({
       itinerary: {
         ...fixtureItinerary,
@@ -158,12 +154,8 @@ describe("RatedTripExpanded — empty items per day", () => {
     });
     expect(handle).toBeInTheDocument();
 
-    // No item rows in the day — verify no "Time pending" text appears because
-    // there are no items at all (the empty-items case has no row text).
-    // GAP NOTE: The spec mentions "Exploration pending" copy inside each empty day
-    // (§7.1). The current RatedDayCard implementation does NOT render that copy —
-    // it simply renders an empty item list. Document here: the copy is not present.
-    expect(screen.queryByText(/exploration pending/i)).not.toBeInTheDocument();
+    // "Exploration pending" copy should now be present for the empty day
+    expect(screen.getByText(/exploration pending/i)).toBeInTheDocument();
   });
 });
 

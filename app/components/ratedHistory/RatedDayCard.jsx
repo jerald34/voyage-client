@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import RatedItemRow from "./RatedItemRow.jsx";
 
 /**
@@ -100,6 +100,8 @@ function DragHandleSVG() {
  *   selectedDayIds: string[],
  *   consecutiveError: boolean,
  *   allDays: Array<{ dayId: string, dayNumber: number }>,
+ *   getKeyboardTargets?: (payload: object) => Array<{ dayIndex: number, label: string }>,
+ *   onKeyboardMove?: (payload: object, target: object) => void,
  * }} props
  */
 export default function RatedDayCard({
@@ -112,6 +114,8 @@ export default function RatedDayCard({
   selectedDayIds = [],
   consecutiveError = false,
   allDays = [],
+  getKeyboardTargets,
+  onKeyboardMove,
 }) {
   const { dayId, dayNumber, date, title, summary, items = [] } = day;
 
@@ -153,6 +157,37 @@ export default function RatedDayCard({
     event.dataTransfer.effectAllowed = "copy";
   }
 
+  /** Keyboard targets select state for the day-drag keyboard fallback */
+  const [keyboardTargets, setKeyboardTargets] = useState(/** @type {Array<{dayIndex:number,label:string}>|null} */ (null));
+
+  /**
+   * Space/Enter on the day drag handle: open a native <select> of target
+   * positions so keyboard-only users can insert the day without drag-and-drop.
+   * Calls getKeyboardTargets() if provided, otherwise no-ops.
+   */
+  function handleDragHandleKeyDown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      if (typeof getKeyboardTargets !== "function") return;
+      const payload = buildDragPayload();
+      const targets = getKeyboardTargets(payload);
+      setKeyboardTargets(targets && targets.length > 0 ? targets : null);
+    }
+    if (event.key === "Escape") {
+      setKeyboardTargets(null);
+    }
+  }
+
+  function handleKeyboardTargetSelect(event) {
+    const idx = Number(event.target.value);
+    if (isNaN(idx) || !keyboardTargets) return;
+    const target = keyboardTargets[idx];
+    if (!target) return;
+    const payload = buildDragPayload();
+    onKeyboardMove?.(payload, target);
+    setKeyboardTargets(null);
+  }
+
   function handleCheckboxChange(checked) {
     let nextIds;
     if (checked) {
@@ -175,7 +210,7 @@ export default function RatedDayCard({
   return (
     <div className="mb-3 border border-border/[0.12] rounded-[10px] overflow-hidden bg-surface shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
       {/* ── Day header ── */}
-      <header className="flex items-center gap-2 px-3 py-2.5 bg-background border-b border-border/[0.10]">
+      <header className="relative flex items-center gap-2 px-3 py-2.5 bg-background border-b border-border/[0.10]">
         {/* Range-mode checkbox */}
         {rangeMode && (
           <input
@@ -198,14 +233,36 @@ export default function RatedDayCard({
           <button
             type="button"
             aria-label={`Drag Day ${dayNumber}: ${title}`}
+            aria-haspopup={typeof getKeyboardTargets === "function" ? "listbox" : undefined}
+            aria-expanded={keyboardTargets !== null ? "true" : undefined}
             /* Prevent the button click from accidentally toggling something */
             onClick={(e) => e.preventDefault()}
+            onKeyDown={handleDragHandleKeyDown}
             className="p-1 rounded text-text-soft hover:text-text-muted hover:bg-border/[0.08] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/50"
             style={{ cursor: "inherit" }}
           >
             <DragHandleSVG />
           </button>
         </div>
+
+        {/* Keyboard fallback: inline target picker shown on Enter/Space */}
+        {keyboardTargets !== null && (
+          <select
+            aria-label={`Move Day ${dayNumber}: ${title} to…`}
+            size={Math.min(keyboardTargets.length, 6)}
+            autoFocus
+            onChange={handleKeyboardTargetSelect}
+            onBlur={() => setKeyboardTargets(null)}
+            onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setKeyboardTargets(null); } }}
+            className="absolute z-40 left-0 top-full mt-1 rounded border border-border/[0.25] bg-surface text-[13px] text-text-primary shadow-lg focus:outline-none"
+            defaultValue=""
+          >
+            <option value="" disabled>Move to…</option>
+            {keyboardTargets.map((t, i) => (
+              <option key={i} value={i}>{t.label}</option>
+            ))}
+          </select>
+        )}
 
         {/* Day label */}
         <div className="flex-1 min-w-0">
@@ -260,11 +317,11 @@ export default function RatedDayCard({
       )}
 
       {/* ── Item rows ── */}
-      <div className="divide-y divide-border/[0.06]">
+      <ul className="m-0 p-0 list-none divide-y divide-border/[0.06]">
         {items.length === 0 ? (
-          <p className="px-3 py-3 m-0 text-[12px] text-text-soft italic">
-            No activities for this day.
-          </p>
+          <li className="px-3 py-3 text-[12px] text-text-soft italic">
+            <em>Exploration pending</em>
+          </li>
         ) : (
           items.map((item) => (
             <RatedItemRow
@@ -277,7 +334,7 @@ export default function RatedDayCard({
             />
           ))
         )}
-      </div>
+      </ul>
     </div>
   );
 }

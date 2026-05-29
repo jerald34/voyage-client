@@ -236,16 +236,18 @@ describe("RatedHistoryPicker — selection state propagation", () => {
   });
 });
 
-describe("RatedHistoryPicker — isLoading prop (gap documentation)", () => {
-  it("7. trips=undefined shows empty state (no isLoading prop exists on picker)", () => {
-    // GAP: The picker has no `isLoading` prop. When trips is undefined (not yet fetched),
-    // it shows the empty state rather than a loading spinner. The parent (ReuseLauncher /
-    // ReuseSlashCommand) is responsible for managing loading state before passing trips.
-    // This test documents the gap — a loading skeleton prop on the picker is spec-required
-    // (§7.1 says the picker body shows a list) but not yet implemented.
+describe("RatedHistoryPicker — isLoading prop", () => {
+  it("7. isLoading=true renders a loading skeleton (role=status) instead of empty state", () => {
+    renderPicker({ trips: undefined, isLoading: true });
+    // Loading skeleton must be present
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    // Empty state must NOT appear while loading
+    expect(screen.queryByText("No rated trips yet")).not.toBeInTheDocument();
+  });
+
+  it("7b. isLoading=false (default) with no trips shows empty state", () => {
     renderPicker({ trips: undefined });
     expect(screen.getByText("No rated trips yet")).toBeInTheDocument();
-    // No loading spinner or skeleton rendered — this is the gap
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 });

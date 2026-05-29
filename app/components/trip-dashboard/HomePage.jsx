@@ -563,6 +563,32 @@ export default function HomePage({
     } catch (e) { setApprovalError(e.message); } finally { setIsApprovingDraft(false); }
   };
 
+  // REUSE: Append a system-visible message (e.g. reuse confirmation) into the
+  // active trip's message list so it surfaces in the chat history without
+  // triggering an agent run. Falls back silently when no trip context is active.
+  const handleReuseSystemMessage = useCallback((message) => {
+    const tripId = activeContext?.type === "trip" ? activeContext.id : null;
+    if (!tripId || !message) return;
+    setTripStates((prev) => {
+      const current = prev[tripId] || { messages: [], loaded: false };
+      // Deduplicate by id to avoid double-appends on re-renders.
+      if (current.messages.some((m) => m.id === message.id)) return prev;
+      return { ...prev, [tripId]: { ...current, messages: [...current.messages, message] } };
+    });
+  }, [activeContext, setTripStates]);
+
+  // REUSE: Replace the active trip's itinerary with the freshly-inserted copy
+  // returned by the reuse API call. Also refreshes the itinerary in the sidebar
+  // (fetchedTrips) so the version badge stays accurate without a full reload.
+  const handleReuseInserted = useCallback((updatedItinerary) => {
+    const tripId = activeContext?.type === "trip" ? activeContext.id : null;
+    if (!tripId || !updatedItinerary) return;
+    setTripStates((prev) => {
+      const current = prev[tripId] || {};
+      return { ...prev, [tripId]: { ...current, itinerary: updatedItinerary } };
+    });
+  }, [activeContext, setTripStates]);
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-background text-text-primary font-sans">
       <FirstUseTutorial
@@ -693,6 +719,13 @@ export default function HomePage({
                     onPlaceSelect={setSelectedPlaceId}
                     onStop={isVisible ? stopStream : undefined}
                     processSnapshotRef={agentProcessSnapshotRef}
+                    tripId={activeContext?.type === "trip" ? activeContext.id : null}
+                    agencyId={agencyId}
+                    targetItineraryId={effectiveTripState?.itinerary?.id ?? null}
+                    currentVersion={effectiveTripState?.itinerary?.version ?? null}
+                    targetItinerary={effectiveTripState?.itinerary ?? null}
+                    onSystemVisibleMessage={handleReuseSystemMessage}
+                    onReuseInserted={handleReuseInserted}
                   />
                 </div>
               </div>
@@ -740,6 +773,13 @@ export default function HomePage({
                     onStop={isVisible ? stopStream : undefined}
                     hideChatInput
                     processSnapshotRef={agentProcessSnapshotRef}
+                    tripId={activeContext?.type === "trip" ? activeContext.id : null}
+                    agencyId={agencyId}
+                    targetItineraryId={effectiveTripState?.itinerary?.id ?? null}
+                    currentVersion={effectiveTripState?.itinerary?.version ?? null}
+                    targetItinerary={effectiveTripState?.itinerary ?? null}
+                    onSystemVisibleMessage={handleReuseSystemMessage}
+                    onReuseInserted={handleReuseInserted}
                   />
                 </MobileGlassSheet>
               )}

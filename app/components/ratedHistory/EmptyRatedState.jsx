@@ -3,13 +3,16 @@
 /**
  * EmptyRatedState
  *
- * Static component shown in the body of RatedHistoryPicker when the agency
- * has no trips with a TripReview rating >= 4 (or when all rated trips have
- * been filtered out by the active destination / duration / season filters).
+ * Shown in the body of RatedHistoryPicker when there are no trips to display.
+ *
+ * @param {Object}  props
+ * @param {boolean} [props.hasFilteredAway] - When true, the agency has rated trips but
+ *   the active destination filter removed all of them. Shows a hint to clear the filter
+ *   instead of the generic "no rated trips yet" copy.
  *
  * Uses design tokens from app/globals.css. No interactivity.
  */
-export default function EmptyRatedState() {
+export default function EmptyRatedState({ hasFilteredAway = false }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-8 text-center select-none">
       {/* Star-with-slash icon — inline SVG, ~48px, opacity-40 */}
@@ -42,20 +45,39 @@ export default function EmptyRatedState() {
         </svg>
       </div>
 
-      <h3
-        className="m-0 mb-2 text-[17px] font-semibold leading-snug"
-        style={{ color: "rgb(var(--color-text-rgb))" }}
-      >
-        No rated trips yet
-      </h3>
-
-      <p
-        className="m-0 text-[14px] leading-relaxed max-w-[260px]"
-        style={{ color: "rgb(var(--color-text-soft-rgb))" }}
-      >
-        Once travelers rate trips &ge;4&#9733;, those itineraries appear here
-        for reuse.
-      </p>
+      {hasFilteredAway ? (
+        <>
+          <h3
+            className="m-0 mb-2 text-[17px] font-semibold leading-snug"
+            style={{ color: "rgb(var(--color-text-rgb))" }}
+          >
+            No matches for this destination
+          </h3>
+          <p
+            className="m-0 text-[14px] leading-relaxed max-w-[260px]"
+            style={{ color: "rgb(var(--color-text-soft-rgb))" }}
+          >
+            No rated trips match this destination. Clear the filter to see all
+            rated trips.
+          </p>
+        </>
+      ) : (
+        <>
+          <h3
+            className="m-0 mb-2 text-[17px] font-semibold leading-snug"
+            style={{ color: "rgb(var(--color-text-rgb))" }}
+          >
+            No rated trips yet
+          </h3>
+          <p
+            className="m-0 text-[14px] leading-relaxed max-w-[260px]"
+            style={{ color: "rgb(var(--color-text-soft-rgb))" }}
+          >
+            Once travelers rate trips &ge;4&#9733;, those itineraries appear here
+            for reuse.
+          </p>
+        </>
+      )}
     </div>
   );
 }

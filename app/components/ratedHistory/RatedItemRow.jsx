@@ -119,9 +119,8 @@ export default function RatedItemRow({
   }
 
   return (
-    <div
+    <li
       className="flex items-start gap-3 px-3 py-2.5"
-      role="listitem"
     >
       {/* ── ⋮⋮ Drag handle ── */}
       <div
@@ -132,7 +131,6 @@ export default function RatedItemRow({
       >
         <button
           type="button"
-          role="button"
           tabIndex={0}
           aria-label={`Drag ${title}`}
           onClick={(e) => e.preventDefault()}
@@ -182,6 +180,6 @@ export default function RatedItemRow({
           </p>
         )}
       </div>
-    </div>
+    </li>
   );
 }

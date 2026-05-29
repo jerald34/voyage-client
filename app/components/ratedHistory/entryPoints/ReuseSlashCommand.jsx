@@ -69,12 +69,11 @@ export default function ReuseSlashCommand({
 
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  // Fetch rated history (same pattern as ReuseLauncher).
+  // Fetch unfiltered so the picker receives all agency rated trips.
+  // The destination chip is pre-seeded via defaultDestinationFilter below.
   const { trips } = useRatedHistory({
     agencyId: agencyId ?? "",
-    filters: {
-      destination: currentTrip?.destinationSummary ?? undefined,
-    },
+    filters: {},
   });
 
   /* ─────────────────────────────────────────────────────────────
@@ -244,17 +243,23 @@ export default function ReuseSlashCommand({
             maxWidth: "320px",
           }}
         >
-          <button
-            type="button"
+          <div
             role="option"
             aria-selected="true"
+            tabIndex={0}
             onMouseDown={(e) => {
               // Prevent the textarea from losing focus before we handle the pick.
               e.preventDefault();
             }}
             onClick={handlePickReuse}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handlePickReuse();
+              }
+            }}
             data-testid="reuse-slash-option-reuse"
-            className="w-full text-left px-4 py-2.5 cursor-pointer flex flex-col gap-0.5 border-none"
+            className="w-full text-left px-4 py-2.5 cursor-pointer flex flex-col gap-0.5"
             style={{
               background: "rgba(var(--color-secondary-rgb), 0.08)",
               color: "rgb(var(--color-text-rgb))",
@@ -267,7 +272,7 @@ export default function ReuseSlashCommand({
             >
               Insert items from a rated past trip
             </span>
-          </button>
+          </div>
         </div>
       )}
 
@@ -276,6 +281,7 @@ export default function ReuseSlashCommand({
           isOpen={pickerOpen}
           onClose={() => setPickerOpen(false)}
           currentTrip={currentTrip}
+          defaultDestinationFilter={currentTrip?.destinationSummary ?? null}
           mode="slash"
           agencyId={agencyId}
           trips={trips}

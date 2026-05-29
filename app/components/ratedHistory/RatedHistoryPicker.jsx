@@ -60,34 +60,44 @@ import RatedTripList from "./RatedTripList.jsx";
  * @param {boolean}  props.isOpen
  * @param {()=>void} props.onClose
  * @param {{ destinationSummary: string|null }|null} [props.currentTrip]
+ * @param {string|null} [props.defaultDestinationFilter] - Pre-seeds the destination chip on
+ *   mount/open as a clearable chip, exactly as if the user had typed it. When null/empty the
+ *   chip starts in the empty "+ Add destination" state. Has no effect if the filter has already
+ *   been set by the user.
  * @param {'editor'|'clientItinerary'|'slash'} [props.mode]
  * @param {string}   props.agencyId
  * @param {RatedTripSummary[]} [props.trips]        - Omit → empty state; provide → render list.
+ * @param {boolean}  [props.isLoading]              - When true, shows a loading skeleton in the trip-list area.
  * @param {(payload: object) => void} [props.onConfirmInsertions] - Slot for Stage 5B/6C.
  */
 export default function RatedHistoryPicker({
   isOpen,
   onClose,
   currentTrip = null,
+  defaultDestinationFilter = null,
   mode = "editor",
   agencyId,
   trips,
+  isLoading = false,
   onConfirmInsertions,
 }) {
   /* ─────────────────────────────────────────────────────────────
      Filter state
-     Destination defaults to currentTrip.destinationSummary.
-     Re-syncs if the prop changes (e.g. picker reused across trips).
+     Destination is seeded from `defaultDestinationFilter` (a clearable
+     chip the user can clear, exactly as if they had typed it). Falls back
+     to currentTrip.destinationSummary for backwards compat, then "".
+     Re-syncs if defaultDestinationFilter changes (e.g. picker reused
+     across trips).
   ──────────────────────────────────────────────────────────────── */
   const [destination, setDestination] = useState(
-    currentTrip?.destinationSummary ?? ""
+    defaultDestinationFilter ?? currentTrip?.destinationSummary ?? ""
   );
   const [durationDays, setDurationDays] = useState(/** @type {number|undefined} */ (undefined));
   const [season, setSeason] = useState(/** @type {string|undefined} */ (undefined));
 
   useEffect(() => {
-    setDestination(currentTrip?.destinationSummary ?? "");
-  }, [currentTrip?.destinationSummary]);
+    setDestination(defaultDestinationFilter ?? currentTrip?.destinationSummary ?? "");
+  }, [defaultDestinationFilter, currentTrip?.destinationSummary]);
 
   // "Show all rated" clears the destination filter.
   const handleShowAll = useCallback(() => setDestination(""), []);
@@ -251,6 +261,10 @@ export default function RatedHistoryPicker({
   const hasTrips = Array.isArray(trips) && trips.length > 0;
   // trips undefined → not yet provided (empty state); trips [] → fetched empty.
   const showEmptyState = !hasTrips;
+  // True when the caller provided trips but the active destination filter
+  // removed all of them — so the user should be nudged to clear the filter.
+  const hasFilteredAway =
+    Array.isArray(trips) && trips.length === 0 && destination.trim().length > 0;
 
   /* ─────────────────────────────────────────────────────────────
      Duration options per spec §7.1.
@@ -435,8 +449,23 @@ export default function RatedHistoryPicker({
           className="flex-1 overflow-y-auto"
           style={{ overscrollBehavior: "contain" }}
         >
-          {showEmptyState ? (
-            <EmptyRatedState />
+          {isLoading ? (
+            <div
+              role="status"
+              aria-label="Loading rated trips"
+              className="flex flex-col gap-3 px-4 py-5"
+            >
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="h-14 rounded-[10px] animate-pulse"
+                  style={{ background: "rgba(var(--color-text-rgb), 0.07)" }}
+                />
+              ))}
+              <span className="sr-only">Loading…</span>
+            </div>
+          ) : showEmptyState ? (
+            <EmptyRatedState hasFilteredAway={hasFilteredAway} />
           ) : (
             <RatedTripList
               trips={trips}

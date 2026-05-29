@@ -155,7 +155,9 @@ export default function RatedTripExpanded({
     );
   }
 
-  const days = Array.isArray(itinerary.days) ? itinerary.days : [];
+  const days = Array.isArray(itinerary.days)
+    ? [...itinerary.days].sort((a, b) => a.dayNumber - b.dayNumber)
+    : [];
   const showDraftBadge = isDraft(itinerary);
 
   return (

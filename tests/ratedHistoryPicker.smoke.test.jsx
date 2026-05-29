@@ -67,8 +67,21 @@ describe("RatedHistoryPicker — smoke", () => {
     ).toBeInTheDocument();
   });
 
-  it("2b. renders empty-state copy when trips is an empty array", () => {
+  it("2b. renders filtered-away hint when trips is empty but destination filter is set", () => {
+    // Default renderPicker includes currentTrip: { destinationSummary: "Tokyo" }
+    // so the destination chip is pre-filled — hasFilteredAway=true → hint copy shown.
     renderPicker({ trips: [] });
+    expect(
+      screen.getByText("No matches for this destination")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/No rated trips match this destination/i)
+    ).toBeInTheDocument();
+  });
+
+  it("2c. renders 'No rated trips yet' when trips is empty and no destination filter", () => {
+    // Pass currentTrip=null and no defaultDestinationFilter → empty chip → generic copy.
+    renderPicker({ trips: [], currentTrip: null });
     expect(screen.getByText("No rated trips yet")).toBeInTheDocument();
   });
 

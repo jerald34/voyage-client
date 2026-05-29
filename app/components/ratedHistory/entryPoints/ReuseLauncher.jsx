@@ -18,12 +18,11 @@ export default function ReuseLauncher({
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Fetch rated history with destination pre-filter
-  const { trips, isLoading, error } = useRatedHistory({
+  // Fetch unfiltered so the badge reflects total agency rated trips,
+  // not just trips matching the current destination.
+  const { trips: allTrips, isLoading, error } = useRatedHistory({
     agencyId,
-    filters: {
-      destination: currentTrip?.destinationSummary,
-    },
+    filters: {},
   });
 
   // Set up drop target logic
@@ -67,8 +66,8 @@ export default function ReuseLauncher({
     <>
       <ReuseButton
         onClick={() => setIsOpen(true)}
-        count={trips.length}
-        disabled={trips.length === 0}
+        count={allTrips.length}
+        disabled={allTrips.length === 0}
         mode={mode}
       />
       {isOpen && (
@@ -76,9 +75,10 @@ export default function ReuseLauncher({
           isOpen={isOpen}
           onClose={() => setIsOpen(false)}
           currentTrip={currentTrip}
+          defaultDestinationFilter={currentTrip?.destinationSummary ?? null}
           mode={mode}
           agencyId={agencyId}
-          trips={trips}
+          trips={allTrips}
           isLoading={isLoading}
           error={error}
           onConfirmInsertions={() => {}}
