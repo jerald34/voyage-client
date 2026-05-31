@@ -407,7 +407,7 @@ export default function ClientItineraryPage({
                     placeholder="Search clients..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full py-2.5 pr-3 pl-10 rounded-md border border-border/10 bg-white/5 text-[0.9rem] font-[inherit] text-text-primary transition-all duration-200 focus:outline-none focus:border-secondary"
+                    className="w-full py-2.5 pr-3 pl-10 rounded-md border border-border/10 bg-surface text-[0.9rem] font-[inherit] text-text-primary placeholder:text-text-soft transition-all duration-200 focus:outline-none focus:border-secondary"
                   />
                 </div>
               </div>
