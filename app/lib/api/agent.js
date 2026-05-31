@@ -57,16 +57,22 @@ export async function uploadChatImages(agencyId, threadId, files) {
   return data;
 }
 
-export async function approveAgentThreadItinerary(
-  agencyId,
-  threadId,
-  payload,
-) {
+export async function saveAgentThreadItinerary(agencyId, threadId, payload) {
   return fetchApi(
-    `/agencies/${agencyId}/agent/threads/${threadId}/approve-itinerary`,
+    `/agencies/${agencyId}/agent/threads/${threadId}/save`,
     {
       method: "POST",
       body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function updateAgentThreadTitle(agencyId, threadId, title) {
+  return fetchApi(
+    `/agencies/${agencyId}/agent/threads/${threadId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ title }),
     },
   );
 }

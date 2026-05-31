@@ -1,7 +1,7 @@
 import React from "react";
 import { useTheme } from "../../theme/ThemeProvider";
 
-export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab, logout, user, pendingCount }) {
+export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab, logout, user, pendingCount, agencyId }) {
   const { theme, setTheme } = useTheme();
   const isDark = theme === "dark";
   const isAdmin = user?.role === "SUPER_ADMIN";
@@ -27,6 +27,26 @@ export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, acti
         aria-label="Dashboard navigation"
       >
         <nav className="flex flex-col py-[18px] flex-1 gap-2 max-[900px]:py-6 max-[900px]:px-6">
+          {hasAgencyMembership && !isPersonal && agencyId && (
+            <button
+              type="button"
+              data-tour-target="dashboard-overview"
+              className={`${navItemBase} ${activeTab === "dashboard" ? navItemActive : ""}`}
+              aria-current={activeTab === "dashboard" ? "page" : undefined}
+              onClick={() => setActiveTab("dashboard")}
+            >
+              <span className="inline-flex items-center justify-center relative" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="7" height="9" />
+                  <rect x="14" y="3" width="7" height="5" />
+                  <rect x="14" y="12" width="7" height="9" />
+                  <rect x="3" y="16" width="7" height="5" />
+                </svg>
+              </span>
+              <span className="text-[11px] font-semibold leading-tight max-[900px]:text-sm">Dashboard</span>
+            </button>
+          )}
+
           <button
             type="button"
             className={`${navItemBase} ${activeTab === "command-center" ? navItemActive : ""}`}
@@ -58,25 +78,6 @@ export default function DashboardSidebar({ isSidebarOpen, setIsSidebarOpen, acti
             </span>
             <span className="text-[11px] font-semibold leading-tight max-[900px]:text-sm">Itineraries</span>
           </button>
-
-          {hasAgencyMembership && !isPersonal && (
-            <button
-              type="button"
-              className={`${navItemBase} ${activeTab === "team" ? navItemActive : ""}`}
-              aria-current={activeTab === "team" ? "page" : undefined}
-              onClick={() => setActiveTab("team")}
-            >
-              <span className="inline-flex items-center justify-center relative" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              </span>
-              <span className="text-[11px] font-semibold leading-tight max-[900px]:text-sm">Team</span>
-            </button>
-          )}
 
           {isAdmin && (
             <button

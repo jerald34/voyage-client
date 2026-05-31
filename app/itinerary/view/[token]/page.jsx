@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { fetchPublicItinerary, postPublicComment, listPublicComments } from "../../../lib/api/index.js";
+import ProposalRating from "./components/ProposalRating.jsx";
 import { formatCommentTime } from "../../../lib/formatters.js";
 import { generateItineraryPdf, titleToFilename } from "../../../lib/pdfExport.js";
 import ThemeToggle from "../../../components/theme/ThemeToggle";
@@ -578,7 +579,10 @@ export default function PublicItineraryPage() {
   }
 
   /* ── success ── */
-  const { trip, itinerary, brand } = data;
+  const { trip: rawTrip, itinerary, brand, share } = data;
+  // Personal shares have no bound trip; fall back to an empty object so the
+  // template can dereference fields safely without `trip?.` everywhere.
+  const trip = rawTrip ?? {};
 
   /* ── brand node for header ── */
   let brandNode;
@@ -851,8 +855,18 @@ export default function PublicItineraryPage() {
             ))}
           </div>
 
+          {/* ── proposal rating ── */}
+          <div className="mt-10 max-sm:mt-7">
+            <ProposalRating
+              token={token}
+              initialRating={share?.proposalRating ?? null}
+              initialComment={share?.proposalRatingComment ?? null}
+              initialRatedAt={share?.proposalRatedAt ?? null}
+            />
+          </div>
+
           {/* ── general feedback section ── */}
-          <div className="grid gap-3 mt-10 px-5 py-[22px] bg-primary/[0.03] border border-border rounded-md max-sm:mt-7 max-sm:p-4">
+          <div className="grid gap-3 mt-6 px-5 py-[22px] bg-primary/[0.03] border border-border rounded-md max-sm:mt-5 max-sm:p-4">
             <div className="flex items-center gap-2 text-primary">
               <ChatBubbleIcon size={16} />
               <h3 className="font-serif text-[17px] font-normal m-0 text-primary">General Feedback</h3>

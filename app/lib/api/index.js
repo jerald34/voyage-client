@@ -33,6 +33,7 @@ export {
   deleteAgencyTrip,
   fetchItineraryDraft,
   bootstrapAgentWorkspace,
+  approveClientTrip,
 } from "./agency.js";
 
 // Agent threads & runs
@@ -43,7 +44,8 @@ export {
   deleteAgentThread,
   sendMessage,
   uploadChatImages,
-  approveAgentThreadItinerary,
+  saveAgentThreadItinerary,
+  updateAgentThreadTitle,
   fetchThreadMessages,
   cancelAgentRun,
 } from "./agent.js";
