@@ -250,12 +250,11 @@ describe("useRatedHistory", () => {
     // Change agencyId
     rerender({ agencyId: "agency-2", filters: {} });
 
+    // Trips reset, detail cache cleared. Wait for the new agency's list to be
+    // applied (the 3rd request resolves a tick after it is issued).
     await waitFor(() =>
-      expect(fetchApi.mock.calls.length).toBeGreaterThanOrEqual(3)
+      expect(result.current.trips).toEqual([{ id: "trip-3" }])
     );
-
-    // Trips reset, detail cache cleared
-    expect(result.current.trips).toEqual([{ id: "trip-3" }]);
 
     // Detail request for old trip should not be cached; would refetch
     expect(fetchApi).toHaveBeenCalledTimes(3);

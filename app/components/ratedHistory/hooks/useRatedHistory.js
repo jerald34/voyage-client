@@ -37,12 +37,20 @@ export function useRatedHistory({ agencyId, filters = {} }) {
   // Map<tripId, Promise<RatedItinerary>> for detail caching.
   const detailCacheRef = useRef(new Map());
 
-  // AbortController for cancelling in-flight list requests.
+  // AbortController for cancelling in-flight IMPERATIVE list requests
+  // (loadMore / refetch only). The automatic list effect owns its own
+  // per-run controller so StrictMode's setup -> cleanup -> setup cycle can
+  // never orphan it. No unmount effect touches this ref.
   const abortControllerRef = useRef(null);
 
-  // Track previous agencyId and filter string to detect changes.
+  // Track previous agencyId to decide whether an agencyId change should also
+  // clear the detail cache (filters changes must NOT clear it).
   const prevAgencyIdRef = useRef(null);
-  const prevFiltersRef = useRef("");
+
+  // Stable serialization of filters. Callers pass `filters: {}` inline (a new
+  // object every render), so the automatic effect must depend on this string
+  // — not the raw object — to avoid churn / infinite re-fetch loops.
+  const filtersKey = JSON.stringify(filters);
 
   // State refs to access latest values in async context without re-creating callbacks.
   const agencyIdRef = useRef(agencyId);
@@ -55,10 +63,19 @@ export function useRatedHistory({ agencyId, filters = {} }) {
   }, [agencyId, filters]);
 
   /**
-   * Internal fetch for list — called by public methods and effects.
+   * Internal fetch for list — called by the automatic effect and by the
+   * imperative public methods (loadMore / refetch).
+   *
+   * Each caller passes the AbortSignal that owns this request so the result is
+   * only applied while that specific request is still live. This keeps every
+   * invocation self-contained and StrictMode-safe.
+   *
+   * @param {number} page
+   * @param {boolean} append
+   * @param {AbortSignal} signal - signal owning this request
    */
   const doFetchList = useCallback(
-    async (page, append = false) => {
+    async (page, append, signal) => {
       const currentAgencyId = agencyIdRef.current;
       const currentFilters = filtersRef.current;
 
@@ -66,11 +83,6 @@ export function useRatedHistory({ agencyId, filters = {} }) {
 
       setIsLoading(true);
       setError(null);
-
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      abortControllerRef.current = new AbortController();
 
       try {
         const params = new URLSearchParams({
@@ -88,23 +100,24 @@ export function useRatedHistory({ agencyId, filters = {} }) {
 
         const result = await fetchApi(
           `/agencies/${currentAgencyId}/rated-history?${params.toString()}`,
-          {
-            signal: abortControllerRef.current.signal,
-          }
+          { signal }
         );
 
-        if (abortControllerRef.current?.signal.aborted) return;
+        // This request was superseded/cancelled — drop its result.
+        if (signal?.aborted) return;
 
         const newTrips = result.trips || [];
         setTrips((prev) => (append ? [...prev, ...newTrips] : newTrips));
         setHasMore(result.hasMore ?? false);
         currentPageRef.current = page;
       } catch (err) {
-        if (err.name !== "AbortError") {
+        if (err.name !== "AbortError" && !signal?.aborted) {
           setError(err);
         }
       } finally {
-        setIsLoading(false);
+        if (!signal?.aborted) {
+          setIsLoading(false);
+        }
       }
     },
     []
@@ -143,12 +156,24 @@ export function useRatedHistory({ agencyId, filters = {} }) {
   );
 
   /**
+   * Start a new imperative list request, cancelling any prior imperative one.
+   * Returns the owning signal.
+   */
+  const startImperativeFetch = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    return abortControllerRef.current.signal;
+  }, []);
+
+  /**
    * loadMore — append next page if hasMore and not already loading.
    */
   const loadMore = useCallback(() => {
     if (!hasMore || isLoading) return;
-    doFetchList(currentPageRef.current + 1, true);
-  }, [hasMore, isLoading, doFetchList]);
+    doFetchList(currentPageRef.current + 1, true, startImperativeFetch());
+  }, [hasMore, isLoading, doFetchList, startImperativeFetch]);
 
   /**
    * refetch — reset to page 1 and re-fetch (keeps trips visible).
@@ -156,61 +181,48 @@ export function useRatedHistory({ agencyId, filters = {} }) {
   const refetch = useCallback(() => {
     currentPageRef.current = 1;
     setHasMore(true);
-    doFetchList(1, false);
-  }, [doFetchList]);
+    doFetchList(1, false, startImperativeFetch());
+  }, [doFetchList, startImperativeFetch]);
 
   /**
-   * Main effect: detect agencyId or filter changes.
+   * Automatic list fetch — runs on mount and whenever `agencyId` or the
+   * serialized filters change. Each run OWNS a fresh AbortController whose
+   * signal acts as that run's "ignore" token: doFetchList only applies a
+   * result while the signal is live, and the cleanup aborts it. This makes
+   * StrictMode's setup -> cleanup -> setup double-invoke safe — the first
+   * setup's request is aborted by its own cleanup, and the second setup
+   * performs a real fetch whose result IS applied. Keying on `filtersKey`
+   * (a string) avoids churn from inline `filters: {}` objects.
    */
   useEffect(() => {
     if (!agencyId) return;
 
-    const newFilterString = JSON.stringify(filters);
+    // An agencyId change clears the detail cache too; a filters-only change
+    // must preserve it. (filtersKey participates in the deps below.)
     const agencyChanged = prevAgencyIdRef.current !== agencyId;
-    const filtersChanged = prevFiltersRef.current !== newFilterString;
-
-    // agencyId change: clear both caches.
     if (agencyChanged) {
       detailCacheRef.current.clear();
-      setTrips([]);
-      currentPageRef.current = 1;
-      setHasMore(true);
-      setError(null);
       prevAgencyIdRef.current = agencyId;
-      prevFiltersRef.current = newFilterString;
-      doFetchList(1, false);
-      return;
     }
 
-    // Filters change: clear list cache only.
-    if (filtersChanged) {
-      setTrips([]);
-      currentPageRef.current = 1;
-      setHasMore(true);
-      setError(null);
-      prevFiltersRef.current = newFilterString;
-      doFetchList(1, false);
-      return;
-    }
+    // Reset list state for the page-1 fetch this run is about to perform.
+    setTrips([]);
+    currentPageRef.current = 1;
+    setHasMore(true);
+    setError(null);
 
-    // Initial mount: fetch.
-    if (!prevAgencyIdRef.current) {
-      prevAgencyIdRef.current = agencyId;
-      prevFiltersRef.current = newFilterString;
-      doFetchList(1, false);
-    }
-  }, [agencyId, filters, doFetchList]);
+    const controller = new AbortController();
 
-  /**
-   * Cleanup on unmount.
-   */
-  useEffect(() => {
+    // doFetchList only applies its result while controller.signal is live, so
+    // aborting in cleanup is what makes a superseded/StrictMode-orphaned run a
+    // no-op. Fire-and-forget: an effect body can't be async.
+    doFetchList(1, false, controller.signal);
+
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      controller.abort();
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agencyId, filtersKey, doFetchList]);
 
   return {
     trips,

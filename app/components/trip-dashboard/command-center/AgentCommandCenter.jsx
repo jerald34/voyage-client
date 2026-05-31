@@ -344,9 +344,10 @@ export default function AgentCommandCenter({
         <div className="absolute bottom-4 left-4 right-4 z-10 pointer-events-none">
           <div className="pointer-events-auto relative">
             {/* Stage 6C — slash-command observer. Renders nothing unless the
-                composer matches `/^\/[a-z]*$/i`. Mounted only when all
-                required identifiers are wired by the parent. */}
-            {tripId && agencyId && targetItineraryId && currentVersion != null && (
+                composer matches `/^\/[a-z]*$/i`. Mounts whenever an agency is
+                active; in a draft (no saved trip) it shows a "save first" hint
+                instead of opening the picker or leaking `/reuse` to the agent. */}
+            {agencyId && (
               <ReuseSlashCommand
                 composerInput={composerInput}
                 setComposerInput={setComposerInput}

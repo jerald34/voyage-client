@@ -67,6 +67,9 @@ export default function ReuseSlashCommand({
     return /^\/[a-z]*$/i.test(composerInput);
   }, [composerInput]);
 
+  // True only when we have a saved/approved trip to insert into.
+  const hasValidTarget = Boolean(tripId && targetItineraryId && currentVersion != null);
+
   const [pickerOpen, setPickerOpen] = useState(false);
 
   // Fetch unfiltered so the picker receives all agency rated trips.
@@ -78,11 +81,15 @@ export default function ReuseSlashCommand({
 
   /* ─────────────────────────────────────────────────────────────
      Autocomplete: pick `reuse` → clear composer, open picker.
+     In a draft (hasValidTarget false) we only clear the composer —
+     the picker must never open without a valid target.
   ──────────────────────────────────────────────────────────────── */
   const handlePickReuse = useCallback(() => {
     setComposerInput("");
-    setPickerOpen(true);
-  }, [setComposerInput]);
+    if (hasValidTarget) {
+      setPickerOpen(true);
+    }
+  }, [setComposerInput, hasValidTarget]);
 
   /* ─────────────────────────────────────────────────────────────
      Autocomplete keyboard handling
@@ -270,13 +277,15 @@ export default function ReuseSlashCommand({
               className="text-[12px]"
               style={{ color: "rgb(var(--color-text-soft-rgb))" }}
             >
-              Insert items from a rated past trip
+              {hasValidTarget
+                ? "Insert items from a rated past trip"
+                : "Save this plan first to reuse from past trips"}
             </span>
           </div>
         </div>
       )}
 
-      {pickerOpen && (
+      {pickerOpen && hasValidTarget && (
         <RatedHistoryPicker
           isOpen={pickerOpen}
           onClose={() => setPickerOpen(false)}

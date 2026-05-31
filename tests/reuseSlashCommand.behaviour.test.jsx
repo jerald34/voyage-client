@@ -334,3 +334,150 @@ describe("ReuseSlashCommand — autocomplete edge cases", () => {
     expect(screen.queryByTestId("mock-picker")).not.toBeInTheDocument();
   });
 });
+
+// ── Draft-context tests (tripId / targetItineraryId / currentVersion null) ──────
+
+describe("ReuseSlashCommand — draft (no valid target)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    if (!global.fetch || !global.fetch.mockReset) {
+      global.fetch = vi.fn();
+    }
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  /** Helper: render the component in draft mode. */
+  function renderDraft(overrides = {}) {
+    const defaults = {
+      composerInput: "/reuse",
+      setComposerInput: vi.fn(),
+      textareaRef: { current: null },
+      tripId: null,
+      agencyId: "agency-1",
+      targetItineraryId: null,
+      currentVersion: null,
+      onSystemVisibleMessage: vi.fn(),
+    };
+    return render(<ReuseSlashCommand {...defaults} {...overrides} />);
+  }
+
+  it("D1. autocomplete dropdown is visible in a draft when composer is '/reuse'", () => {
+    renderDraft();
+    expect(screen.getByTestId("reuse-slash-autocomplete")).toBeInTheDocument();
+  });
+
+  it("D2. dropdown shows the save-first hint text instead of the normal description", () => {
+    renderDraft();
+    expect(
+      screen.getByText("Save this plan first to reuse from past trips")
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Insert items from a rated past trip")
+    ).not.toBeInTheDocument();
+  });
+
+  it("D3. clicking the autocomplete option calls setComposerInput('') and does NOT open the picker", () => {
+    const setComposerInput = vi.fn();
+    renderDraft({ setComposerInput });
+
+    fireEvent.click(screen.getByTestId("reuse-slash-option-reuse"));
+
+    expect(setComposerInput).toHaveBeenCalledWith("");
+    expect(screen.queryByTestId("mock-picker")).not.toBeInTheDocument();
+  });
+
+  it("D4. Enter keydown on the textarea clears the composer and does NOT open the picker", () => {
+    const setComposerInput = vi.fn();
+    const textareaRef = { current: null };
+
+    render(
+      <div style={{ position: "relative" }}>
+        <textarea
+          data-testid="textarea"
+          ref={(el) => { textareaRef.current = el; }}
+          defaultValue="/reuse"
+        />
+        <ReuseSlashCommand
+          composerInput="/reuse"
+          setComposerInput={setComposerInput}
+          textareaRef={textareaRef}
+          tripId={null}
+          agencyId="agency-1"
+          targetItineraryId={null}
+          currentVersion={null}
+          onSystemVisibleMessage={vi.fn()}
+        />
+      </div>
+    );
+
+    // Confirm autocomplete is open (so the capture-phase handler is attached)
+    expect(screen.getByTestId("reuse-slash-autocomplete")).toBeInTheDocument();
+
+    // Fire Enter — the capture-phase handler must intercept it
+    const textarea = screen.getByTestId("textarea");
+    fireEvent.keyDown(textarea, { key: "Enter" });
+
+    expect(setComposerInput).toHaveBeenCalledWith("");
+    expect(screen.queryByTestId("mock-picker")).not.toBeInTheDocument();
+  });
+
+  it("D5. Tab keydown on the textarea clears the composer and does NOT open the picker", () => {
+    const setComposerInput = vi.fn();
+    const textareaRef = { current: null };
+
+    render(
+      <div style={{ position: "relative" }}>
+        <textarea
+          data-testid="textarea"
+          ref={(el) => { textareaRef.current = el; }}
+          defaultValue="/reuse"
+        />
+        <ReuseSlashCommand
+          composerInput="/reuse"
+          setComposerInput={setComposerInput}
+          textareaRef={textareaRef}
+          tripId={null}
+          agencyId="agency-1"
+          targetItineraryId={null}
+          currentVersion={null}
+          onSystemVisibleMessage={vi.fn()}
+        />
+      </div>
+    );
+
+    const textarea = screen.getByTestId("textarea");
+    fireEvent.keyDown(textarea, { key: "Tab" });
+
+    expect(setComposerInput).toHaveBeenCalledWith("");
+    expect(screen.queryByTestId("mock-picker")).not.toBeInTheDocument();
+  });
+
+  it("D6. saved-trip path still opens the picker (regression: valid target unchanged)", () => {
+    const setComposerInput = vi.fn();
+    render(
+      <ReuseSlashCommand
+        composerInput="/r"
+        setComposerInput={setComposerInput}
+        textareaRef={{ current: null }}
+        tripId="trip-1"
+        agencyId="agency-1"
+        targetItineraryId="itin-1"
+        currentVersion={3}
+        onSystemVisibleMessage={vi.fn()}
+      />
+    );
+
+    // The normal description is shown for a valid target
+    expect(
+      screen.getByText("Insert items from a rated past trip")
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("reuse-slash-option-reuse"));
+
+    expect(setComposerInput).toHaveBeenCalledWith("");
+    expect(screen.getByTestId("mock-picker")).toBeInTheDocument();
+  });
+});
