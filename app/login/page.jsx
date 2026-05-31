@@ -43,19 +43,24 @@ function AuthShell() {
     }
 
     // PENDING guard: authenticated user who hasn't chosen an account type yet.
-    // Covers OAuth users (who land here authenticated but with PENDING) and
-    // email users who closed the tab between Step 1 and the type picker.
-    const storedUser = localStorage.getItem("voyage-user");
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        if (user?.accountType === "PENDING") {
-          setIsAuthenticated(true);
-          setMode("register");
-          setWizardStep("type");
+    // Only activates when page.jsx explicitly redirects here with ?step=type
+    // (meaning the server confirmed the session is live and accountType=PENDING).
+    // We do NOT read accountType from localStorage here — stale PENDING entries
+    // from a previous abandoned signup would otherwise trap fully-registered users
+    // in the wizard every time they try to sign in.
+    if (stepParam === "type") {
+      const storedUser = localStorage.getItem("voyage-user");
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          if (user?.accountType === "PENDING") {
+            setIsAuthenticated(true);
+            setMode("register");
+            setWizardStep("type");
+          }
+        } catch (_) {
+          // ignore malformed stored user
         }
-      } catch (_) {
-        // ignore malformed stored user
       }
     }
   }, [searchParams]);

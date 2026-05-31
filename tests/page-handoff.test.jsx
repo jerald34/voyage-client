@@ -310,3 +310,94 @@ describe("OAuth return /auth/me failure handling", () => {
     expect(mockState.routerPush).not.toHaveBeenCalled();
   });
 });
+
+describe("auth routing — fully set-up users reach the dashboard (Bug B)", () => {
+  beforeEach(() => {
+    mockState.searchParamsAuthenticated = "1";
+    mockState.prototypeState = landingPrototypeState();
+  });
+
+  it("(a) PERSONAL user with stale PENDING localStorage reaches the dashboard, not the wizard", async () => {
+    // Stale PENDING entry simulates an abandoned earlier signup
+    window.localStorage.setItem(
+      "voyage-user",
+      JSON.stringify({ id: "user-1", accountType: "PENDING", memberships: [] }),
+    );
+    // Server says the user is fully set up as PERSONAL
+    mockState.fetchApi.mockResolvedValueOnce({
+      user: { id: "user-1", accountType: "PERSONAL", memberships: [] },
+    });
+
+    render(<Page />);
+
+    await waitFor(() => {
+      expect(mockState.setActiveScreen).toHaveBeenCalledWith("trip-brief");
+    });
+    // Must NOT redirect to the wizard
+    expect(mockState.routerPush).not.toHaveBeenCalledWith("/login");
+    expect(mockState.routerPush).not.toHaveBeenCalledWith("/login?step=agency");
+    expect(mockState.routerPush).not.toHaveBeenCalledWith("/login?step=type");
+  });
+
+  it("(b) AGENCY_USER with verified membership reaches the dashboard, not the wizard", async () => {
+    mockState.fetchApi.mockResolvedValueOnce({
+      user: {
+        id: "user-2",
+        accountType: "AGENCY_USER",
+        memberships: [{ agency: { id: "agency-1", status: "VERIFIED" } }],
+      },
+    });
+
+    render(<Page />);
+
+    await waitFor(() => {
+      expect(mockState.setActiveScreen).toHaveBeenCalledWith("trip-brief");
+    });
+    expect(mockState.routerPush).not.toHaveBeenCalled();
+  });
+
+  it("(c) stale PENDING localStorage does NOT cause page.jsx to redirect when server returns PERSONAL", async () => {
+    // Even if localStorage has PENDING, server response wins
+    window.localStorage.setItem(
+      "voyage-user",
+      JSON.stringify({ id: "user-3", accountType: "PENDING", memberships: [] }),
+    );
+    mockState.fetchApi.mockResolvedValueOnce({
+      user: { id: "user-3", accountType: "PERSONAL", memberships: [] },
+    });
+
+    render(<Page />);
+
+    await waitFor(() => {
+      expect(mockState.setActiveScreen).toHaveBeenCalledWith("trip-brief");
+    });
+    // No wizard redirect of any kind
+    expect(mockState.routerPush).not.toHaveBeenCalled();
+  });
+
+  it("(d) genuinely PENDING account (server-confirmed) is redirected to ?step=type, not bare /login", async () => {
+    mockState.fetchApi.mockResolvedValueOnce({
+      user: { id: "user-4", accountType: "PENDING", memberships: [] },
+    });
+
+    render(<Page />);
+
+    await waitFor(() => {
+      expect(mockState.routerPush).toHaveBeenCalledWith("/login?step=type");
+    });
+    expect(mockState.setActiveScreen).not.toHaveBeenCalledWith("trip-brief");
+  });
+
+  it("(d) AGENCY_USER without membership is redirected to ?step=agency (recoverable setup path)", async () => {
+    mockState.fetchApi.mockResolvedValueOnce({
+      user: { id: "user-5", accountType: "AGENCY_USER", memberships: [] },
+    });
+
+    render(<Page />);
+
+    await waitFor(() => {
+      expect(mockState.routerPush).toHaveBeenCalledWith("/login?step=agency");
+    });
+    expect(mockState.setActiveScreen).not.toHaveBeenCalledWith("trip-brief");
+  });
+});

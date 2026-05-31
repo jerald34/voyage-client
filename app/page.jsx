@@ -62,9 +62,11 @@ function HomePageInner() {
         const accountType = data.user?.accountType;
 
         // PENDING — user hasn't chosen account type yet (e.g. OAuth user, or
-        // closed the tab mid-signup). Send them back to the type picker.
+        // closed the tab mid-signup). Send them to the type picker.
+        // Use ?step=type so login/page.jsx can distinguish a fresh server-confirmed
+        // PENDING redirect from a stale localStorage entry.
         if (accountType === "PENDING") {
-          router.push("/login");
+          router.push("/login?step=type");
           return;
         }
 
