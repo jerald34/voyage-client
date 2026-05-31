@@ -1,13 +1,9 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { updateAgencySettings } from "@/app/lib/api/index.js";
-import { fetchTeam } from "@/app/lib/api/index.js";
+import { updateAgencySettings, fetchTeam } from "@/app/lib/api/index.js";
+import { sanitizeBusinessPhoneInput, validateBusinessPhone } from "@/app/components/auth/authValidation.js";
 import { useAgencyRole } from "@/app/hooks/useAgencyRole";
 import DangerZoneCard from "./DangerZoneCard";
-
-function sanitizePhone(value) {
-  return String(value ?? "").replace(/\D/g, "");
-}
 
 function getFieldClass() {
   return [
@@ -35,14 +31,14 @@ export default function AgencySettingsPage({ agencyId }) {
   }, [agencyId]);
 
   const [agencyName, setAgencyName] = useState(initialAgency?.name ?? "");
-  const [businessPhone, setBusinessPhone] = useState(sanitizePhone(initialAgency?.businessPhone));
+  const [businessPhone, setBusinessPhone] = useState(sanitizeBusinessPhoneInput(initialAgency?.businessPhone));
   const [businessEmail, setBusinessEmail] = useState(initialAgency?.businessEmail ?? "");
   const [city, setCity] = useState(initialAgency?.city ?? "");
   const [country, setCountry] = useState(initialAgency?.country ?? "");
 
   const [savedValues, setSavedValues] = useState({
     agencyName: initialAgency?.name ?? "",
-    businessPhone: sanitizePhone(initialAgency?.businessPhone),
+    businessPhone: sanitizeBusinessPhoneInput(initialAgency?.businessPhone),
     businessEmail: initialAgency?.businessEmail ?? "",
     city: initialAgency?.city ?? "",
     country: initialAgency?.country ?? "",
@@ -71,13 +67,14 @@ export default function AgencySettingsPage({ agencyId }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const name = agencyName.trim();
-    const phone = sanitizePhone(businessPhone);
+    const phone = sanitizeBusinessPhoneInput(businessPhone);
     const email = businessEmail.trim();
     const cityVal = city.trim();
     const countryVal = country.trim();
 
     if (!name) { setFormError("Agency name is required."); return; }
-    if (!phone) { setFormError("Business phone is required."); return; }
+    const phoneError = validateBusinessPhone(phone);
+    if (phoneError) { setFormError(phoneError); return; }
     if (!cityVal) { setFormError("City is required."); return; }
     if (!countryVal) { setFormError("Country is required."); return; }
 
@@ -127,7 +124,7 @@ export default function AgencySettingsPage({ agencyId }) {
               <input
                 className={getFieldClass()}
                 value={businessPhone}
-                onChange={(e) => setBusinessPhone(sanitizePhone(e.target.value))}
+                onChange={(e) => setBusinessPhone(sanitizeBusinessPhoneInput(e.target.value))}
                 placeholder="Digits only"
                 inputMode="numeric"
               />
