@@ -15,10 +15,19 @@ const mockState = {
   setSelectedDayId: vi.fn(),
   setSelectedPlaceId: vi.fn(),
   setAgentMessages: vi.fn(),
+  fetchApi: vi.fn(),
   prototypeState: null,
   workspaceProps: null,
   homePageProps: null,
 };
+
+vi.mock("../app/lib/api/index.js", () => ({
+  fetchApi: (...args) => mockState.fetchApi(...args),
+}));
+
+vi.mock("../app/hooks/useAuth.js", () => ({
+  useAuth: () => ({ logout: vi.fn() }),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -106,6 +115,24 @@ const testDays = [
   },
 ];
 
+function landingPrototypeState() {
+  return {
+    activeScreen: "landing",
+    setActiveScreen: mockState.setActiveScreen,
+    activeWorkspaceTab: "overview",
+    setActiveWorkspaceTab: mockState.setActiveWorkspaceTab,
+    tripBrief: testTripBrief,
+    days: testDays,
+    setDays: mockState.setDays,
+    selectedDayId: "day-1",
+    setSelectedDayId: mockState.setSelectedDayId,
+    selectedPlaceId: null,
+    setSelectedPlaceId: mockState.setSelectedPlaceId,
+    agentMessages: [],
+    setAgentMessages: mockState.setAgentMessages,
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
@@ -115,6 +142,10 @@ beforeEach(() => {
   mockState.prototypeState = null;
   mockState.workspaceProps = null;
   mockState.homePageProps = null;
+  // Default: /auth/me never settles, so tests that don't drive it explicitly
+  // (and the existing handoff guards) behave as before this mock existed.
+  mockState.fetchApi.mockReset();
+  mockState.fetchApi.mockImplementation(() => new Promise(() => {}));
 });
 
 describe("page handoff guards", () => {
@@ -143,6 +174,11 @@ describe("page handoff guards", () => {
 
     mockState.setActiveScreen.mockClear();
     mockState.searchParamsAuthenticated = "1";
+    // A transient /auth/me failure with a stored user must still advance (fallback).
+    const netError = new Error("Unable to connect. Please try again.");
+    netError.status = 0;
+    netError.code = "NETWORK_ERROR";
+    mockState.fetchApi.mockRejectedValueOnce(netError);
     render(<Page />);
 
     await waitFor(() => {
@@ -203,5 +239,74 @@ describe("page handoff guards", () => {
       initialTab: "team",
       showJoinedNotice: true,
     });
+  });
+});
+
+describe("OAuth return /auth/me failure handling", () => {
+  beforeEach(() => {
+    mockState.searchParamsAuthenticated = "1";
+    mockState.prototypeState = landingPrototypeState();
+  });
+
+  it("routes a genuine 401 (cookie not accepted) to /login instead of stranding on the landing page", async () => {
+    // Simulate the Google-after-email bug: session cookie not accepted, no stored user.
+    window.localStorage.clear();
+    const authError = new Error("Sign in is required.");
+    authError.status = 401;
+    authError.code = "AUTH_REQUIRED";
+    mockState.fetchApi.mockRejectedValueOnce(authError);
+
+    render(<Page />);
+
+    await waitFor(() => {
+      expect(mockState.routerPush).toHaveBeenCalledWith("/login");
+    });
+    // Must NOT silently advance into the app, and must not leave the user with no recovery.
+    expect(mockState.setActiveScreen).not.toHaveBeenCalledWith("trip-brief");
+  });
+
+  it("falls back to the stored user on a transient network error (does not redirect)", async () => {
+    window.localStorage.setItem(
+      "voyage-user",
+      JSON.stringify({ id: "user-1", accountType: "PERSONAL", memberships: [] }),
+    );
+    const netError = new Error("Unable to connect. Please try again.");
+    netError.status = 0;
+    netError.code = "NETWORK_ERROR";
+    mockState.fetchApi.mockRejectedValueOnce(netError);
+
+    render(<Page />);
+
+    await waitFor(() => {
+      expect(mockState.setActiveScreen).toHaveBeenCalledWith("trip-brief");
+    });
+    expect(mockState.routerPush).not.toHaveBeenCalled();
+  });
+
+  it("routes a 401 with no stored user to /login even though localStorage is empty", async () => {
+    window.localStorage.clear();
+    const authError = new Error("Sign in is required.");
+    authError.status = 401;
+    authError.code = "AUTH_REQUIRED";
+    mockState.fetchApi.mockRejectedValueOnce(authError);
+
+    render(<Page />);
+
+    await waitFor(() => {
+      expect(mockState.routerPush).toHaveBeenCalledWith("/login");
+    });
+  });
+
+  it("still advances into the app when /auth/me succeeds (PERSONAL)", async () => {
+    mockState.fetchApi.mockResolvedValueOnce({
+      user: { id: "user-1", accountType: "PERSONAL", memberships: [] },
+    });
+
+    render(<Page />);
+
+    await waitFor(() => {
+      expect(mockState.setActiveScreen).toHaveBeenCalledWith("trip-brief");
+    });
+    expect(mockState.routerPush).not.toHaveBeenCalled();
   });
 });
