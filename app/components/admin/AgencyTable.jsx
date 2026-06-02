@@ -27,6 +27,29 @@ function formatDate(dateStr) {
   });
 }
 
+function AgencyCard({ a, selected, onRowClick }) {
+  return (
+    <button
+      type="button"
+      data-testid={`agency-card-${a.id}`}
+      onClick={() => onRowClick(a.id)}
+      className={`flex w-full flex-col gap-2 rounded-md border border-border/12 bg-surface p-4 text-left shadow-soft transition active:scale-[0.99] motion-reduce:transition-none ${
+        selected ? "ring-2 ring-primary/30" : ""
+      }`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <span className="font-semibold text-text-primary">{a.name}</span>
+        <span className={`inline-block rounded-pill px-2.5 py-0.5 text-xs font-semibold ${statusPillClasses(a.status)}`}>
+          {statusLabel(a.status)}
+        </span>
+      </div>
+      <span className="text-sm text-text-muted">{a.ownerUser?.displayName || "—"}</span>
+      {a.ownerUser?.email && <span className="text-xs text-text-soft">{a.ownerUser.email}</span>}
+      <span className="text-xs text-text-soft tabular-nums">Submitted {formatDate(a.submittedAt)}</span>
+    </button>
+  );
+}
+
 function SortableHeader({ label, field, currentField, direction, onSort }) {
   const active = currentField === field;
   return (
@@ -50,9 +73,19 @@ export default function AgencyTable({
   onRowClick,
 }) {
   return (
-    <div className="rounded-md overflow-hidden border border-border/12 shadow-soft">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+    <>
+      {/* Mobile cards (below sm) */}
+      <div className="grid gap-3 sm:hidden">
+        {sorted.map((a) => (
+          <AgencyCard key={a.id} a={a} selected={selectedAgencyId === a.id} onRowClick={onRowClick} />
+        ))}
+        <p className="px-1 pt-1 text-xs text-text-soft">Showing {sorted.length} of {agencies.length} agencies</p>
+      </div>
+
+      {/* Desktop table (sm and up) */}
+      <div className="hidden sm:block rounded-md overflow-hidden border border-border/12 shadow-soft">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
           <thead>
             <tr className="bg-surface">
               <SortableHeader
@@ -138,13 +171,14 @@ export default function AgencyTable({
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+          </table>
+        </div>
 
-      {/* Table footer */}
-      <div className="px-4 py-3 bg-surface border-t border-border/10 text-xs text-text-soft">
-        Showing {sorted.length} of {agencies.length} agencies
+        {/* Table footer */}
+        <div className="px-4 py-3 bg-surface border-t border-border/10 text-xs text-text-soft">
+          Showing {sorted.length} of {agencies.length} agencies
+        </div>
       </div>
-    </div>
+    </>
   );
 }
