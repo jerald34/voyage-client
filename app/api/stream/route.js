@@ -1,15 +1,16 @@
 // Streaming proxy for the agent run SSE endpoint.
 //
-// The blanket `/api/:path*` rewrite in next.config.mjs buffers proxied response
-// bodies. That is fine for normal request/response JSON, but it BREAKS Server-Sent
-// Events: an agent stream stays open indefinitely, so the buffer never flushes and
-// the browser's EventSource receives nothing — the chat appears stuck "thinking"
-// even though the run already finished server-side (a refresh then loads the
-// persisted messages via REST). A Route Handler lets us forward the upstream body
-// through as a live ReadableStream so events reach the client as they are written.
+// IMPORTANT: this lives at a STATIC path (/api/stream) on purpose. Next.js
+// resolves routes in phases: filesystem/static routes → `afterFiles` rewrites →
+// dynamic routes. Our blanket `/api/:path*` proxy rewrite is an `afterFiles`
+// rewrite, so it runs BEFORE dynamic routes — a dynamic Route Handler like
+// /api/agencies/[agencyId]/.../stream would be swallowed by the buffering proxy
+// and never run. A static route is matched before the rewrite, so it wins.
 //
-// Filesystem routes take precedence over `afterFiles` rewrites, so this handler
-// owns ONLY the stream path; every other `/api/*` request still uses the rewrite.
+// The agent run id + agency id are passed as query params instead of path
+// segments. We forward to the backend's real stream path and pipe the upstream
+// body straight through as a live ReadableStream so SSE events reach the browser
+// as they are written (the rewrite buffers the body, which breaks SSE).
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -21,9 +22,18 @@ const API_PROXY_TARGET = (
   "http://localhost:4000"
 ).replace(/\/+$/, "");
 
-export async function GET(request, { params }) {
-  const { agencyId, runId } = await params;
-  const target = `${API_PROXY_TARGET}/agencies/${agencyId}/agent/runs/${runId}/stream`;
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const agencyId = searchParams.get("agencyId");
+  const runId = searchParams.get("runId");
+
+  if (!agencyId || !runId) {
+    return new Response("Missing agencyId or runId", { status: 400 });
+  }
+
+  const target = `${API_PROXY_TARGET}/agencies/${encodeURIComponent(
+    agencyId
+  )}/agent/runs/${encodeURIComponent(runId)}/stream`;
 
   let upstream;
   try {
@@ -45,7 +55,6 @@ export async function GET(request, { params }) {
   }
 
   if (!upstream.ok || !upstream.body) {
-    // Pass through the upstream status (e.g. 401/404) so the client can react.
     const body = await upstream.text().catch(() => "");
     return new Response(body, { status: upstream.status });
   }
@@ -54,8 +63,6 @@ export async function GET(request, { params }) {
     status: 200,
     headers: {
       "Content-Type": "text/event-stream; charset=utf-8",
-      // `no-transform` stops any intermediary from chunk-buffering/compressing;
-      // `X-Accel-Buffering: no` disables buffering on nginx-style proxies in prod.
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
       "X-Accel-Buffering": "no",

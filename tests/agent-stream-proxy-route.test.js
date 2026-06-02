@@ -1,21 +1,20 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { GET } from "../app/api/agencies/[agencyId]/agent/runs/[runId]/stream/route.js";
+import { GET } from "../app/api/stream/route.js";
 
-function makeRequest(cookie = "voyage_session=abc") {
+function makeRequest(query = "agencyId=a1&runId=r1", cookie = "voyage_session=abc") {
   return {
+    url: `http://localhost:3000/api/stream?${query}`,
     headers: new Headers({ cookie }),
     signal: new AbortController().signal,
   };
 }
-
-const params = Promise.resolve({ agencyId: "a1", runId: "r1" });
 
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
-describe("agent run SSE proxy route", () => {
+describe("agent run SSE proxy route (/api/stream)", () => {
   it("pipes the upstream body through with event-stream headers", async () => {
     const upstreamBody = new ReadableStream({ start(c) { c.close(); } });
     const fetchMock = vi.fn().mockResolvedValue({
@@ -25,7 +24,7 @@ describe("agent run SSE proxy route", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const res = await GET(makeRequest(), { params });
+    const res = await GET(makeRequest());
 
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/event-stream");
@@ -41,12 +40,22 @@ describe("agent run SSE proxy route", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    await GET(makeRequest("voyage_session=xyz"), { params });
+    await GET(makeRequest("agencyId=a1&runId=r1", "voyage_session=xyz"));
 
     const [url, opts] = fetchMock.mock.calls[0];
     expect(url).toMatch(/\/agencies\/a1\/agent\/runs\/r1\/stream$/);
     expect(opts.headers.cookie).toBe("voyage_session=xyz");
     expect(opts.cache).toBe("no-store");
+  });
+
+  it("returns 400 when agencyId or runId is missing", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await GET(makeRequest("agencyId=a1"));
+
+    expect(res.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("passes through a non-OK upstream status", async () => {
@@ -58,7 +67,7 @@ describe("agent run SSE proxy route", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const res = await GET(makeRequest(), { params });
+    const res = await GET(makeRequest());
 
     expect(res.status).toBe(401);
   });
@@ -67,7 +76,7 @@ describe("agent run SSE proxy route", () => {
     const fetchMock = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
     vi.stubGlobal("fetch", fetchMock);
 
-    const res = await GET(makeRequest(), { params });
+    const res = await GET(makeRequest());
 
     expect(res.status).toBe(502);
   });
