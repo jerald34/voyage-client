@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import AdminAgenciesPage from "./AdminAgenciesPage.jsx";
+import UsageSection from "./usage/UsageSection.jsx";
 
 const SECTIONS = [
   { id: "agencies", label: "Agencies" },
@@ -53,12 +54,7 @@ export default function AdminPage({ onPendingCountChange, reportsBadge = 0 }) {
       </div>
 
       {section === "agencies" && <AdminAgenciesPage onPendingCountChange={onPendingCountChange} />}
-      {section === "usage" && (
-        <div className="py-16 text-center text-sm text-text-muted">
-          <p className="font-serif text-2xl text-text-primary">Usage analytics</p>
-          <p className="mt-2">Coming online as runs accumulate.</p>
-        </div>
-      )}
+      {section === "usage" && <UsageSection />}
       {section === "reports" && (
         <div className="py-16 text-center text-sm text-text-muted">
           <p className="font-serif text-2xl text-text-primary">Reports inbox — no reports yet</p>

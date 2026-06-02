@@ -5,6 +5,10 @@ vi.mock("../app/components/admin/AdminAgenciesPage.jsx", () => ({
   default: () => <div data-testid="agencies-section">Agencies</div>
 }));
 
+vi.mock("../app/components/admin/usage/UsageSection.jsx", () => ({
+  default: () => <div>Usage analytics</div>,
+}));
+
 import AdminPage from "../app/components/admin/AdminPage.jsx";
 
 describe("AdminPage", () => {

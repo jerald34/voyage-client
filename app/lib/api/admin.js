@@ -47,3 +47,8 @@ export async function adminUnsuspendAgency(agencyId) {
     method: "POST",
   });
 }
+
+export async function fetchUsage({ period = "day", groupBy = "user", from, to } = {}) {
+  const qs = new URLSearchParams({ period, groupBy, ...(from ? { from } : {}), ...(to ? { to } : {}) });
+  return fetchApi(`/admin/usage?${qs.toString()}`);
+}
