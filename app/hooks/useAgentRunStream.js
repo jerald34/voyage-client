@@ -74,7 +74,7 @@ export function useAgentRunStream(agencyId) {
     toolCountAtThoughtStartRef.current = 0;
     tasksTouchedThisRunRef.current = new Set();
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
     const url = `${API_URL}/agencies/${agencyId}/agent/runs/${runId}/stream`;
 
     // EventSource withCredentials ensures cookies are sent for auth

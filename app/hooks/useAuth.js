@@ -21,7 +21,7 @@ export function getPendingInviteToken() {
   return window.localStorage.getItem(PENDING_INVITE_KEY);
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export function useAuth() {
   const [error, setError] = useState(null);
