@@ -12,6 +12,7 @@ import {
 } from "./authConstants.js";
 import {
   sanitizeBusinessPhoneInput,
+  validateBusinessPhone,
   sanitizeEmailInput,
   getPasswordSimilarityError,
   mapAuthErrorToRegisterErrors,
@@ -149,7 +150,8 @@ export default function RegisterWizard({
     const trimmedCity = city.trim();
 
     if (!trimmedAgencyName) nextStep2Errors.agencyName = "Agency name is required";
-    if (!normalizedBusinessPhone) nextStep2Errors.businessPhone = "Business phone is required";
+    const phoneError = validateBusinessPhone(normalizedBusinessPhone);
+    if (phoneError) nextStep2Errors.businessPhone = phoneError;
     if (!trimmedBusinessEmail) nextStep2Errors.businessEmail = "Business email is required";
     else if (!/\S+@\S+\.\S+/.test(trimmedBusinessEmail)) nextStep2Errors.businessEmail = "Enter a valid business email";
     if (!trimmedCountry) nextStep2Errors.country = "Country is required";

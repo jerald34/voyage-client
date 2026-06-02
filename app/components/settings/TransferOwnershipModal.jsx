@@ -43,7 +43,7 @@ export default function TransferOwnershipModal({ agencyId, members, onClose }) {
                   value={m.id}
                   checked={selectedId === m.id}
                   onChange={() => setSelectedId(m.id)}
-                  className="accent-white/80"
+                  className="accent-secondary"
                 />
                 <div>
                   <div className="text-sm text-white">{m.user.displayName}</div>
