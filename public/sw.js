@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE = `voyage-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `voyage-dynamic-${CACHE_VERSION}`;
 const FONT_CACHE = `voyage-fonts-${CACHE_VERSION}`;
@@ -63,9 +63,13 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // API routes → network-first (always try fresh data, cache as fallback)
+  // API routes → bypass the service worker entirely. These are authenticated,
+  // per-user, frequently-changing responses: caching them risks serving stale or
+  // empty data (and previously, the catch-all strategy could swallow a failed
+  // fetch into `null`, masking auth errors as empty threads/itineraries). Returning
+  // without calling respondWith lets the browser perform the native fetch with
+  // cookies attached.
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(networkFirst(request, DYNAMIC_CACHE));
     return;
   }
 

@@ -2,7 +2,10 @@
  * Base API client — fetch wrapper with auth credentials and error handling.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+// Same-origin proxy base. The browser hits `/api/*` on the app's own origin and
+// Next reverse-proxies to the real backend (see next.config.mjs `rewrites`). This
+// keeps the session cookie first-party so it survives iOS standalone-PWA ITP.
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export { API_URL };
 
