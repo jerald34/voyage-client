@@ -3,6 +3,7 @@
 import { useState } from "react";
 import AdminAgenciesPage from "./AdminAgenciesPage.jsx";
 import UsageSection from "./usage/UsageSection.jsx";
+import ReportsSection from "./reports/ReportsSection.jsx";
 
 const SECTIONS = [
   { id: "agencies", label: "Agencies" },
@@ -33,6 +34,7 @@ function SubNavPill({ id, label, active, badge, onSelect }) {
 
 export default function AdminPage({ onPendingCountChange, reportsBadge = 0 }) {
   const [section, setSection] = useState("agencies");
+  const [badge, setBadge] = useState(reportsBadge);
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-[1100px] mx-auto">
@@ -47,7 +49,7 @@ export default function AdminPage({ onPendingCountChange, reportsBadge = 0 }) {
             id={s.id}
             label={s.label}
             active={section === s.id}
-            badge={s.id === "reports" ? reportsBadge : 0}
+            badge={s.id === "reports" ? badge : 0}
             onSelect={setSection}
           />
         ))}
@@ -55,12 +57,7 @@ export default function AdminPage({ onPendingCountChange, reportsBadge = 0 }) {
 
       {section === "agencies" && <AdminAgenciesPage onPendingCountChange={onPendingCountChange} />}
       {section === "usage" && <UsageSection />}
-      {section === "reports" && (
-        <div className="py-16 text-center text-sm text-text-muted">
-          <p className="font-serif text-2xl text-text-primary">Reports inbox — no reports yet</p>
-          <p className="mt-2">Submitted reports will appear here.</p>
-        </div>
-      )}
+      {section === "reports" && <ReportsSection onBadgeChange={setBadge} />}
     </div>
   );
 }

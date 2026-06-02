@@ -9,6 +9,10 @@ vi.mock("../app/components/admin/usage/UsageSection.jsx", () => ({
   default: () => <div>Usage analytics</div>,
 }));
 
+vi.mock("../app/components/admin/reports/ReportsSection.jsx", () => ({
+  default: () => <div>Reports inbox</div>,
+}));
+
 import AdminPage from "../app/components/admin/AdminPage.jsx";
 
 describe("AdminPage", () => {
