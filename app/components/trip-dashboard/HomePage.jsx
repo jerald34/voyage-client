@@ -37,7 +37,7 @@ import SettingsPage from "./pages/SettingsPage.jsx";
 import SaveItineraryModal from "./modals/SaveItineraryModal.jsx";
 import DashboardHeader from "./layout/DashboardHeader.jsx";
 import DashboardSidebar from "./layout/DashboardSidebar.jsx";
-import AdminAgenciesPage from "../admin/AdminAgenciesPage.jsx";
+import AdminPage from "../admin/AdminPage.jsx";
 import MobileGlassSheet from "./mobile/MobileGlassSheet.jsx";
 import useMobileViewport from "./mobile/useMobileViewport.js";
 import ChatInput from "./command-center/ChatInput.jsx";
@@ -843,7 +843,7 @@ export default function HomePage({
               onReplayTutorial={replayFirstUseTutorial}
             />
           ) : activeTab === "admin" && user?.role === "SUPER_ADMIN" ? (
-            <AdminAgenciesPage onPendingCountChange={refreshPendingCount} />
+            <AdminPage onPendingCountChange={refreshPendingCount} />
           ) : null}
         </main>
       </div>

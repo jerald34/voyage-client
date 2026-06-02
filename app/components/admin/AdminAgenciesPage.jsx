@@ -87,7 +87,7 @@ export default function AdminAgenciesPage({ onPendingCountChange }) {
   };
 
   return (
-    <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-[1100px] mx-auto">
+    <>
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <h1 className="font-serif text-3xl text-text-primary">
@@ -169,6 +169,6 @@ export default function AdminAgenciesPage({ onPendingCountChange }) {
           onAction={handleAction}
         />
       )}
-    </div>
+    </>
   );
 }
