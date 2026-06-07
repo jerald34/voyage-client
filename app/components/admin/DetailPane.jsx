@@ -80,6 +80,7 @@ export default function DetailPane({ open, onClose, title, children, ariaLabel }
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={endDrag}
+          onPointerCancel={endDrag}
           className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border/10 bg-surface-elevated px-5 py-4"
         >
           <h2 className="truncate font-serif text-lg text-text-primary">{title}</h2>
