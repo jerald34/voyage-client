@@ -41,7 +41,7 @@ function AgencyCard({ a, selected, onRowClick }) {
       type="button"
       data-testid={`agency-card-${a.id}`}
       onClick={() => onRowClick(a.id)}
-      className={`flex w-full flex-col gap-2 rounded-md border bg-surface-elevated p-4 text-left shadow-soft transition active:scale-[0.99] motion-reduce:transition-none ${
+      className={`flex w-full flex-col gap-2 rounded-md border bg-surface-elevated p-4 text-left shadow-soft transition-transform active:scale-[0.99] motion-reduce:transition-none ${
         selected ? "border-primary/40 ring-2 ring-primary/20" : "border-border/12"
       }`}
     >
