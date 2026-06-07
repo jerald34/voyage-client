@@ -40,7 +40,7 @@ export default function SegmentedControl({
             aria-selected={isTab ? active : undefined}
             aria-checked={isTab ? undefined : active}
             onClick={() => onChange(o.value)}
-            className={`relative inline-flex min-h-11 items-center whitespace-nowrap rounded-pill font-semibold transition active:scale-[0.97] motion-reduce:transition-none ${pad} ${
+            className={`relative inline-flex min-h-11 items-center whitespace-nowrap rounded-pill font-semibold transition-transform active:scale-[0.97] motion-reduce:transition-none ${pad} ${
               active ? "bg-primary text-white shadow-soft" : "text-text-muted hover:text-text-primary"
             }`}
           >
