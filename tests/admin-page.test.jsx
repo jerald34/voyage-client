@@ -26,4 +26,9 @@ describe("AdminPage", () => {
     fireEvent.click(screen.getByRole("tab", { name: /reports/i }));
     expect(screen.getByText(/no reports yet|reports inbox/i)).toBeInTheDocument();
   });
+
+  it("renders the active section title in the top bar", () => {
+    render(<AdminPage />);
+    expect(screen.getByRole("heading", { name: "Agencies" })).toBeInTheDocument();
+  });
 });

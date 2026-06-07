@@ -4,60 +4,42 @@ import { useState } from "react";
 import AdminAgenciesPage from "./AdminAgenciesPage.jsx";
 import UsageSection from "./usage/UsageSection.jsx";
 import ReportsSection from "./reports/ReportsSection.jsx";
+import AdminTopBar from "./AdminTopBar.jsx";
+import SegmentedControl from "./SegmentedControl.jsx";
 
 const SECTIONS = [
-  { id: "agencies", label: "Agencies" },
-  { id: "usage", label: "Usage" },
-  { id: "reports", label: "Reports" },
+  { id: "agencies", label: "Agencies", title: "Agencies" },
+  { id: "usage", label: "Usage", title: "Usage" },
+  { id: "reports", label: "Reports", title: "Reports" },
 ];
-
-function SubNavPill({ id, label, active, badge, onSelect }) {
-  return (
-    <button
-      role="tab"
-      aria-selected={active}
-      type="button"
-      onClick={() => onSelect(id)}
-      className={`relative min-h-11 whitespace-nowrap rounded-pill px-4 py-2 text-sm font-semibold transition active:scale-[0.97] motion-reduce:transition-none ${
-        active ? "bg-primary text-white shadow-soft" : "bg-surface text-text-muted hover:text-text-primary"
-      }`}
-    >
-      {label}
-      {badge > 0 && (
-        <span className="ml-2 inline-flex min-w-[18px] items-center justify-center rounded-pill bg-secondary px-1 text-[10px] font-bold leading-[18px] text-white">
-          {badge > 99 ? "99+" : badge}
-        </span>
-      )}
-    </button>
-  );
-}
 
 export default function AdminPage({ onPendingCountChange, reportsBadge = 0 }) {
   const [section, setSection] = useState("agencies");
   const [badge, setBadge] = useState(reportsBadge);
 
-  return (
-    <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-[1100px] mx-auto">
-      <div
-        role="tablist"
-        aria-label="Admin sections"
-        className="mb-6 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {SECTIONS.map((s) => (
-          <SubNavPill
-            key={s.id}
-            id={s.id}
-            label={s.label}
-            active={section === s.id}
-            badge={s.id === "reports" ? badge : 0}
-            onSelect={setSection}
-          />
-        ))}
-      </div>
+  const tabs = (
+    <SegmentedControl
+      as="tab"
+      ariaLabel="Admin sections"
+      value={section}
+      onChange={setSection}
+      options={SECTIONS.map((s) => ({
+        value: s.id,
+        label: s.label,
+        badge: s.id === "reports" ? badge : 0,
+      }))}
+    />
+  );
+  const active = SECTIONS.find((s) => s.id === section);
 
-      {section === "agencies" && <AdminAgenciesPage onPendingCountChange={onPendingCountChange} />}
-      {section === "usage" && <UsageSection />}
-      {section === "reports" && <ReportsSection onBadgeChange={setBadge} />}
+  return (
+    <div className="flex min-h-0 flex-1 flex-col px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:px-5 lg:px-6">
+      <AdminTopBar title={active?.title} tabs={tabs} />
+      <div className="flex min-h-0 flex-1 flex-col">
+        {section === "agencies" && <AdminAgenciesPage onPendingCountChange={onPendingCountChange} />}
+        {section === "usage" && <UsageSection />}
+        {section === "reports" && <ReportsSection onBadgeChange={setBadge} />}
+      </div>
     </div>
   );
 }
