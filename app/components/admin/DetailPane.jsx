@@ -88,7 +88,7 @@ export default function DetailPane({ open, onClose, title, children, ariaLabel }
             type="button"
             onClick={onClose}
             aria-label="Close details"
-            className="rounded-full p-2 text-text-muted transition hover:bg-surface hover:text-text-primary active:scale-[0.97] lg:hidden"
+            className="rounded-full p-2 text-text-muted transition-colors hover:bg-surface hover:text-text-primary active:scale-[0.97] lg:hidden"
           >
             <CloseIcon width={20} height={20} />
           </button>
