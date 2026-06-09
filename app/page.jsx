@@ -62,9 +62,11 @@ function HomePageInner() {
         const accountType = data.user?.accountType;
 
         // PENDING — user hasn't chosen account type yet (e.g. OAuth user, or
-        // closed the tab mid-signup). Send them back to the type picker.
+        // closed the tab mid-signup). Send them to the type picker.
+        // Use ?step=type so login/page.jsx can distinguish a fresh server-confirmed
+        // PENDING redirect from a stale localStorage entry.
         if (accountType === "PENDING") {
-          router.push("/login");
+          router.push("/login?step=type");
           return;
         }
 
@@ -94,9 +96,27 @@ function HomePageInner() {
         // Agency is verified — proceed to dashboard
         setShouldBypassLanding(true);
       })
-      .catch(() => {
+      .catch((error) => {
+        if (cancelled) return;
+
+        // An authoritative auth failure means the session cookie was not accepted
+        // on this request (e.g. an OAuth user whose cross-origin session cookie
+        // wasn't sent/stored). This is the case that previously stranded the user
+        // on the welcome screen with no error and no recovery path. Surface it by
+        // sending them to the sign-in screen instead of silently swallowing it.
+        if (error?.status === 401) {
+          // Drop any stale cached identity so /login starts clean.
+          if (typeof window !== "undefined") localStorage.removeItem("voyage-user");
+          setUser(null);
+          router.push("/login");
+          return;
+        }
+
+        // Transient failure (network error / 5xx). Don't strand or hard-redirect:
+        // fall back to a previously stored user if we have one, otherwise stay put
+        // so a flaky request doesn't bounce a legitimately signed-in user.
         const storedUser = typeof window !== "undefined" ? localStorage.getItem("voyage-user") : null;
-        if (!cancelled && storedUser) {
+        if (storedUser) {
           try {
             const parsed = JSON.parse(storedUser);
             setUser(parsed);

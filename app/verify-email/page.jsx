@@ -107,7 +107,7 @@ function VerifyEmailInner() {
                   onChange={(e) => setResendEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
-                  className="rounded-lg border border-border bg-white/70 px-4 py-3 text-sm focus:outline-none focus:border-secondary"
+                  className="rounded-lg border border-border bg-surface-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-soft focus:outline-none focus:border-secondary"
                 />
               </label>
               {resendState.sent && (
