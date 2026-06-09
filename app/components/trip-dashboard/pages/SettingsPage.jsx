@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "../../theme/ThemeProvider";
 import { voyageTourHelpBullets, voyageTourSteps } from "../tutorial/tutorialContent.js";
 import DangerZoneCard from "../../settings/DangerZoneCard.jsx";
+import ReportProblemModal from "../../settings/ReportProblemModal.jsx";
+import { createProblemReport } from "../../../lib/api/support.js";
 
 function formatReadOnlyValue(value) {
   const text = String(value ?? "").trim();
@@ -116,6 +118,9 @@ export default function SettingsPage({
   const [savedCountry, setSavedCountry] = useState("");
   const [workspaceError, setWorkspaceError] = useState("");
   const [isSavingWorkspace, setIsSavingWorkspace] = useState(false);
+
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportSent, setReportSent] = useState(false);
 
   useEffect(() => {
     const nextDisplayName = String(user?.displayName ?? "");
@@ -486,6 +491,27 @@ export default function SettingsPage({
           </div>
         </Panel>
 
+        <Panel
+          eyebrow="Support"
+          title="Need help?"
+          description="Report a problem or send feedback to the Voyage team."
+        >
+          <div className="flex flex-col gap-3">
+            {reportSent ? (
+              <p className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400" role="status">
+                Thanks — your report was sent. We'll take a look.
+              </p>
+            ) : null}
+            <button
+              type="button"
+              className="min-h-11 w-fit rounded-pill bg-secondary px-5 text-sm font-semibold text-white transition active:scale-[0.97] hover:brightness-110 motion-reduce:transition-none"
+              onClick={() => { setReportSent(false); setReportOpen(true); }}
+            >
+              Report a problem
+            </button>
+          </div>
+        </Panel>
+
         {!isPersonal && membership?.role === "OWNER" && agency?.id ? (
           <DangerZoneCard
             agencyId={agency.id}
@@ -493,6 +519,12 @@ export default function SettingsPage({
           />
         ) : null}
       </div>
+
+      <ReportProblemModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        onSubmit={async (payload) => { await createProblemReport(payload); setReportSent(true); }}
+      />
     </div>
   );
 }

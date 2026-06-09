@@ -74,6 +74,10 @@ export {
   adminRejectAgency,
   adminSuspendAgency,
   adminUnsuspendAgency,
+  fetchUsage,
+  fetchReports,
+  fetchReportDetail,
+  updateReport,
 } from "./admin.js";
 
 // Team & agency management
@@ -85,6 +89,11 @@ export {
   transferOwnership,
   deleteAgency,
 } from "./team.js";
+
+// Support
+export {
+  createProblemReport,
+} from "./support.js";
 
 // Personal account (/me/*)
 export * from "./personal.js";
